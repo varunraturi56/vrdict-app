@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Library as LibraryIcon, Search, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -38,7 +38,6 @@ function LibraryContent() {
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("my_rating");
   const [searchQuery, setSearchQuery] = useState("");
-  const [heroEntry, setHeroEntry] = useState<Entry | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [tvOn, setTvOn] = useState(true);
 
@@ -113,20 +112,6 @@ function LibraryContent() {
     });
   }, [mediaEntries, genreFilter, tagFilter, searchQuery, sortBy]);
 
-  // Hero — auto-rotate every 5s
-  const pickHero = useCallback(() => {
-    const candidates = mediaEntries.filter((e) => e.my_rating >= 7 && e.poster);
-    if (candidates.length > 0) {
-      setHeroEntry(candidates[Math.floor(Math.random() * candidates.length)]);
-    }
-  }, [mediaEntries]);
-
-  useEffect(() => {
-    pickHero();
-    const interval = setInterval(pickHero, 5000);
-    return () => clearInterval(interval);
-  }, [pickHero]);
-
   // Compact pill style
   const pillClass = (active: boolean) =>
     `px-2.5 py-0.5 rounded-[20px] text-[10px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
@@ -182,57 +167,7 @@ function LibraryContent() {
   );
 
   return (
-    <div className="px-4 pt-1 pb-4 lg:px-5 lg:pt-0 lg:pb-0 flex flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
-      {/* Hero banner */}
-      {heroEntry && (
-        <div
-          className="relative mb-2 cursor-pointer animate-fade-up flex-shrink-0"
-          onClick={() => setSelectedEntry(heroEntry)}
-        >
-          <div
-            className="absolute inset-0 -mx-4 lg:-mx-5"
-            style={{
-              backgroundImage: `url(${posterUrl(heroEntry.poster, "large")})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center 20%",
-              filter: "brightness(0.15) saturate(1.4) blur(40px)",
-              transform: "scale(1.1)",
-              maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-            }}
-          />
-          <div className="relative z-[1] flex items-center gap-4 py-2.5 max-w-[1360px] mx-auto">
-            <img
-              src={posterUrl(heroEntry.poster, "small")}
-              alt={heroEntry.title}
-              className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
-            />
-            <div className="min-w-0">
-              <p
-                className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5"
-                style={{ color: heroEntry.media_type === "movie" ? "#38bdf8" : "#c4b5fd" }}
-              >
-                From Your Collection
-              </p>
-              <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
-                {heroEntry.title}
-              </h2>
-              <div className="flex items-center gap-2">
-                <span className="font-mono-stats text-sm text-vr-blue font-bold">
-                  {Number(heroEntry.my_rating).toFixed(0)}/10
-                </span>
-                <span className="font-mono-stats text-xs text-[#5c5954]">
-                  {heroEntry.year}
-                </span>
-                <span className="text-xs text-[#5c5954] truncate">
-                  {heroEntry.genres?.slice(0, 3).join(", ")}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+    <div className="px-4 pt-1 pb-4 lg:px-5 lg:pt-1 lg:pb-0 flex flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
       {/* Mobile: Movies/TV tabs */}
       <div className="flex justify-center mb-2 flex-shrink-0 lg:hidden">
         <div className="flex items-center gap-2">
