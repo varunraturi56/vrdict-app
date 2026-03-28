@@ -390,6 +390,7 @@ function DiscoverContent() {
               }`}
               style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
               onMouseEnter={() => setPeekedResult(r)}
+              onClick={() => { if (!inLibrary) setSelectedResult(r); }}
             >
               <div className="aspect-[2/3]">
                 <img
@@ -409,8 +410,35 @@ function DiscoverContent() {
                 </div>
               )}
 
-              {/* Hover overlay with actions */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-1.5">
+              {/* Mobile: always-visible bottom bar with add/watchlist */}
+              <div className="absolute bottom-0 left-0 right-0 md:hidden bg-gradient-to-t from-black/90 to-transparent pt-4 pb-1 px-1">
+                <div className="flex gap-0.5">
+                  {!inLibrary ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedResult(r); }}
+                      className="flex-1 flex items-center justify-center gap-0.5 py-0.5 rounded text-[6px] font-display uppercase tracking-wider text-white bg-vr-blue/80"
+                    >
+                      <Plus size={7} /> Add
+                    </button>
+                  ) : (
+                    <span className="flex-1 flex items-center justify-center gap-0.5 py-0.5 rounded text-[6px] font-display uppercase text-green-400/70">
+                      <Check size={7} />
+                    </span>
+                  )}
+                  {!inLibrary && !inWatchlist && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); addToWatchlist(r); }}
+                      disabled={addingToWatchlist === r.id}
+                      className="px-1 py-0.5 rounded text-[#9a968e] border border-border-glow/50 disabled:opacity-50"
+                    >
+                      <Bookmark size={7} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Desktop: hover overlay with actions */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex flex-col justify-end p-1.5">
                 <p className="font-display text-[9px] text-white leading-tight truncate">{getDisplayTitle(r)}</p>
                 <p className="font-mono-stats text-[7px] text-[#9a968e] mb-1.5">{getYear(r)}</p>
                 <div className="flex gap-1">
