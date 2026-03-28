@@ -30,14 +30,14 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle }: TvFra
   }
 
   return (
-    <div className={`relative flex flex-col flex-1 min-h-0 px-10 ${className}`}>
+    <div className={`relative flex flex-col flex-1 min-h-0 px-20 ${className}`}>
       {/* Ambient glow — positioned behind the TV, inset to match screen area */}
       <div
         className="absolute z-0 pointer-events-none transition-all duration-[800ms]"
         style={{
           top: 8,
-          left: 48,
-          right: 48,
+          left: 88,
+          right: 88,
           bottom: 8,
           boxShadow: isOn
             ? `0 0 60px 20px ${rgba(ambient, 0.08)}, 0 0 120px 50px ${rgba(ambient, 0.04)}`

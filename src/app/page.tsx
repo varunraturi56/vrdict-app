@@ -167,7 +167,7 @@ function LibraryContent() {
   );
 
   return (
-    <div className="px-4 pt-1 pb-4 lg:px-5 lg:pt-1 lg:pb-0 flex flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+    <div className="px-4 pt-1 pb-4 lg:px-5 lg:pt-3 lg:pb-0 flex flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
       {/* Mobile: Movies/TV tabs */}
       <div className="flex justify-center mb-2 flex-shrink-0 lg:hidden">
         <div className="flex items-center gap-2">
@@ -258,8 +258,8 @@ function LibraryContent() {
         </div>
       </div>
 
-      {/* Desktop: compact filter rows */}
-      <div className="hidden lg:block space-y-1 mb-1 flex-shrink-0">
+      {/* Desktop: compact filter rows — aligned with TV width */}
+      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-20">
         {/* Row 1: Genre pills | Sort pills (tight, no gap) */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <span className="font-display text-[9px] uppercase tracking-[0.15em] text-[#5c5954] shrink-0">
@@ -315,7 +315,7 @@ function LibraryContent() {
           <div className="hidden md:flex md:flex-col flex-1 min-h-0">
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
             {/* TV stand — neck + base pedestal */}
-            <div className="hidden lg:block px-10">
+            <div className="hidden lg:block px-20">
               <div className="tv-stand">
                 <div className="tv-stand-neck" />
                 <div className="tv-stand-base" />

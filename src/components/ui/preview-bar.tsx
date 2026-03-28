@@ -27,7 +27,7 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
   return (
     <div className="hidden lg:block flex-shrink-0" style={glowVars}>
       {/* Soundbar — the now-playing bar, sits on the console table */}
-      <div className="px-10">
+      <div className="px-20">
         <div
           className="ec-soundbar"
           style={{
