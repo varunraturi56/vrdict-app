@@ -11,7 +11,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
   const isSearchPage = pathname === "/search";
-  const isLibraryPage = pathname === "/";
+  const isTvLayoutPage = pathname === "/" || pathname === "/favourites";
 
   if (isLoginPage) {
     return <>{children}</>;
@@ -22,7 +22,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       <Suspense><TopNav /></Suspense>
       <main
         className={`pb-20 lg:pb-0 lg:pt-[52px] ${
-          isLibraryPage
+          isTvLayoutPage
             ? "lg:h-screen lg:overflow-hidden lg:flex lg:flex-col lg:pb-0"
             : "flex-1"
         }`}
