@@ -25,6 +25,17 @@ export const metadata: Metadata = {
   title: "VRdict — Personal Cinelog",
   description:
     "Search, collect, rate, and analyse your film & TV watching habits.",
+  manifest: "/manifest.json",
+  themeColor: "#080811",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "VRdict",
+  },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
 };
 
 export default function RootLayout({
