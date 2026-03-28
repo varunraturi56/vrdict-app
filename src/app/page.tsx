@@ -377,7 +377,31 @@ function LibraryContent() {
       {/* Poster grid — TV frame on desktop, plain on mobile */}
       {filteredEntries.length > 0 ? (
         <>
-          <div className="hidden md:flex md:flex-col flex-1 min-h-0">
+          <div className="hidden md:flex md:flex-col flex-1 min-h-0 relative">
+            {/* LED Play bar — left (stands on console table) */}
+            <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center"
+              style={{ left: 36, top: "20%", bottom: 18 }}
+            >
+              {/* Bar body */}
+              <div className="flex-1 w-[10px] rounded-[5px] bg-[#0c0c0e] border border-[#1a1a1c]"
+                style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03)" }}
+              />
+              {/* Base stand */}
+              <div className="w-[18px] h-[4px] rounded-b-[2px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]" />
+            </div>
+
+            {/* LED Play bar — right (stands on console table) */}
+            <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center"
+              style={{ right: 36, top: "20%", bottom: 18 }}
+            >
+              {/* Bar body */}
+              <div className="flex-1 w-[10px] rounded-[5px] bg-[#0c0c0e] border border-[#1a1a1c]"
+                style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03)" }}
+              />
+              {/* Base stand */}
+              <div className="w-[18px] h-[4px] rounded-b-[2px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]" />
+            </div>
+
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
             {/* TV stand — neck + base pedestal */}
             <div className="hidden lg:block px-20">

@@ -58,20 +58,6 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle }: TvFra
         </>
       )}
 
-      {/* LED Play bar — left */}
-      <div className="absolute z-[1] pointer-events-none" style={{ left: 52, top: "15%", bottom: "15%", width: 6 }}>
-        <div className="w-full h-full rounded-full bg-[#0c0c0e] border border-[#1a1a1c]"
-          style={{ boxShadow: "inset 0 0 3px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.03)" }}
-        />
-      </div>
-
-      {/* LED Play bar — right */}
-      <div className="absolute z-[1] pointer-events-none" style={{ right: 52, top: "15%", bottom: "15%", width: 6 }}>
-        <div className="w-full h-full rounded-full bg-[#0c0c0e] border border-[#1a1a1c]"
-          style={{ boxShadow: "inset 0 0 3px rgba(0,0,0,0.8), 0 0 1px rgba(255,255,255,0.03)" }}
-        />
-      </div>
-
       {/* TV — modern flatscreen */}
       <div
         className={`tv-flatscreen relative z-[2] ${!isOn && !animState ? "tv-flatscreen-off" : ""}`}

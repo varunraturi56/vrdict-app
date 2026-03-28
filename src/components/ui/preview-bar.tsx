@@ -43,30 +43,66 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
           {/* Subtle scanlines */}
           <div className="ec-scanlines" />
 
-          {/* Left speaker grille */}
-          <div className="absolute left-0 top-0 bottom-0 w-[28px] z-[3] flex items-center justify-center"
+          {/* Left speaker */}
+          <div className="absolute left-0 top-0 bottom-0 w-[50px] z-[3] flex items-center justify-center gap-1.5"
             style={{ borderRight: "1px solid #1a1a1c" }}
           >
-            <div className="w-[14px] h-[50px] rounded-[2px] overflow-hidden">
-              {[...Array(12)].map((_, i) => (
-                <div key={i} className="h-[2px] mb-[2px] rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
-              ))}
+            {/* Woofer */}
+            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center"
+              style={{
+                background: "radial-gradient(circle at 45% 40%, #1a1a1e, #0e0e12 60%, #0a0a0e)",
+                border: "1px solid #222",
+                boxShadow: "inset 0 0 6px rgba(0,0,0,0.8), 0 0 2px rgba(255,255,255,0.02)",
+              }}
+            >
+              <div className="w-[10px] h-[10px] rounded-full"
+                style={{
+                  background: "radial-gradient(circle at 40% 35%, #222, #151518)",
+                  border: "1px solid #2a2a2e",
+                }}
+              />
             </div>
+            {/* Tweeter */}
+            <div className="w-[14px] h-[14px] rounded-full"
+              style={{
+                background: "radial-gradient(circle at 45% 40%, #1c1c20, #0e0e12 60%)",
+                border: "1px solid #222",
+                boxShadow: "inset 0 0 4px rgba(0,0,0,0.7)",
+              }}
+            />
           </div>
 
-          {/* Right speaker grille */}
-          <div className="absolute right-0 top-0 bottom-0 w-[28px] z-[3] flex items-center justify-center"
+          {/* Right speaker */}
+          <div className="absolute right-0 top-0 bottom-0 w-[50px] z-[3] flex items-center justify-center gap-1.5"
             style={{ borderLeft: "1px solid #1a1a1c" }}
           >
-            <div className="w-[14px] h-[50px] rounded-[2px] overflow-hidden">
-              {[...Array(12)].map((_, i) => (
-                <div key={i} className="h-[2px] mb-[2px] rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
-              ))}
+            {/* Tweeter */}
+            <div className="w-[14px] h-[14px] rounded-full"
+              style={{
+                background: "radial-gradient(circle at 45% 40%, #1c1c20, #0e0e12 60%)",
+                border: "1px solid #222",
+                boxShadow: "inset 0 0 4px rgba(0,0,0,0.7)",
+              }}
+            />
+            {/* Woofer */}
+            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center"
+              style={{
+                background: "radial-gradient(circle at 45% 40%, #1a1a1e, #0e0e12 60%, #0a0a0e)",
+                border: "1px solid #222",
+                boxShadow: "inset 0 0 6px rgba(0,0,0,0.8), 0 0 2px rgba(255,255,255,0.02)",
+              }}
+            >
+              <div className="w-[10px] h-[10px] rounded-full"
+                style={{
+                  background: "radial-gradient(circle at 40% 35%, #222, #151518)",
+                  border: "1px solid #2a2a2e",
+                }}
+              />
             </div>
           </div>
 
           {/* Film details — between speakers */}
-          <div className={`ec-content relative z-[2] flex items-center px-10 transition-opacity duration-500 ${isOn ? "opacity-100" : "opacity-0"}`}>
+          <div className={`ec-content relative z-[2] flex items-center px-14 transition-opacity duration-500 ${isOn ? "opacity-100" : "opacity-0"}`}>
             {entry ? (
               <div className="flex items-center gap-3 w-full min-w-0">
                 {/* Poster */}
