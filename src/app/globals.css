@@ -187,6 +187,19 @@
   opacity: 0.5;
 }
 
+/* ── TV Ambient LED Glow Animation ── */
+@keyframes ambient-glow-cycle {
+  0%   { filter: hue-rotate(0deg) brightness(1); }
+  25%  { filter: hue-rotate(15deg) brightness(1.1); }
+  50%  { filter: hue-rotate(-20deg) brightness(0.95); }
+  75%  { filter: hue-rotate(10deg) brightness(1.05); }
+  100% { filter: hue-rotate(0deg) brightness(1); }
+}
+
+.tv-ambient-glow {
+  animation: ambient-glow-cycle 8s ease-in-out infinite;
+}
+
 /* ── Modern Flatscreen TV ── */
 
 .tv-flatscreen {

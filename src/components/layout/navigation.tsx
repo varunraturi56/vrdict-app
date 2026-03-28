@@ -74,7 +74,8 @@ export function TopNav() {
   const mediaTab = searchParams.get("tab") || "movie";
   const { counts } = useLibraryCounts();
   const isLibrary = pathname === "/";
-  const [libraryExpanded, setLibraryExpanded] = useState(false);
+  const [libraryCollapsed, setLibraryCollapsed] = useState(false);
+  const libraryExpanded = isLibrary && !libraryCollapsed;
 
   return (
     <header className="hidden lg:flex fixed top-0 left-0 right-0 z-50 h-[52px] items-center px-6 border-b border-border-glow bg-bg-card/90 backdrop-blur-xl">
@@ -104,9 +105,9 @@ export function TopNav() {
                 onClick={(e) => {
                   if (isLibraryTab && isLibrary) {
                     e.preventDefault();
-                    setLibraryExpanded(!libraryExpanded);
+                    setLibraryCollapsed(!libraryCollapsed);
                   } else {
-                    setLibraryExpanded(false);
+                    setLibraryCollapsed(false);
                   }
                 }}
                 className={`relative flex flex-col items-center gap-0.5 transition-all duration-200 group ${
