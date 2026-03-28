@@ -38,21 +38,21 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle }: TvFra
             className="absolute z-0 pointer-events-none tv-glow-cyan"
             style={{
               top: 8, left: 88, right: 88, bottom: 8,
-              boxShadow: "0 0 60px 20px rgba(14,165,233,0.12), 0 0 120px 50px rgba(14,165,233,0.05)",
+              boxShadow: "0 0 80px 30px rgba(14,165,233,0.18), 0 0 150px 60px rgba(14,165,233,0.08)",
             }}
           />
           <div
             className="absolute z-0 pointer-events-none tv-glow-violet"
             style={{
               top: 8, left: 88, right: 88, bottom: 8,
-              boxShadow: "0 0 60px 20px rgba(167,139,250,0.12), 0 0 120px 50px rgba(167,139,250,0.05)",
+              boxShadow: "0 0 80px 30px rgba(167,139,250,0.18), 0 0 150px 60px rgba(167,139,250,0.08)",
             }}
           />
           <div
             className="absolute z-0 pointer-events-none tv-glow-teal"
             style={{
               top: 8, left: 88, right: 88, bottom: 8,
-              boxShadow: "0 0 60px 20px rgba(6,182,212,0.10), 0 0 120px 50px rgba(6,182,212,0.04)",
+              boxShadow: "0 0 80px 30px rgba(6,182,212,0.15), 0 0 150px 60px rgba(6,182,212,0.06)",
             }}
           />
         </>
