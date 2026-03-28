@@ -43,8 +43,30 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
           {/* Subtle scanlines */}
           <div className="ec-scanlines" />
 
-          {/* Film details */}
-          <div className={`ec-content relative z-[2] flex items-center px-5 transition-opacity duration-500 ${isOn ? "opacity-100" : "opacity-0"}`}>
+          {/* Left speaker grille */}
+          <div className="absolute left-0 top-0 bottom-0 w-[28px] z-[3] flex items-center justify-center"
+            style={{ borderRight: "1px solid #1a1a1c" }}
+          >
+            <div className="w-[14px] h-[50px] rounded-[2px] overflow-hidden">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="h-[2px] mb-[2px] rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Right speaker grille */}
+          <div className="absolute right-0 top-0 bottom-0 w-[28px] z-[3] flex items-center justify-center"
+            style={{ borderLeft: "1px solid #1a1a1c" }}
+          >
+            <div className="w-[14px] h-[50px] rounded-[2px] overflow-hidden">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="h-[2px] mb-[2px] rounded-full" style={{ background: "rgba(255,255,255,0.04)" }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Film details — between speakers */}
+          <div className={`ec-content relative z-[2] flex items-center px-10 transition-opacity duration-500 ${isOn ? "opacity-100" : "opacity-0"}`}>
             {entry ? (
               <div className="flex items-center gap-3 w-full min-w-0">
                 {/* Poster */}
