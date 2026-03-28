@@ -153,7 +153,7 @@ export function AddModal({ result, onClose, onAdded }: AddModalProps) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-[calc(100vw-16px)] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-border-glow bg-bg-card animate-slide-in">
+      <div className="relative w-full max-w-[calc(100vw-16px)] sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-xl border border-border-glow bg-bg-card animate-slide-in">
         {/* Top gradient line (matches original modal) */}
         <div
           className="h-px rounded-t-xl"
@@ -176,10 +176,10 @@ export function AddModal({ result, onClose, onAdded }: AddModalProps) {
             <div className="w-8 h-8 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />
           </div>
         ) : detail ? (
-          <div className="p-5">
+          <div className="p-3 sm:p-5">
             {/* Header: poster + info */}
-            <div className="flex gap-4 mb-5">
-              <div className="flex-shrink-0 w-28 rounded-lg overflow-hidden bg-bg-deep">
+            <div className="flex gap-3 sm:gap-4 mb-4 sm:mb-5">
+              <div className="flex-shrink-0 w-20 sm:w-28 rounded-lg overflow-hidden bg-bg-deep">
                 {detail.poster_path ? (
                   <img
                     src={posterUrl(detail.poster_path, "medium")}
@@ -318,31 +318,44 @@ export function AddModal({ result, onClose, onAdded }: AddModalProps) {
                   ))}
                 </div>
               )}
-              {/* Tag dropdown — works on mobile (no keyboard needed) */}
+              {/* Mobile: dropdown select */}
               <select
                 value=""
                 onChange={(e) => { if (e.target.value) addTag(e.target.value); }}
-                className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40 mb-2 appearance-none cursor-pointer"
+                className="md:hidden w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40 mb-2 cursor-pointer"
               >
                 <option value="" disabled>Add a tag...</option>
                 {suggestions.map((tag) => (
                   <option key={tag} value={tag}>{tag}</option>
                 ))}
               </select>
-              {/* Custom tag input */}
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && tagInput.trim()) {
-                    e.preventDefault();
-                    addTag(tagInput.trim());
-                  }
-                }}
-                placeholder="Or type a custom tag..."
-                className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40"
-              />
+              {/* Desktop: clickable pill suggestions */}
+              <div className="hidden md:block mb-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && tagInput.trim()) {
+                      e.preventDefault();
+                      addTag(tagInput.trim());
+                    }
+                  }}
+                  placeholder="Type to filter or add custom tag..."
+                  className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40 mb-2"
+                />
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {suggestions.slice(0, 12).map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => addTag(tag)}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-display uppercase tracking-wider border border-border-glow text-[#5c5954] hover:text-[#9a968e] hover:border-vr-blue/20 transition-colors"
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Checkboxes */}

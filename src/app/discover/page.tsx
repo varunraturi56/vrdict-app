@@ -89,7 +89,7 @@ function DiscoverContent() {
   const [resolvedKeywordIds, setResolvedKeywordIds] = useState<string>("");
 
   const pillClass = (active: boolean) =>
-    `px-3 py-1 rounded-[20px] text-[11px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
+    `px-3.5 py-1.5 rounded-[20px] text-xs tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
       active
         ? "text-vr-blue border-vr-blue/30 bg-[rgba(14,165,233,0.12)]"
         : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
