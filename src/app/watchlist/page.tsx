@@ -2,10 +2,10 @@
 
 import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bookmark, Search, ChevronDown, X, Plus, Star } from "lucide-react";
+import { Bookmark, Search, ChevronDown, X, Plus, Star, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
-import { MAJOR_GENRES, type WatchlistItem, type MediaType } from "@/lib/types";
+import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { PreviewBar } from "@/components/ui/preview-bar";
 
@@ -52,6 +52,26 @@ function WatchlistContent() {
   const [tvOn, setTvOn] = useState(true);
   const [peekedEntry, setPeekedEntry] = useState<WatchlistItem | null>(null);
   const [movingToLibrary, setMovingToLibrary] = useState<string | null>(null);
+  const [showRewatch, setShowRewatch] = useState(false);
+  const [rewatchItems, setRewatchItems] = useState<Entry[]>([]);
+  const [rewatchLoading, setRewatchLoading] = useState(false);
+
+  // Fetch rewatch entries from library
+  useEffect(() => {
+    if (!showRewatch) return;
+    async function loadRewatch() {
+      setRewatchLoading(true);
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("entries")
+        .select("*")
+        .eq("rewatch", true)
+        .order("my_rating", { ascending: false });
+      if (data) setRewatchItems(data as Entry[]);
+      setRewatchLoading(false);
+    }
+    loadRewatch();
+  }, [showRewatch]);
 
   // Fetch watchlist
   useEffect(() => {
@@ -97,6 +117,12 @@ function WatchlistContent() {
       }
     });
   }, [mediaItems, genreFilter, minRating, searchQuery, sortBy]);
+
+  // Rewatch items filtered by current tab
+  const filteredRewatchItems = useMemo(
+    () => rewatchItems.filter((e) => e.media_type === mediaTab),
+    [rewatchItems, mediaTab]
+  );
 
   // Hero — mobile only
   const pickHero = useCallback(() => {
@@ -229,6 +255,53 @@ function WatchlistContent() {
     year_watched: null,
   } : null;
 
+  // Rewatch grid
+  const rewatchGrid = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 p-1">
+      {rewatchLoading ? (
+        <div className="col-span-full flex items-center justify-center py-12">
+          <div className="w-6 h-6 border-2 border-vr-violet/30 border-t-vr-violet rounded-full animate-spin" />
+        </div>
+      ) : filteredRewatchItems.length === 0 ? (
+        <div className="col-span-full text-center py-12">
+          <RotateCcw size={24} className="mx-auto mb-2 text-[#5c5954]" />
+          <p className="font-body text-[11px] text-[#5c5954]">No {mediaTab === "movie" ? "movies" : "TV shows"} marked for rewatch</p>
+        </div>
+      ) : (
+        filteredRewatchItems.map((item, i) => (
+          <div
+            key={item.id}
+            className="flex gap-3 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border border-vr-violet/20 animate-slide-in hover:border-vr-violet/40 transition-all"
+            style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
+          >
+            {item.poster && (
+              <img
+                src={posterUrl(item.poster, "small")}
+                alt={item.title}
+                className="w-[45px] h-[67px] rounded-[3px] object-cover shrink-0"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <h3 className="font-display text-[11px] font-medium text-[#e8e4dc] tracking-wide leading-tight truncate">
+                {item.title}
+              </h3>
+              <p className="font-mono-stats text-[9px] text-[#5c5954] mt-0.5">
+                {item.year} · {item.genres?.slice(0, 2).join(", ")}
+                {item.tmdb_rating && <> · <Star size={8} className="inline -mt-0.5" /> {item.tmdb_rating}</>}
+              </p>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <span className="px-2 py-0.5 rounded text-[8px] font-display uppercase tracking-wider text-vr-violet border border-vr-violet/20 bg-vr-violet/10">
+                  <RotateCcw size={8} className="inline -mt-0.5 mr-1" />
+                  Rewatch · {item.my_rating}/10
+                </span>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
   // Watchlist cards inside TV
   const watchlistGrid = (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 p-1">
@@ -278,8 +351,10 @@ function WatchlistContent() {
     </div>
   );
 
+  const activeGrid = showRewatch ? rewatchGrid : watchlistGrid;
+
   return (
-    <div className="px-4 pt-1 pb-4 lg:px-5 lg:pt-3 lg:pb-0 flex flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+    <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
       {/* Hero banner — mobile only */}
       {heroEntry && (
         <div className="relative mb-2 animate-fade-up flex-shrink-0 lg:hidden">
@@ -366,7 +441,7 @@ function WatchlistContent() {
       </div>
 
       {/* Desktop: filter rows */}
-      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-20">
+      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-20 relative z-10">
         {/* Row 1: Genre + Sort + Rating */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">Genre</span>
@@ -382,10 +457,23 @@ function WatchlistContent() {
               {opt.label}
             </button>
           ))}
+
+          {/* Rewatch toggle */}
+          <button
+            onClick={() => setShowRewatch(!showRewatch)}
+            className={`ml-3 px-3.5 py-1 rounded-[20px] text-[10px] font-display uppercase tracking-[0.15em] border cursor-pointer transition-all flex items-center gap-1.5 shrink-0 ${
+              showRewatch
+                ? "text-vr-violet border-vr-violet/40 bg-vr-violet/15"
+                : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
+            }`}
+          >
+            <RotateCcw size={10} />
+            Rewatch
+          </button>
         </div>
 
         {/* Row 2: Rating filter + Search + Add to watchlist */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 scrollbar-none">
           <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">Rating</span>
           {RATING_FILTERS.map((r) => (
             <button key={r.key} onClick={() => setRatingFilter(r.key)} className={pillClass(ratingFilter === r.key)}>
@@ -418,33 +506,48 @@ function WatchlistContent() {
             {/* Dropdown results */}
             {addResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-bg-card shadow-xl z-50 overflow-hidden">
-                {addResults.map((r) => (
-                  <button
-                    key={`${r.media_type}-${r.id}`}
-                    onClick={() => addToWatchlist(r)}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-bg-3 transition-colors"
-                  >
-                    {r.poster_path && (
-                      <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="font-display text-[10px] text-[#e8e4dc] truncate">{r.title || r.name}</p>
-                      <p className="font-mono-stats text-[8px] text-[#5c5954]">
-                        {(r.release_date || r.first_air_date || "").slice(0, 4)} · {r.media_type}
-                      </p>
+                {addResults.map((r) => {
+                  const alreadyAdded = items.some((i) => i.tmdb_id === r.id);
+                  return (
+                    <div
+                      key={`${r.media_type}-${r.id}`}
+                      className="flex items-center gap-2 w-full px-3 py-2 hover:bg-bg-3 transition-colors"
+                    >
+                      {r.poster_path && (
+                        <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-[10px] text-[#e8e4dc] truncate">{r.title || r.name}</p>
+                        <p className="font-mono-stats text-[8px] text-[#5c5954]">
+                          {(r.release_date || r.first_air_date || "").slice(0, 4)} · {r.media_type}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => addToWatchlist(r)}
+                        disabled={alreadyAdded}
+                        className={`shrink-0 px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all ${
+                          alreadyAdded
+                            ? "text-[#5c5954] border border-border-glow cursor-default"
+                            : "bg-vr-violet/15 text-vr-violet border border-vr-violet/25 hover:bg-vr-violet/25"
+                        }`}
+                      >
+                        {alreadyAdded ? "Added" : "+ Add"}
+                      </button>
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
 
-          <span className="font-mono-stats text-[9px] text-[#5c5954] shrink-0">{filteredItems.length} titles</span>
+          <span className="font-mono-stats text-[9px] text-[#5c5954] shrink-0">
+            {showRewatch ? `${filteredRewatchItems.length} rewatch` : `${filteredItems.length} titles`}
+          </span>
         </div>
       </div>
 
       {/* Content — TV frame on desktop */}
-      {filteredItems.length > 0 ? (
+      {(filteredItems.length > 0 || showRewatch) ? (
         <>
           <div className="hidden md:flex md:flex-col flex-1 min-h-0 relative">
             {/* LED Play bars */}
@@ -457,7 +560,7 @@ function WatchlistContent() {
               <div className="w-[30px] h-[8px] rounded-b-[3px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]" style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }} />
             </div>
 
-            <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{watchlistGrid}</TvFrame>
+            <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{activeGrid}</TvFrame>
             <div className="hidden lg:block px-20">
               <div className="tv-stand">
                 <div className="tv-stand-neck" />
@@ -470,7 +573,7 @@ function WatchlistContent() {
               isOn={tvOn}
             />
           </div>
-          <div className="md:hidden flex-1 overflow-y-auto">{watchlistGrid}</div>
+          <div className="md:hidden flex-1 min-h-0 overflow-y-auto pb-20">{activeGrid}</div>
         </>
       ) : (
         <div className="flex flex-col items-center justify-center flex-1">

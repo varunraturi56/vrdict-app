@@ -72,6 +72,19 @@ function DiscoverContent() {
   // Mobile scroll container
   const mobileScrollRef = useRef<HTMLDivElement>(null);
 
+  // Hero banner (mobile) — auto-rotate every 5s
+  const [heroResult, setHeroResult] = useState<TmdbSearchResult | null>(null);
+  const pickHero = useCallback(() => {
+    if (results.length === 0) return;
+    setHeroResult(results[Math.floor(Math.random() * Math.min(results.length, 20))]);
+  }, [results]);
+
+  useEffect(() => {
+    pickHero();
+    const interval = setInterval(pickHero, 5000);
+    return () => clearInterval(interval);
+  }, [pickHero]);
+
   // Keyword resolution
   const [resolvedKeywordIds, setResolvedKeywordIds] = useState<string>("");
 
@@ -444,7 +457,53 @@ function DiscoverContent() {
   );
 
   return (
-    <div className="px-4 pt-1 pb-4 lg:px-5 lg:pt-3 lg:pb-0 flex flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+    <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
+      {/* Hero banner — mobile only */}
+      {heroResult && (
+        <div
+          className="relative mb-2 cursor-pointer animate-fade-up flex-shrink-0 lg:hidden"
+          onClick={() => setSelectedResult(heroResult)}
+        >
+          <div
+            className="absolute inset-0 -mx-4"
+            style={{
+              backgroundImage: `url(${posterUrl(heroResult.poster_path, "large")})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center 20%",
+              filter: "brightness(0.15) saturate(1.4) blur(40px)",
+              transform: "scale(1.1)",
+              maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+            }}
+          />
+          <div className="relative z-[1] flex items-center gap-4 py-2.5">
+            <img
+              src={posterUrl(heroResult.poster_path, "small")}
+              alt={getDisplayTitle(heroResult)}
+              className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5 text-pink-400">
+                Discover
+              </p>
+              <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
+                {getDisplayTitle(heroResult)}
+              </h2>
+              <div className="flex items-center gap-2">
+                {heroResult.vote_average > 0 && (
+                  <span className="font-mono-stats text-sm text-pink-400 font-bold">
+                    {heroResult.vote_average.toFixed(1)}
+                  </span>
+                )}
+                <span className="font-mono-stats text-xs text-[#5c5954]">
+                  {getYear(heroResult)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile: filter dropdowns */}
       <div className="lg:hidden mb-1 flex-shrink-0">
         <div className="flex items-center gap-2 mb-1">
@@ -645,8 +704,8 @@ function DiscoverContent() {
               isOn={tvOn}
             />
           </div>
-          {/* Mobile: plain grid */}
-          <div ref={mobileScrollRef} className="md:hidden flex-1 overflow-y-auto">
+          {/* Mobile: plain grid — scrollable, hero+filters stay pinned above */}
+          <div ref={mobileScrollRef} className="md:hidden flex-1 min-h-0 overflow-y-auto pb-20">
             {initialLoad ? (
               <div className="flex items-center justify-center py-20">
                 <div className="w-8 h-8 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />

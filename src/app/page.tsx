@@ -182,7 +182,7 @@ function LibraryContent() {
   );
 
   return (
-    <div className="px-4 pt-1 pb-4 lg:px-5 lg:pt-3 lg:pb-0 flex flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+    <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
       {/* Hero banner — mobile only */}
       {heroEntry && (
         <div
@@ -421,8 +421,8 @@ function LibraryContent() {
               isOn={tvOn}
             />
           </div>
-          {/* Mobile: plain grid */}
-          <div className="md:hidden flex-1 overflow-y-auto">{posterGrid}</div>
+          {/* Mobile: plain grid — scrollable, hero+filters stay pinned above */}
+          <div className="md:hidden flex-1 min-h-0 overflow-y-auto pb-20">{posterGrid}</div>
         </>
       ) : (
         <div className="flex flex-col items-center justify-center flex-1">

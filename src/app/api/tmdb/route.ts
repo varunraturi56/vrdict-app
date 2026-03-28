@@ -59,6 +59,16 @@ export async function GET(request: NextRequest) {
         url = `${TMDB_BASE}/trending/${mediaType}/week?api_key=${API_KEY}&page=${page}`;
         break;
 
+      case "keyword_search":
+        if (!query) {
+          return NextResponse.json(
+            { error: "Query is required" },
+            { status: 400 }
+          );
+        }
+        url = `${TMDB_BASE}/search/keyword?api_key=${API_KEY}&query=${encodeURIComponent(query)}`;
+        break;
+
       case "discover": {
         const genreIds = searchParams.get("genre_ids") || "";
         const sortBy = searchParams.get("sort_by") || "popularity.desc";
@@ -82,6 +92,9 @@ export async function GET(request: NextRequest) {
           discoverUrl += `&vote_count.lte=${voteCountLte}`;
         if (voteAvgGte)
           discoverUrl += `&vote_average.gte=${voteAvgGte}`;
+
+        const withKeywords = searchParams.get("with_keywords") || "";
+        if (withKeywords) discoverUrl += `&with_keywords=${withKeywords}`;
 
         url = discoverUrl;
         break;
