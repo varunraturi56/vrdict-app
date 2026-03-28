@@ -40,12 +40,10 @@ function LibraryContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [heroEntry, setHeroEntry] = useState<Entry | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
+  const [tvOn, setTvOn] = useState(true);
 
   // Preview bar (desktop only) — updates on hover
   const [peekedEntry, setPeekedEntry] = useState<Entry | null>(null);
-
-  // Shared power state — TV button controls both TV and preview bar
-  const [tvIsOn, setTvIsOn] = useState(true);
 
   function handleMouseEnter(entry: Entry) {
     setPeekedEntry(entry);
@@ -327,8 +325,9 @@ function LibraryContent() {
 
       {/* Desktop: compact filter rows */}
       <div className="hidden lg:block space-y-1 mb-1 flex-shrink-0">
+        {/* Row 1: Genre pills | Sort pills (tight, no gap) */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-[#5c5954] w-12 shrink-0">
+          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-[#5c5954] shrink-0">
             Genre
           </span>
           <button onClick={() => setGenreFilter(null)} className={pillClass(!genreFilter)}>All</button>
@@ -337,24 +336,32 @@ function LibraryContent() {
               {g}
             </button>
           ))}
+          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-[#5c5954] shrink-0 ml-2">
+            Sort
+          </span>
+          {SORT_OPTIONS.map((opt) => (
+            <button key={opt.key} onClick={() => setSortBy(opt.key)} className={pillClass(sortBy === opt.key)}>
+              {opt.label}
+            </button>
+          ))}
         </div>
 
-        {topTags.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-            <span className="font-display text-[9px] uppercase tracking-[0.15em] text-[#5c5954] w-12 shrink-0">
-              Tags
-            </span>
-            <button onClick={() => setTagFilter(null)} className={pillClass(!tagFilter)}>All</button>
-            {topTags.map((t) => (
-              <button key={t} onClick={() => setTagFilter(tagFilter === t ? null : t)} className={pillClass(tagFilter === t)}>
-                {t}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center gap-1.5">
-          <div className="relative flex-1">
+        {/* Row 2: Tag pills + Search (tight) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+          {topTags.length > 0 && (
+            <>
+              <span className="font-display text-[9px] uppercase tracking-[0.15em] text-[#5c5954] shrink-0">
+                Tags
+              </span>
+              <button onClick={() => setTagFilter(null)} className={pillClass(!tagFilter)}>All</button>
+              {topTags.map((t) => (
+                <button key={t} onClick={() => setTagFilter(tagFilter === t ? null : t)} className={pillClass(tagFilter === t)}>
+                  {t}
+                </button>
+              ))}
+            </>
+          )}
+          <div className="relative flex-1 min-w-[140px] ml-auto">
             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
             <input
               type="text"
@@ -364,14 +371,6 @@ function LibraryContent() {
               className="w-full h-7 rounded-[20px] border border-border-glow bg-bg-3 pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
             />
           </div>
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-[#5c5954] shrink-0">
-            Sort
-          </span>
-          {SORT_OPTIONS.map((opt) => (
-            <button key={opt.key} onClick={() => setSortBy(opt.key)} className={pillClass(sortBy === opt.key)}>
-              {opt.label}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -379,7 +378,20 @@ function LibraryContent() {
       {filteredEntries.length > 0 ? (
         <>
           <div className="hidden md:flex md:flex-col flex-1 min-h-0">
-            <TvFrame isOn={tvIsOn} onPowerChange={setTvIsOn}>{posterGrid}</TvFrame>
+            <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
+            {/* TV stand — neck + base pedestal */}
+            <div className="hidden lg:block px-10">
+              <div className="tv-stand">
+                <div className="tv-stand-neck" />
+                <div className="tv-stand-base" />
+              </div>
+            </div>
+            {/* Soundbar — now-playing bar */}
+            <PreviewBar
+              entry={displayEntry}
+              onEdit={(entry) => setSelectedEntry(entry)}
+              isOn={tvOn}
+            />
           </div>
           {/* Mobile: plain grid */}
           <div className="md:hidden flex-1 overflow-y-auto">{posterGrid}</div>
@@ -394,13 +406,6 @@ function LibraryContent() {
           </p>
         </div>
       )}
-
-      {/* Bottom preview bar (desktop only) */}
-      <PreviewBar
-        entry={displayEntry}
-        onEdit={(entry) => setSelectedEntry(entry)}
-        isOn={tvIsOn}
-      />
 
       {/* Detail modal */}
       {selectedEntry && (

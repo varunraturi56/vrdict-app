@@ -35,13 +35,16 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           sidebarCollapsed ? "lg:pl-16" : "lg:pl-56"
         } ${
           isLibraryPage
-            ? "lg:h-screen lg:overflow-hidden lg:flex lg:flex-col lg:pb-[150px]"
+            ? "lg:h-screen lg:overflow-hidden lg:flex lg:flex-col lg:pb-0"
             : "flex-1"
         }`}
       >
         {children}
       </main>
       <Suspense><BottomNav /></Suspense>
+
+      {/* Wall zone — darkened bottom edge so ambient glow reads against it */}
+      <div className="wall-zone hidden lg:block" />
 
       {!isSearchPage && (
         <Link

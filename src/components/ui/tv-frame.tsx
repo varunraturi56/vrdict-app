@@ -1,106 +1,74 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { type ReactNode } from "react";
+import { getAmbientColor, rgba } from "@/lib/ambient-colors";
 
 interface TvFrameProps {
   children: ReactNode;
   className?: string;
-  isOn?: boolean;
-  onPowerChange?: (isOn: boolean) => void;
+  isOn: boolean;
+  onPowerToggle: () => void;
 }
 
-export function TvFrame({
-  children,
-  className = "",
-  isOn: externalIsOn,
-  onPowerChange,
-}: TvFrameProps) {
-  const controlled = externalIsOn !== undefined;
-  const [internalIsOn, setInternalIsOn] = useState(true);
-  const isOn = controlled ? externalIsOn : internalIsOn;
+export function TvFrame({ children, className = "", isOn, onPowerToggle }: TvFrameProps) {
+  const pathname = usePathname();
+  const ambient = getAmbientColor(pathname);
   const [animState, setAnimState] = useState<"shutting-down" | "booting-up" | null>(null);
-
-  // Sync animation when external power changes
-  useEffect(() => {
-    if (!controlled) return;
-    // handled by handlePower
-  }, [controlled, externalIsOn]);
 
   function handlePower() {
     if (animState) return;
-
     if (isOn) {
       setAnimState("shutting-down");
-      setTimeout(() => {
-        if (!controlled) setInternalIsOn(false);
-        onPowerChange?.(false);
-        setAnimState(null);
-      }, 1400);
+      setTimeout(() => { onPowerToggle(); setAnimState(null); }, 1400);
     } else {
-      if (!controlled) setInternalIsOn(true);
-      onPowerChange?.(true);
+      onPowerToggle();
       setAnimState("booting-up");
-      setTimeout(() => {
-        setAnimState(null);
-      }, 600);
+      setTimeout(() => { setAnimState(null); }, 600);
     }
   }
 
-  const frameClass = [
-    "tv-frame",
-    !isOn && !animState ? "tv-frame-off" : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
-
   return (
-    <div className={`relative flex flex-col flex-1 min-h-0 ${className}`}>
-      <div className={frameClass}>
-        <div className="tv-frame-inner">
-          {/* Scrollable content area */}
-          <div
-            className={`tv-scroll ${!isOn ? "pointer-events-none" : ""}`}
-          >
+    <div className={`relative flex flex-col flex-1 min-h-0 px-10 ${className}`}>
+      {/* TV — modern flatscreen */}
+      <div
+        className={`tv-flatscreen relative ${!isOn && !animState ? "tv-flatscreen-off" : ""}`}
+      >
+        {/* Screen with ambient glow — glow comes from screen, not bezel */}
+        <div
+          className="tv-flatscreen-inner"
+          style={{
+            boxShadow: isOn
+              ? `0 0 60px 20px ${rgba(ambient, 0.08)}, 0 0 120px 50px ${rgba(ambient, 0.04)}`
+              : "none",
+            transition: "box-shadow 0.8s ease",
+          }}
+        >
+          <div className={`tv-scroll ${!isOn ? "pointer-events-none" : ""}`}>
             {children}
           </div>
-
-          {/* CRT overlay — uses CSS class-based animations from globals.css */}
-          <div
-            className={`tv-crt-overlay ${animState || ""}`}
-          />
+          {/* CRT overlay for shutdown/boot */}
+          <div className={`tv-crt-overlay ${animState || ""}`} />
         </div>
+
+        {/* Power LED — centred vertically in bottom bezel */}
+        <button
+          onClick={handlePower}
+          className="absolute left-1/2 -translate-x-1/2 z-[5] w-[5px] h-[5px] rounded-full cursor-pointer transition-all duration-300 focus:outline-none hover:scale-[1.6]"
+          style={{
+            bottom: "-6.5px",
+            background: isOn
+              ? `radial-gradient(circle at 40% 35%, ${rgba(ambient, 1)}, ${rgba(ambient, 0.7)} 60%)`
+              : "radial-gradient(circle at 40% 35%, #555, #333 60%)",
+            boxShadow: isOn
+              ? `0 0 6px ${rgba(ambient, 0.6)}, 0 0 2px ${rgba(ambient, 0.8)}`
+              : "0 0 3px rgba(80,80,80,0.3)",
+          }}
+          aria-label={isOn ? "Turn off TV" : "Turn on TV"}
+        />
       </div>
 
-      {/* Power button — sits on the TV stand */}
-      <button
-        onClick={handlePower}
-        className="absolute bottom-[41px] left-1/2 -translate-x-1/2 z-[3] w-[6px] h-[6px] rounded-full border-0 p-0 cursor-pointer transition-all duration-300 focus:outline-none"
-        style={{
-          background: isOn
-            ? "radial-gradient(circle at 40% 35%, #ff6b6b, #ef4444 50%, #b91c1c)"
-            : "radial-gradient(circle at 40% 35%, #666, #444 50%, #333)",
-          boxShadow: isOn
-            ? "0 0 6px rgba(239,68,68,0.5), 0 0 2px rgba(239,68,68,0.8)"
-            : "0 0 4px rgba(100,100,100,0.3)",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.transform =
-            "translateX(-50%) scale(1.3)";
-          if (isOn) {
-            (e.currentTarget as HTMLElement).style.boxShadow =
-              "0 0 10px rgba(239,68,68,0.7), 0 0 4px rgba(239,68,68,0.9)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.transform =
-            "translateX(-50%) scale(1)";
-          if (isOn) {
-            (e.currentTarget as HTMLElement).style.boxShadow =
-              "0 0 6px rgba(239,68,68,0.5), 0 0 2px rgba(239,68,68,0.8)";
-          }
-        }}
-        aria-label={isOn ? "Turn off TV" : "Turn on TV"}
-      />
     </div>
   );
 }

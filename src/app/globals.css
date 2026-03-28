@@ -187,68 +187,64 @@
   opacity: 0.5;
 }
 
-/* ── TV Frame ── */
-@property --border-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
+/* ── Modern Flatscreen TV ── */
 
-.tv-frame {
-  position: relative;
-  padding: 8px;
-  border-radius: 16px;
-  margin-bottom: 40px;
+.tv-flatscreen {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background:
-    conic-gradient(
-      from var(--border-angle),
-      #0ea5e9, #38bdf8, #a78bfa, #c4b5fd, #06b6d4, #0ea5e9
-    );
-  box-shadow:
-    0 0 12px rgba(14, 165, 233, 0.35),
-    0 0 24px rgba(167, 139, 250, 0.2);
-  animation: spin-border 5s linear infinite;
+  border: 8px solid #111113;
+  border-radius: 4px;
+  background: #111113;
+  position: relative;
+  transition: box-shadow 0.8s ease;
 }
 
-/* TV stand — exact from original */
-.tv-frame::before {
-  content: "";
-  position: absolute;
-  bottom: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 30%;
+/* TV stand — neck + base like a real TV pedestal */
+.tv-stand {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tv-stand-neck {
+  width: 8%;
+  height: 14px;
+  background: linear-gradient(180deg, #111113 0%, #0e0e10 100%);
+  border-left: 1px solid #1a1a1c;
+  border-right: 1px solid #1a1a1c;
+}
+
+.tv-stand-base {
+  width: 40%;
   height: 10px;
-  background: linear-gradient(180deg, #3a3a44, #2e2e38);
-  border-radius: 0 0 6px 6px;
+  background: linear-gradient(180deg, #141416 0%, #0e0e10 100%);
+  border-radius: 2px 2px 3px 3px;
+  border: 1px solid #1a1a1c;
+  border-top: none;
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.35),
-    0 2px 10px rgba(14, 165, 233, 0.12);
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-.tv-frame-inner {
+.tv-flatscreen-inner {
   flex: 1;
   min-height: 0;
-  border-radius: 10px;
+  border-radius: 2px;
   overflow: hidden;
   position: relative;
   background: #0e0e12;
-  box-shadow:
-    inset 0 0 30px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(14, 165, 233, 0.04);
 }
 
 /* Scrollable content inside TV */
 .tv-scroll {
   height: 100%;
   overflow-y: auto;
-  padding: 16px;
+  padding: 12px;
 }
-
 
 .tv-scroll::-webkit-scrollbar {
   width: 4px;
@@ -259,40 +255,27 @@
 }
 
 .tv-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #0ea5e9, #a78bfa);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 2px;
 }
 
-@keyframes spin-border {
-  to { --border-angle: 360deg; }
-}
-
 /* TV off state */
-.tv-frame-off {
-  animation: none;
-  background: #1a1a22;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+.tv-flatscreen-off .tv-flatscreen-inner {
+  background: #0a0a0c;
 }
 
-.tv-frame-off .tv-frame-inner {
-  background: #0a0a0e;
-}
-
-/* ── CRT Animations — exact from original ── */
-
-/* CRT overlay container */
+/* CRT overlay for TV shutdown/boot */
 .tv-crt-overlay {
   position: absolute;
   inset: 0;
-  border-radius: 10px;
-  z-index: 2;
+  border-radius: 2px;
+  z-index: 4;
   pointer-events: none;
   background: #0a0a0e;
   opacity: 0;
   overflow: hidden;
 }
 
-/* The scanline (pseudo-element) */
 .tv-crt-overlay::after {
   content: "";
   position: absolute;
@@ -308,12 +291,10 @@
     0 0 40px 10px rgba(14, 165, 233, 0.3);
 }
 
-/* Off state — overlay fully opaque */
-.tv-frame-off .tv-crt-overlay {
+.tv-flatscreen-off .tv-crt-overlay {
   opacity: 1;
 }
 
-/* Shutdown animations */
 @keyframes tv-shutdown-bg {
   0%   { opacity: 0; }
   35%  { opacity: 0.9; }
@@ -340,7 +321,6 @@
   animation: tv-shutdown-line 1.4s ease-in forwards;
 }
 
-/* Boot animations */
 @keyframes tv-bootup-bg {
   0%   { opacity: 1; }
   85%  { opacity: 1; }
@@ -364,6 +344,8 @@
   animation: tv-bootup-line 0.6s ease-out forwards;
 }
 
+/* TV stand removed — TV sits on soundbar now */
+
 /* ── Card entry animations ── */
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(16px); }
@@ -383,123 +365,167 @@
   animation: slide-in 0.35s ease-out both;
 }
 
-/* ── Preview Bar (Bottom TV on Wooden Shelf) ── */
+/* ── Entertainment Center (Soundbar + Console Table) ── */
 
-/* Wooden shelf — dark walnut console */
-.preview-shelf {
-  height: 20px;
+/* Soundbar — sleek dark bar below the TV, displays now-playing info */
+.ec-soundbar {
+  height: 80px;
   position: relative;
-  z-index: 2;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-  background:
-    linear-gradient(180deg,
-      #4a3728 0px,
-      #3d2b1f 3px,
-      #543d2e 6px,
-      #3a2819 9px,
-      #4a3728 12px,
-      #3d2b1f 15px,
-      #2e1f14 18px,
-      #3a2819 20px
-    );
-}
-
-/* TV wrapper — sits directly on shelf, no margin gap */
-.preview-tv-wrap {
-  margin: 0;
-  position: relative;
-}
-
-/* Outer frame — thin subtle border */
-.preview-tv-outer {
-  padding: 2px;
-  border-radius: 4px 4px 0 0;
-  background:
-    linear-gradient(
-      135deg,
-      rgba(14, 165, 233, 0.3),
-      rgba(167, 139, 250, 0.2),
-      rgba(6, 182, 212, 0.25)
-    );
-  box-shadow:
-    0 -2px 12px rgba(14, 165, 233, 0.1),
-    0 -1px 6px rgba(167, 139, 250, 0.06);
-}
-
-/* Inner screen */
-.preview-tv-screen {
-  position: relative;
-  height: 100px;
-  border-radius: 3px 3px 0 0;
-  overflow: hidden;
   background: #0a0a0e;
-  box-shadow:
-    inset 0 0 30px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(14, 165, 233, 0.03);
+  border: 5px solid #111113;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: box-shadow 0.8s ease;
 }
 
-/* CRT scanlines */
-.preview-scanlines {
+/* Wall zone — subtle gradient at viewport bottom so ambient glow is visible */
+.wall-zone {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  background: linear-gradient(180deg, transparent 0%, rgba(10, 8, 15, 0.95) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Wooden console table — dark walnut with wood grain texture */
+.ec-console-table {
+  height: 18px;
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+  background:
+    /* Horizontal grain lines */
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.015) 0px,
+      transparent 1px,
+      transparent 7px,
+      rgba(255, 255, 255, 0.015) 8px
+    ),
+    /* Wood base colour with subtle variation */
+    linear-gradient(180deg,
+      #3a2c1f 0%,
+      #33251a 30%,
+      #2e2015 50%,
+      #2a1f14 70%,
+      #251a10 100%
+    );
+}
+
+/* CRT scanline overlay */
+.ec-scanlines {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
+  pointer-events: none;
+  z-index: 5;
+  background-image: repeating-linear-gradient(
     0deg,
     transparent,
     transparent 2px,
     rgba(0, 0, 0, 0.03) 2px,
     rgba(0, 0, 0, 0.03) 3px
   );
-  pointer-events: none;
-  z-index: 2;
-  border-radius: inherit;
 }
 
-/* Idle pulse — glowing light sweeps across the screen */
-.preview-idle-pulse {
+/* Content positioning inside the soundbar */
+.ec-content {
+  position: relative;
+  height: 100%;
+}
+
+/* ── Cyberpunk Cityscape Idle Animation ── */
+
+.ec-idle-anim {
   position: absolute;
   inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(14, 165, 233, 0.06) 15%,
-    rgba(14, 165, 233, 0.12) 30%,
-    rgba(167, 139, 250, 0.08) 50%,
-    rgba(14, 165, 233, 0.12) 70%,
-    rgba(14, 165, 233, 0.06) 85%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: preview-idle-sweep 3s ease-in-out infinite;
+  overflow: hidden;
+  z-index: 1;
 }
 
-@keyframes preview-idle-sweep {
-  0% {
-    background-position: 200% 0;
-    opacity: 0.3;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    background-position: -200% 0;
-    opacity: 0.3;
-  }
+/* Cityscape silhouette — scrolling dark buildings with neon dots */
+.ec-cityscape {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  animation: cityscape-scroll 30s linear infinite;
+  background:
+    /* Building shapes — dark rectangles of varying heights */
+    linear-gradient(0deg, rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.04) 0%, transparent 60%),
+    /* Tall buildings */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 18px,
+      rgba(15, 12, 20, 0.9) 18px,
+      rgba(15, 12, 20, 0.9) 28px,
+      transparent 28px,
+      transparent 36px,
+      rgba(18, 15, 24, 0.85) 36px,
+      rgba(18, 15, 24, 0.85) 42px,
+      transparent 42px,
+      transparent 55px,
+      rgba(12, 10, 18, 0.92) 55px,
+      rgba(12, 10, 18, 0.92) 70px,
+      transparent 70px,
+      transparent 80px,
+      rgba(16, 13, 22, 0.88) 80px,
+      rgba(16, 13, 22, 0.88) 88px,
+      transparent 88px,
+      transparent 100px
+    );
+  background-size: 100% 100%, 200px 100%;
 }
 
-/* Ambient blue glow — subtle like original */
-body::after {
+/* Neon window dots on the buildings */
+.ec-cityscape::before {
   content: "";
-  position: fixed;
-  top: -20%;
-  left: -10%;
-  width: 50%;
-  height: 50%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.04), transparent 70%);
-  pointer-events: none;
-  z-index: -1;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1px 1px at 22px 30px, rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.3), transparent),
+    radial-gradient(1px 1px at 24px 40px, rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.2), transparent),
+    radial-gradient(1px 1px at 39px 25px, rgba(255, 200, 50, 0.25), transparent),
+    radial-gradient(1px 1px at 40px 35px, rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.15), transparent),
+    radial-gradient(1px 1px at 60px 20px, rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.25), transparent),
+    radial-gradient(1px 1px at 62px 32px, rgba(255, 100, 100, 0.2), transparent),
+    radial-gradient(1px 1px at 64px 44px, rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.2), transparent),
+    radial-gradient(1px 1px at 83px 28px, rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.3), transparent),
+    radial-gradient(1px 1px at 85px 38px, rgba(100, 200, 255, 0.2), transparent);
+  background-size: 200px 100%;
+  animation: cityscape-scroll 30s linear infinite;
+}
+
+/* Rain effect */
+.ec-rain {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      175deg,
+      transparent,
+      transparent 40px,
+      rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.02) 40px,
+      rgba(var(--ambient-r), var(--ambient-g), var(--ambient-b), 0.02) 41px
+    );
+  background-size: 60px 100%;
+  animation: rain-fall 1.5s linear infinite;
+  opacity: 0.4;
+}
+
+@keyframes cityscape-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes rain-fall {
+  0% { background-position: 0 -20px; }
+  100% { background-position: -10px 50px; }
 }

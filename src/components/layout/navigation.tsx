@@ -7,7 +7,6 @@ import {
   Film,
   Tv,
   Star,
-  Sparkles,
   Bookmark,
   Radar,
   BarChart3,
@@ -19,7 +18,6 @@ import { logout } from "@/app/login/actions/auth";
 
 const navItems = [
   { href: "/favourites", label: "Favourites", icon: Star },
-  { href: "/vrcommend", label: "VRcommend", icon: Sparkles },
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/discover", label: "Discover", icon: Radar },
   { href: "/stats", label: "Stats", icon: BarChart3 },
@@ -28,7 +26,6 @@ const navItems = [
 const bottomNavItems = [
   { href: "/", label: "Library", icon: Library },
   { href: "/favourites", label: "Favourites", icon: Star },
-  { href: "/vrcommend", label: "VRcommend", icon: Sparkles },
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/discover", label: "Discover", icon: Radar },
   { href: "/stats", label: "Stats", icon: BarChart3 },
@@ -121,8 +118,8 @@ export function Sidebar({ collapsed, onToggle, movieCount = 0, tvCount = 0 }: Si
       {/* Gradient divider */}
       <div className={`${collapsed ? "mx-2" : "mx-4"} divider-gradient`} />
 
-      {/* Nav items */}
-      <nav className={`flex-1 py-5 space-y-0.5 ${collapsed ? "px-1.5" : "px-3"}`}>
+      {/* Nav items — vertically centered */}
+      <nav className={`flex-1 flex flex-col justify-center space-y-0.5 ${collapsed ? "px-1.5" : "px-3"}`}>
         {/* Library — clickable parent, defaults to movies */}
         <Link
           href="/?tab=movie"

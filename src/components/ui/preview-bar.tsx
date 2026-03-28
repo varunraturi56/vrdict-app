@@ -1,160 +1,140 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Pencil } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { posterUrl } from "@/lib/tmdb";
-import { useSidebarState } from "@/lib/sidebar-context";
+
+import { getAmbientColor, rgba } from "@/lib/ambient-colors";
 import type { Entry } from "@/lib/types";
 
 interface PreviewBarProps {
   entry: Entry | null;
   onEdit: (entry: Entry) => void;
-  isOn: boolean;
+  isOn?: boolean;
 }
 
-export function PreviewBar({ entry, onEdit, isOn }: PreviewBarProps) {
-  const { collapsed } = useSidebarState();
-  const [flickering, setFlickering] = useState(false);
-  const [idle, setIdle] = useState(false);
-  const prevEntryId = useRef<string | null>(null);
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // CRT flicker when entry changes
-  useEffect(() => {
-    if (entry && entry.id !== prevEntryId.current && prevEntryId.current !== null) {
-      setFlickering(true);
-      const t = setTimeout(() => setFlickering(false), 100);
-      return () => clearTimeout(t);
-    }
-    prevEntryId.current = entry?.id ?? null;
-  }, [entry]);
-
-  // Idle detection — 2s after last entry change, go idle
-  useEffect(() => {
-    setIdle(false);
-    if (idleTimer.current) clearTimeout(idleTimer.current);
-    idleTimer.current = setTimeout(() => setIdle(true), 2000);
-    return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-    };
-  }, [entry]);
+export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
+  const pathname = usePathname();
+  const ambient = getAmbientColor(pathname);
 
   const isMovie = entry?.media_type === "movie";
 
-  // Sidebar offset for fixed positioning
-  const sidebarWidth = collapsed ? "64px" : "224px";
+  const glowVars = {
+    "--ambient-r": ambient.r,
+    "--ambient-g": ambient.g,
+    "--ambient-b": ambient.b,
+  } as React.CSSProperties;
 
   return (
-    <div
-      className="hidden lg:block fixed bottom-0 right-0 z-40 transition-all duration-300"
-      style={{ left: sidebarWidth }}
-    >
-      {/* TV screen — sits directly on the shelf, no gap */}
-      {isOn && (
-        <div className="preview-tv-wrap">
-          <div className="preview-tv-outer">
-            <div className="preview-tv-screen">
-              {/* Scanlines */}
-              <div className="preview-scanlines" />
+    <div className="hidden lg:block flex-shrink-0" style={glowVars}>
+      {/* Soundbar — the now-playing bar, sits on the console table */}
+      <div className="px-10">
+        <div
+          className="ec-soundbar"
+          style={{
+            boxShadow: isOn
+              ? `inset 0 0 8px rgba(0,0,0,0.5),
+                 -60px 0 60px 15px ${rgba(ambient, 0.10)},
+                 60px 0 60px 15px ${rgba(ambient, 0.10)},
+                 0 -40px 50px 15px ${rgba(ambient, 0.08)},
+                 0 20px 30px 10px ${rgba(ambient, 0.06)}`
+              : "inset 0 0 8px rgba(0,0,0,0.5)",
+          }}
+        >
+          {/* Subtle scanlines */}
+          <div className="ec-scanlines" />
 
-              {/* Idle pulse overlay */}
-              {idle && isOn && (
-                <div className="preview-idle-pulse" />
-              )}
+          {/* Film details */}
+          <div className={`ec-content relative z-[2] flex items-center px-5 transition-opacity duration-500 ${isOn ? "opacity-100" : "opacity-0"}`}>
+            {entry ? (
+              <div className="flex items-center gap-3 w-full min-w-0">
+                {/* Poster */}
+                {entry.poster && (
+                  <img
+                    src={posterUrl(entry.poster, "small")}
+                    alt={entry.title}
+                    className="w-[30px] h-[45px] rounded-[2px] object-cover shrink-0"
+                    style={{
+                      boxShadow: `0 2px 10px rgba(0,0,0,0.6), 0 0 16px ${rgba(ambient, 0.12)}`,
+                    }}
+                  />
+                )}
 
-              {/* Screen content */}
-              <div className={`relative z-[1] h-full flex items-center px-5 transition-opacity duration-100 ${
-                flickering ? "opacity-70" : "opacity-100"
-              } ${idle ? "opacity-0" : ""}`}>
-                {entry && isOn ? (
-                  <div className="flex items-center gap-4 w-full min-w-0">
-                    {/* Poster */}
-                    {entry.poster && (
-                      <img
-                        src={posterUrl(entry.poster, "small")}
-                        alt={entry.title}
-                        className="w-[55px] h-[82px] rounded-[4px] object-cover shadow-[0_2px_12px_rgba(0,0,0,0.6)] shrink-0"
-                      />
-                    )}
+                {/* Info — wraps across lines */}
+                <div className="flex-1 min-w-0">
+                  {/* Row 1: Title + Rating */}
+                  <div className="flex items-baseline gap-2 mb-0.5">
+                    <h3 className="font-display text-[12px] font-medium text-[#e8e4dc] tracking-wide leading-tight">
+                      {entry.title}
+                    </h3>
+                    <span
+                      className="font-mono-stats text-[14px] font-bold leading-none shrink-0"
+                      style={{
+                        color: `rgb(${ambient.r}, ${ambient.g}, ${ambient.b})`,
+                        textShadow: `0 0 10px ${rgba(ambient, 0.5)}`,
+                      }}
+                    >
+                      {Number(entry.my_rating).toFixed(1)}
+                    </span>
+                    <span className="font-mono-stats text-[9px] text-[#5c5954] shrink-0">/10</span>
+                  </div>
 
-                    {/* Title + Rating */}
-                    <div className="shrink-0 min-w-0 max-w-[180px]">
-                      <h3 className="font-display text-[14px] font-medium text-[#e8e4dc] tracking-wide leading-tight line-clamp-2 mb-0.5">
-                        {entry.title}
-                      </h3>
-                      <div className="flex items-baseline gap-1">
-                        <span className="font-mono-stats text-[18px] font-bold text-gradient-vr leading-none">
-                          {Number(entry.my_rating).toFixed(1)}
+                  {/* Row 2: Meta + Genres */}
+                  <div className="flex items-center gap-1.5 flex-wrap text-[#5c5954]">
+                    <span className="font-mono-stats text-[10px]">{entry.year}</span>
+                    {isMovie && entry.runtime ? (
+                      <>
+                        <span className="text-[8px]">·</span>
+                        <span className="font-mono-stats text-[10px]">{entry.runtime}m</span>
+                      </>
+                    ) : null}
+                    {!isMovie && entry.seasons ? (
+                      <>
+                        <span className="text-[8px]">·</span>
+                        <span className="font-mono-stats text-[10px]">
+                          {entry.seasons}S·{entry.episodes}E
                         </span>
-                        <span className="font-mono-stats text-xs text-[#5c5954]">/10</span>
-                      </div>
-                    </div>
-
-                    {/* Meta */}
-                    <div className="flex flex-col gap-0.5 shrink-0 text-[#5c5954]">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono-stats text-xs">{entry.year}</span>
-                        {isMovie && entry.runtime ? (
-                          <>
-                            <span className="text-[10px]">·</span>
-                            <span className="font-mono-stats text-xs">{entry.runtime} min</span>
-                          </>
-                        ) : null}
-                        {!isMovie && entry.seasons ? (
-                          <>
-                            <span className="text-[10px]">·</span>
-                            <span className="font-mono-stats text-xs">{entry.seasons}S · {entry.episodes}E</span>
-                          </>
-                        ) : null}
-                      </div>
-                      {entry.tmdb_rating && (
+                      </>
+                    ) : null}
+                    {entry.tmdb_rating && (
+                      <>
+                        <span className="text-[8px]">·</span>
                         <span className="font-mono-stats text-[10px] text-[#5c5954]/70">
                           TMDB {Number(entry.tmdb_rating).toFixed(1)}
                         </span>
-                      )}
-                    </div>
+                      </>
+                    )}
+                    {entry.genres?.slice(0, 3).map((g) => (
+                      <span
+                        key={g}
+                        className="px-1.5 py-0.5 rounded-full text-[7px] font-display uppercase tracking-wider text-[#9a968e]"
+                        style={{ border: `1px solid ${rgba(ambient, 0.15)}` }}
+                      >
+                        {g}
+                      </span>
+                    ))}
+                  </div>
 
-                    {/* Genres */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {entry.genres?.slice(0, 3).map((g) => (
-                        <span
-                          key={g}
-                          className="px-2 py-0.5 rounded-full text-[9px] font-display uppercase tracking-wider border border-border-glow/60 text-[#9a968e]"
-                        >
-                          {g}
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* Overview — wraps to show full text */}
-                    <p className="flex-1 min-w-0 text-[11px] text-[#9a968e]/60 font-body line-clamp-3 leading-relaxed">
+                  {/* Row 3: Overview */}
+                  {entry.overview && (
+                    <p className="text-[9px] text-[#9a968e]/40 font-body leading-relaxed mt-1 line-clamp-2">
                       {entry.overview}
                     </p>
-
-                    {/* Edit */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onEdit(entry); }}
-                      className="shrink-0 px-3 py-1.5 rounded-lg border border-border-glow/40 text-[#5c5954] hover:text-vr-blue hover:border-vr-blue/30 transition-all flex items-center gap-1.5"
-                    >
-                      <Pencil size={12} />
-                      <span className="font-display text-[9px] uppercase tracking-wider">Edit</span>
-                    </button>
-                  </div>
-                ) : isOn ? (
-                  <div className="flex items-center justify-center w-full">
-                    <p className="font-display text-[11px] uppercase tracking-[0.15em] text-[#5c5954]/20">
-                      Tune in — Hover a film to preview
-                    </p>
-                  </div>
-                ) : null}
+                  )}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <p className="font-display text-[10px] uppercase tracking-[0.15em] text-[#5c5954]/15">
+                  Hover a film to preview
+                </p>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Wooden shelf — always visible */}
-      <div className="preview-shelf" />
+      {/* Wooden console table */}
+      <div className="ec-console-table" />
     </div>
   );
 }
