@@ -1,42 +1,487 @@
-import { Bookmark } from "lucide-react";
+"use client";
+
+import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
+import { Bookmark, Search, ChevronDown, X, Plus, Star } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { posterUrl } from "@/lib/tmdb";
+import { MAJOR_GENRES, type WatchlistItem, type MediaType } from "@/lib/types";
+import { TvFrame } from "@/components/ui/tv-frame";
+import { PreviewBar } from "@/components/ui/preview-bar";
+
+const SORT_OPTIONS = [
+  { key: "tmdb_rating", label: "TMDB" },
+  { key: "title", label: "Title" },
+  { key: "year", label: "Year" },
+] as const;
+
+type SortKey = (typeof SORT_OPTIONS)[number]["key"];
+
+const RATING_FILTERS = [
+  { key: "any", label: "Any", min: 0 },
+  { key: "6+", label: "6+", min: 6 },
+  { key: "7+", label: "7+", min: 7 },
+  { key: "8+", label: "8+", min: 8 },
+  { key: "9+", label: "9+", min: 9 },
+] as const;
+
+type RatingKey = (typeof RATING_FILTERS)[number]["key"];
 
 export default function WatchlistPage() {
   return (
-    <div className="px-4 py-6 lg:px-8 lg:py-8">
-      {/* Page header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Bookmark size={22} className="text-neon-green" />
-        <h1 className="font-display text-xl font-semibold text-gradient-vr tracking-wider uppercase">
-          Watchlist
-        </h1>
-      </div>
+    <Suspense>
+      <WatchlistContent />
+    </Suspense>
+  );
+}
 
-      {/* Sub-tabs placeholder — 3 tabs for Watchlist */}
-      <div className="flex items-center gap-1 p-1 rounded-lg bg-bg-card/80 border border-border-glow w-fit mb-6">
-        <button className="px-4 py-2 rounded-md text-sm font-display uppercase tracking-wider bg-gradient-to-br from-vr-blue to-vr-blue-dark text-white">
-          🎬 Movies
-        </button>
-        <button className="px-4 py-2 rounded-md text-sm font-display uppercase tracking-wider text-[#5c5954] hover:text-[#9a968e] transition-colors">
-          📺 TV Shows
-        </button>
-        <button className="px-4 py-2 rounded-md text-sm font-display uppercase tracking-wider text-[#5c5954] hover:text-[#9a968e] transition-colors">
-          🔁 Rewatch
-        </button>
-      </div>
+function WatchlistContent() {
+  const searchParams = useSearchParams();
+  const mediaTab = (searchParams.get("tab") || "movie") as MediaType;
 
-      {/* Empty state */}
-      <div className="flex flex-col items-center justify-center py-20">
-        <div className="w-20 h-20 rounded-2xl border border-border-glow bg-bg-card/50 flex items-center justify-center mb-6">
-          <Bookmark size={36} className="text-neon-green/30" />
+  const [items, setItems] = useState<WatchlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [genreFilter, setGenreFilter] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortKey>("tmdb_rating");
+  const [ratingFilter, setRatingFilter] = useState<RatingKey>("7+");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [addQuery, setAddQuery] = useState("");
+  const [addResults, setAddResults] = useState<any[]>([]);
+  const [addLoading, setAddLoading] = useState(false);
+  const [heroEntry, setHeroEntry] = useState<WatchlistItem | null>(null);
+  const [tvOn, setTvOn] = useState(true);
+  const [peekedEntry, setPeekedEntry] = useState<WatchlistItem | null>(null);
+  const [movingToLibrary, setMovingToLibrary] = useState<string | null>(null);
+
+  // Fetch watchlist
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("watchlist")
+        .select("*")
+        .order("added_at", { ascending: false });
+      if (data) setItems(data as WatchlistItem[]);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  // Reset filters on tab switch
+  useEffect(() => {
+    setGenreFilter(null);
+    setSearchQuery("");
+  }, [mediaTab]);
+
+  const mediaItems = useMemo(
+    () => items.filter((e) => e.media_type === mediaTab),
+    [items, mediaTab]
+  );
+
+  const minRating = RATING_FILTERS.find((r) => r.key === ratingFilter)?.min || 0;
+
+  const filteredItems = useMemo(() => {
+    let result = mediaItems;
+    if (genreFilter) result = result.filter((e) => e.genres?.includes(genreFilter));
+    if (minRating > 0) result = result.filter((e) => (e.tmdb_rating || 0) >= minRating);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((e) => e.title.toLowerCase().includes(q));
+    }
+    return [...result].sort((a, b) => {
+      switch (sortBy) {
+        case "tmdb_rating": return (b.tmdb_rating || 0) - (a.tmdb_rating || 0);
+        case "title": return a.title.localeCompare(b.title);
+        case "year": return (b.year || "").localeCompare(a.year || "");
+        default: return 0;
+      }
+    });
+  }, [mediaItems, genreFilter, minRating, searchQuery, sortBy]);
+
+  // Hero — mobile only
+  const pickHero = useCallback(() => {
+    const candidates = mediaItems.filter((e) => e.poster);
+    if (candidates.length > 0) {
+      setHeroEntry(candidates[Math.floor(Math.random() * candidates.length)]);
+    }
+  }, [mediaItems]);
+
+  useEffect(() => {
+    pickHero();
+    const interval = setInterval(pickHero, 5000);
+    return () => clearInterval(interval);
+  }, [pickHero]);
+
+  // TMDB search for adding to watchlist
+  useEffect(() => {
+    if (!addQuery.trim()) { setAddResults([]); return; }
+    const timeout = setTimeout(async () => {
+      setAddLoading(true);
+      const res = await fetch(`/api/tmdb?action=search&query=${encodeURIComponent(addQuery)}`);
+      const data = await res.json();
+      const results = (data.results || [])
+        .filter((r: any) => r.media_type === "movie" || r.media_type === "tv")
+        .slice(0, 6);
+      setAddResults(results);
+      setAddLoading(false);
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [addQuery]);
+
+  async function addToWatchlist(result: any) {
+    const supabase = createClient();
+    const existing = items.find((i) => i.tmdb_id === result.id);
+    if (existing) return;
+
+    // Fetch details for full info
+    const detailRes = await fetch(`/api/tmdb?action=detail&id=${result.id}&media_type=${result.media_type}`);
+    const detail = await detailRes.json();
+
+    const item: Partial<WatchlistItem> = {
+      tmdb_id: result.id,
+      media_type: result.media_type,
+      title: result.title || result.name,
+      year: (result.release_date || result.first_air_date || "").slice(0, 4) || null,
+      genres: (detail.genres || []).map((g: any) => g.name),
+      poster: result.poster_path,
+      overview: result.overview,
+      tmdb_rating: result.vote_average ? Math.round(result.vote_average * 10) / 10 : null,
+      runtime: detail.runtime || null,
+      seasons: detail.number_of_seasons || 0,
+      episodes: detail.number_of_episodes || 0,
+      imdb_id: detail.imdb_id || null,
+    };
+
+    const { data } = await supabase.from("watchlist").insert(item).select().single();
+    if (data) {
+      setItems((prev) => [data as WatchlistItem, ...prev]);
+      setAddQuery("");
+      setAddResults([]);
+    }
+  }
+
+  async function removeFromWatchlist(id: string) {
+    const supabase = createClient();
+    await supabase.from("watchlist").delete().eq("id", id);
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  async function moveToLibrary(item: WatchlistItem) {
+    setMovingToLibrary(item.id);
+    const supabase = createClient();
+
+    // Add to entries (library)
+    const entry = {
+      tmdb_id: item.tmdb_id,
+      media_type: item.media_type,
+      title: item.title,
+      year: item.year,
+      genres: item.genres,
+      poster: item.poster,
+      overview: item.overview,
+      tmdb_rating: item.tmdb_rating,
+      runtime: item.runtime,
+      seasons: item.seasons,
+      episodes: item.episodes,
+      imdb_id: item.imdb_id,
+      my_rating: 7,
+      tags: [],
+      recommended: false,
+      rewatch: false,
+    };
+
+    const { error } = await supabase.from("entries").insert(entry);
+    if (!error) {
+      // Remove from watchlist
+      await supabase.from("watchlist").delete().eq("id", item.id);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+    }
+    setMovingToLibrary(null);
+  }
+
+  const pillClass = (active: boolean) =>
+    `px-2.5 py-0.5 rounded-[20px] text-[10px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
+      active
+        ? "text-vr-blue border-vr-blue/30 bg-[rgba(14,165,233,0.12)]"
+        : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
+    }`;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const movieCount = items.filter((e) => e.media_type === "movie").length;
+  const tvCount = items.filter((e) => e.media_type === "tv").length;
+  const isMovie = mediaTab === "movie";
+
+  // Convert WatchlistItem to Entry-like for PreviewBar
+  const displayItem = peekedEntry || filteredItems[0] || null;
+  const displayEntry = displayItem ? {
+    ...displayItem,
+    my_rating: displayItem.tmdb_rating || 0,
+    tags: [],
+    recommended: false,
+    rewatch: false,
+    year_watched: null,
+  } : null;
+
+  // Watchlist cards inside TV
+  const watchlistGrid = (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 p-1">
+      {filteredItems.map((item, i) => (
+        <div
+          key={item.id}
+          className="flex gap-3 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border border-border-glow/50 animate-slide-in hover:border-border-glow transition-all"
+          style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
+          onMouseEnter={() => setPeekedEntry(item)}
+        >
+          {/* Poster */}
+          {item.poster && (
+            <img
+              src={posterUrl(item.poster, "small")}
+              alt={item.title}
+              className="w-[45px] h-[67px] rounded-[3px] object-cover shrink-0"
+            />
+          )}
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-[11px] font-medium text-[#e8e4dc] tracking-wide leading-tight truncate">
+              {item.title}
+            </h3>
+            <p className="font-mono-stats text-[9px] text-[#5c5954] mt-0.5">
+              {item.year} · {item.genres?.slice(0, 2).join(", ")}
+              {item.tmdb_rating && <> · <Star size={8} className="inline -mt-0.5" /> {item.tmdb_rating}</>}
+            </p>
+            {/* Actions */}
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <button
+                onClick={() => moveToLibrary(item)}
+                disabled={movingToLibrary === item.id}
+                className="px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider bg-vr-blue/15 text-vr-blue border border-vr-blue/25 hover:bg-vr-blue/25 transition-all disabled:opacity-50"
+              >
+                {movingToLibrary === item.id ? "..." : "Watched — Add to Library"}
+              </button>
+              <button
+                onClick={() => removeFromWatchlist(item.id)}
+                className="p-1 rounded text-[#5c5954] hover:text-red-400 hover:bg-red-500/10 transition-all"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
         </div>
-        <h2 className="font-display text-lg text-[#e8e4dc] tracking-wider mb-2">
-          Nothing Queued Yet
-        </h2>
-        <p className="font-body text-[#5c5954] text-center max-w-sm">
-          Add films and shows to your watchlist from Discover. When you&apos;ve
-          watched them, move them to your Library with a rating.
-        </p>
+      ))}
+    </div>
+  );
+
+  return (
+    <div className="px-4 pt-1 pb-4 lg:px-5 lg:pt-3 lg:pb-0 flex flex-col lg:flex-1 lg:min-h-0 lg:overflow-hidden">
+      {/* Hero banner — mobile only */}
+      {heroEntry && (
+        <div className="relative mb-2 animate-fade-up flex-shrink-0 lg:hidden">
+          <div
+            className="absolute inset-0 -mx-4"
+            style={{
+              backgroundImage: `url(${posterUrl(heroEntry.poster, "large")})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center 20%",
+              filter: "brightness(0.15) saturate(1.4) blur(40px)",
+              transform: "scale(1.1)",
+              maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+            }}
+          />
+          <div className="relative z-[1] flex items-center gap-4 py-2.5">
+            <img
+              src={posterUrl(heroEntry.poster, "small")}
+              alt={heroEntry.title}
+              className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
+            />
+            <div className="min-w-0">
+              <p className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5 text-[#b026ff]">
+                On Your Watchlist
+              </p>
+              <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
+                {heroEntry.title}
+              </h2>
+              <div className="flex items-center gap-2">
+                {heroEntry.tmdb_rating && (
+                  <span className="font-mono-stats text-sm font-bold" style={{ color: "#b026ff" }}>
+                    TMDB {heroEntry.tmdb_rating}
+                  </span>
+                )}
+                <span className="font-mono-stats text-xs text-[#5c5954]">
+                  {heroEntry.year}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: Movies/TV tabs */}
+      <div className="flex justify-center mb-2 flex-shrink-0 lg:hidden">
+        <div className="flex items-center gap-2">
+          <a
+            href="/watchlist?tab=movie"
+            className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+              isMovie
+                ? "bg-gradient-to-br from-vr-blue to-vr-blue-dark text-white"
+                : "text-[#5c5954] hover:text-[#9a968e]"
+            }`}
+          >
+            🎬 Movies <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{movieCount}</span>
+          </a>
+          <a
+            href="/watchlist?tab=tv"
+            className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+              !isMovie
+                ? "bg-gradient-to-br from-vr-violet to-vr-violet-dark text-white"
+                : "text-[#5c5954] hover:text-[#9a968e]"
+            }`}
+          >
+            📺 TV <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{tvCount}</span>
+          </a>
+        </div>
       </div>
+
+      {/* Mobile: simple search */}
+      <div className="lg:hidden mb-1 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search watchlist..."
+              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop: filter rows */}
+      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-20">
+        {/* Row 1: Genre + Sort + Rating */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">Genre</span>
+          <button onClick={() => setGenreFilter(null)} className={pillClass(!genreFilter)}>All</button>
+          {MAJOR_GENRES.map((g) => (
+            <button key={g} onClick={() => setGenreFilter(genreFilter === g ? null : g)} className={pillClass(genreFilter === g)}>
+              {g}
+            </button>
+          ))}
+          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-violet shrink-0 ml-2">Sort</span>
+          {SORT_OPTIONS.map((opt) => (
+            <button key={opt.key} onClick={() => setSortBy(opt.key)} className={pillClass(sortBy === opt.key)}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Row 2: Rating filter + Search + Add to watchlist */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">Rating</span>
+          {RATING_FILTERS.map((r) => (
+            <button key={r.key} onClick={() => setRatingFilter(r.key)} className={pillClass(ratingFilter === r.key)}>
+              {r.label}
+            </button>
+          ))}
+
+          {/* Search collection */}
+          <div className="relative flex-1 min-w-[120px] ml-2">
+            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search collection..."
+              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+            />
+          </div>
+
+          {/* Add to watchlist */}
+          <div className="relative flex-1 min-w-[140px]">
+            <Plus size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-vr-violet" />
+            <input
+              type="text"
+              value={addQuery}
+              onChange={(e) => setAddQuery(e.target.value)}
+              placeholder="Add to watchlist..."
+              className="w-full h-7 rounded-[20px] border border-vr-violet/20 bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-violet/40"
+            />
+            {/* Dropdown results */}
+            {addResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-bg-card shadow-xl z-50 overflow-hidden">
+                {addResults.map((r) => (
+                  <button
+                    key={`${r.media_type}-${r.id}`}
+                    onClick={() => addToWatchlist(r)}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-bg-3 transition-colors"
+                  >
+                    {r.poster_path && (
+                      <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="font-display text-[10px] text-[#e8e4dc] truncate">{r.title || r.name}</p>
+                      <p className="font-mono-stats text-[8px] text-[#5c5954]">
+                        {(r.release_date || r.first_air_date || "").slice(0, 4)} · {r.media_type}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <span className="font-mono-stats text-[9px] text-[#5c5954] shrink-0">{filteredItems.length} titles</span>
+        </div>
+      </div>
+
+      {/* Content — TV frame on desktop */}
+      {filteredItems.length > 0 ? (
+        <>
+          <div className="hidden md:flex md:flex-col flex-1 min-h-0 relative">
+            {/* LED Play bars */}
+            <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center" style={{ left: 36, top: "20%", bottom: 18 }}>
+              <div className="flex-1 w-[10px] rounded-[5px] bg-[#0c0c0e] border border-[#1a1a1c]" style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9)" }} />
+              <div className="w-[30px] h-[8px] rounded-b-[3px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]" style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }} />
+            </div>
+            <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center" style={{ right: 36, top: "20%", bottom: 18 }}>
+              <div className="flex-1 w-[10px] rounded-[5px] bg-[#0c0c0e] border border-[#1a1a1c]" style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9)" }} />
+              <div className="w-[30px] h-[8px] rounded-b-[3px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]" style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }} />
+            </div>
+
+            <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{watchlistGrid}</TvFrame>
+            <div className="hidden lg:block px-20">
+              <div className="tv-stand">
+                <div className="tv-stand-neck" />
+                <div className="tv-stand-base" />
+              </div>
+            </div>
+            <PreviewBar
+              entry={displayEntry}
+              onEdit={() => {}}
+              isOn={tvOn}
+            />
+          </div>
+          <div className="md:hidden flex-1 overflow-y-auto">{watchlistGrid}</div>
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center flex-1">
+          <Bookmark size={36} className="text-[#5c5954]/20 mb-4" />
+          <p className="font-body text-[#5c5954]">
+            {items.length === 0
+              ? "Nothing queued yet. Use the search above to add films."
+              : "No matches for your filters."}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
