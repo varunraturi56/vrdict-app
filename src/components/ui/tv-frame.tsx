@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
 import { getAmbientColor, rgba } from "@/lib/ambient-colors";
@@ -10,9 +10,10 @@ interface TvFrameProps {
   className?: string;
   isOn: boolean;
   onPowerToggle: () => void;
+  scrollRef?: Ref<HTMLDivElement>;
 }
 
-export function TvFrame({ children, className = "", isOn, onPowerToggle }: TvFrameProps) {
+export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollRef }: TvFrameProps) {
   const pathname = usePathname();
   const ambient = getAmbientColor(pathname);
   const [animState, setAnimState] = useState<"shutting-down" | "booting-up" | null>(null);
@@ -66,7 +67,7 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle }: TvFra
         className={`tv-flatscreen relative z-[2] ${!isOn && !animState ? "tv-flatscreen-off" : ""}`}
       >
         <div className="tv-flatscreen-inner">
-          <div className={`tv-scroll ${!isOn ? "pointer-events-none" : ""}`}>
+          <div ref={scrollRef} className={`tv-scroll ${!isOn ? "pointer-events-none" : ""}`}>
             {children}
           </div>
           {/* CRT overlay for shutdown/boot */}

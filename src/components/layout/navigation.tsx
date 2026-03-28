@@ -76,7 +76,8 @@ export function TopNav() {
   const isLibrary = pathname === "/";
   const isFavourites = pathname === "/favourites";
   const isWatchlist = pathname === "/watchlist";
-  const hasMediaTabs = isLibrary || isFavourites || isWatchlist;
+  const isDiscover = pathname === "/discover";
+  const hasMediaTabs = isLibrary || isFavourites || isWatchlist || isDiscover;
   const [mediaTabsCollapsed, setMediaTabsCollapsed] = useState(false);
   const mediaTabsExpanded = hasMediaTabs && !mediaTabsCollapsed;
 
@@ -99,7 +100,7 @@ export function TopNav() {
               ? pathname === "/"
               : pathname.startsWith(item.href);
 
-          const isMediaTabHost = item.href === "/" || item.href === "/favourites" || item.href === "/watchlist";
+          const isMediaTabHost = item.href === "/" || item.href === "/favourites" || item.href === "/watchlist" || item.href === "/discover";
           const isThisTabActive = isActive;
           const isThisTabMediaHost = isMediaTabHost && isThisTabActive;
 
