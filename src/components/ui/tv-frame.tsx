@@ -31,28 +31,34 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle }: TvFra
 
   return (
     <div className={`relative flex flex-col flex-1 min-h-0 px-20 ${className}`}>
-      {/* Ambient glow — three layers cycling between cyan, violet, teal */}
+      {/* Ambient glow — three layers cycling, colours based on page */}
       {isOn && (
         <>
           <div
             className="absolute z-0 pointer-events-none tv-glow-cyan"
             style={{
               top: 8, left: 88, right: 88, bottom: 8,
-              boxShadow: "0 0 80px 30px rgba(14,165,233,0.18), 0 0 150px 60px rgba(14,165,233,0.08)",
+              boxShadow: pathname === "/favourites"
+                ? "0 0 80px 30px rgba(255,184,0,0.18), 0 0 150px 60px rgba(255,184,0,0.08)"
+                : "0 0 80px 30px rgba(14,165,233,0.18), 0 0 150px 60px rgba(14,165,233,0.08)",
             }}
           />
           <div
             className="absolute z-0 pointer-events-none tv-glow-violet"
             style={{
               top: 8, left: 88, right: 88, bottom: 8,
-              boxShadow: "0 0 80px 30px rgba(167,139,250,0.18), 0 0 150px 60px rgba(167,139,250,0.08)",
+              boxShadow: pathname === "/favourites"
+                ? "0 0 80px 30px rgba(200,200,210,0.15), 0 0 150px 60px rgba(200,200,210,0.06)"
+                : "0 0 80px 30px rgba(167,139,250,0.18), 0 0 150px 60px rgba(167,139,250,0.08)",
             }}
           />
           <div
             className="absolute z-0 pointer-events-none tv-glow-teal"
             style={{
               top: 8, left: 88, right: 88, bottom: 8,
-              boxShadow: "0 0 80px 30px rgba(6,182,212,0.15), 0 0 150px 60px rgba(6,182,212,0.06)",
+              boxShadow: pathname === "/favourites"
+                ? "0 0 80px 30px rgba(255,215,100,0.14), 0 0 150px 60px rgba(255,215,100,0.05)"
+                : "0 0 80px 30px rgba(6,182,212,0.15), 0 0 150px 60px rgba(6,182,212,0.06)",
             }}
           />
         </>

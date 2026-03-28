@@ -33,6 +33,7 @@ function FavouritesContent() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("my_rating");
   const [searchQuery, setSearchQuery] = useState("");
   const [heroEntry, setHeroEntry] = useState<Entry | null>(null);
@@ -62,6 +63,7 @@ function FavouritesContent() {
   // Reset filters when switching tabs
   useEffect(() => {
     setGenreFilter(null);
+    setTagFilter(null);
     setSearchQuery("");
   }, [mediaTab]);
 
@@ -70,9 +72,21 @@ function FavouritesContent() {
     [entries, mediaTab]
   );
 
+  const topTags = useMemo(() => {
+    const tagCount: Record<string, number> = {};
+    mediaEntries.forEach((e) =>
+      e.tags?.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; })
+    );
+    return Object.entries(tagCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([tag]) => tag);
+  }, [mediaEntries]);
+
   const filteredEntries = useMemo(() => {
     let result = mediaEntries;
     if (genreFilter) result = result.filter((e) => e.genres?.includes(genreFilter));
+    if (tagFilter) result = result.filter((e) => e.tags?.includes(tagFilter));
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter((e) => e.title.toLowerCase().includes(q));
@@ -298,6 +312,19 @@ function FavouritesContent() {
         </div>
 
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+          {topTags.length > 0 && (
+            <>
+              <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">
+                Tags
+              </span>
+              <button onClick={() => setTagFilter(null)} className={pillClass(!tagFilter)}>All</button>
+              {topTags.map((t) => (
+                <button key={t} onClick={() => setTagFilter(tagFilter === t ? null : t)} className={pillClass(tagFilter === t)}>
+                  {t}
+                </button>
+              ))}
+            </>
+          )}
           <div className="relative flex-1 min-w-[140px] ml-auto">
             <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
             <input

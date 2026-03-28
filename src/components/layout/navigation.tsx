@@ -74,8 +74,10 @@ export function TopNav() {
   const mediaTab = searchParams.get("tab") || "movie";
   const { counts } = useLibraryCounts();
   const isLibrary = pathname === "/";
-  const [libraryCollapsed, setLibraryCollapsed] = useState(false);
-  const libraryExpanded = isLibrary && !libraryCollapsed;
+  const isFavourites = pathname === "/favourites";
+  const hasMediaTabs = isLibrary || isFavourites;
+  const [mediaTabsCollapsed, setMediaTabsCollapsed] = useState(false);
+  const mediaTabsExpanded = hasMediaTabs && !mediaTabsCollapsed;
 
   return (
     <header className="hidden lg:flex fixed top-0 left-0 right-0 z-50 h-[52px] items-center px-6 border-b border-border-glow bg-bg-card/90 backdrop-blur-xl">
@@ -96,18 +98,20 @@ export function TopNav() {
               ? pathname === "/"
               : pathname.startsWith(item.href);
 
-          const isLibraryTab = item.href === "/";
+          const isMediaTabHost = item.href === "/" || item.href === "/favourites";
+          const isThisTabActive = isActive;
+          const isThisTabMediaHost = isMediaTabHost && isThisTabActive;
 
           return (
             <div key={item.href} className="flex items-center gap-0 transition-all duration-300">
               <Link
                 href={item.href}
                 onClick={(e) => {
-                  if (isLibraryTab && isLibrary) {
+                  if (isThisTabMediaHost) {
                     e.preventDefault();
-                    setLibraryCollapsed(!libraryCollapsed);
+                    setMediaTabsCollapsed(!mediaTabsCollapsed);
                   } else {
-                    setLibraryCollapsed(false);
+                    setMediaTabsCollapsed(false);
                   }
                 }}
                 className={`relative flex flex-col items-center gap-0.5 transition-all duration-200 group ${
@@ -143,35 +147,35 @@ export function TopNav() {
                 )}
               </Link>
 
-              {/* Library sub-tabs — expand inline */}
-              {isLibraryTab && (
+              {/* Movies/TV sub-tabs — expand inline for Library & Favourites */}
+              {isMediaTabHost && (
                 <div
                   className="flex items-center overflow-hidden transition-all duration-300 ease-in-out"
                   style={{
-                    maxWidth: libraryExpanded && isLibrary ? 200 : 0,
-                    opacity: libraryExpanded && isLibrary ? 1 : 0,
-                    marginLeft: libraryExpanded && isLibrary ? 12 : 0,
+                    maxWidth: mediaTabsExpanded && isThisTabActive ? 200 : 0,
+                    opacity: mediaTabsExpanded && isThisTabActive ? 1 : 0,
+                    marginLeft: mediaTabsExpanded && isThisTabActive ? 12 : 0,
                   }}
                 >
                   <Link
-                    href="/?tab=movie"
+                    href={`${item.href === "/" ? "/" : item.href}?tab=movie`}
                     className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all duration-200 ${
                       mediaTab === "movie"
                         ? "text-vr-blue bg-vr-blue/10 border border-vr-blue/25"
                         : "text-[#5c5954] hover:text-[#9a968e] border border-transparent"
                     }`}
                   >
-                    Movies {counts.movieCount > 0 && <span className="font-mono-stats text-[9px] ml-0.5 opacity-60">{counts.movieCount}</span>}
+                    Movies
                   </Link>
                   <Link
-                    href="/?tab=tv"
+                    href={`${item.href === "/" ? "/" : item.href}?tab=tv`}
                     className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all duration-200 ml-1.5 ${
                       mediaTab === "tv"
                         ? "text-vr-violet bg-vr-violet/10 border border-vr-violet/25"
                         : "text-[#5c5954] hover:text-[#9a968e] border border-transparent"
                     }`}
                   >
-                    TV {counts.tvCount > 0 && <span className="font-mono-stats text-[9px] ml-0.5 opacity-60">{counts.tvCount}</span>}
+                    TV
                   </Link>
                 </div>
               )}
