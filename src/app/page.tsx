@@ -131,8 +131,8 @@ function LibraryContent() {
   const pillClass = (active: boolean) =>
     `px-2.5 py-0.5 rounded-[20px] text-[10px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
       active
-        ? "bg-vr-blue/15 text-vr-blue border-vr-blue/30"
-        : "bg-bg-4 text-[#9a968e] border-border-glow hover:text-[#e8e4dc]"
+        ? "bg-vr-blue/25 text-vr-blue border-vr-blue/40"
+        : "bg-bg-deep text-[#9a968e] border-border-glow hover:text-[#e8e4dc]"
     }`;
 
   if (loading) {
@@ -317,7 +317,7 @@ function LibraryContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="w-full h-7 rounded-[20px] border border-border-glow bg-bg-3 pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+              className="w-full h-7 rounded-[20px] border border-border-glow bg-bg-deep pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
             />
           </div>
         </div>
@@ -368,7 +368,7 @@ function LibraryContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={`Search ${isMovie ? "movies" : "TV shows"}...`}
-              className="w-full h-7 rounded-[20px] border border-border-glow bg-bg-3 pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+              className="w-full h-7 rounded-[20px] border border-border-glow bg-bg-deep pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
             />
           </div>
         </div>
