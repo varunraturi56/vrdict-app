@@ -378,17 +378,17 @@ function DiscoverContent() {
   // Poster grid with hover actions
   const discoverGrid = (
     <div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
+      <div className="poster-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
         {results.map((r, i) => {
           const inLibrary = isInLibrary(r);
           const inWatchlist = isInWatchlist(r);
           return (
             <div
               key={`${r.media_type}-${r.id}`}
-              className={`group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in transition-all hover:scale-[1.03] ${
+              className={`poster-card group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in ${
                 inLibrary ? "opacity-40" : ""
               }`}
-              style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
+              style={{ animationDelay: `${Math.min(i * 30, 400)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
               onMouseEnter={() => setPeekedResult(r)}
               onClick={() => { if (!inLibrary) setSelectedResult(r); }}
             >
@@ -396,7 +396,7 @@ function DiscoverContent() {
                 <img
                   src={posterUrl(r.poster_path, "small")}
                   alt={getDisplayTitle(r)}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover rounded-[6px]"
                   loading="lazy"
                 />
               </div>
