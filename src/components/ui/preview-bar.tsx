@@ -117,11 +117,11 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
                 <div className="flex-1 min-w-0">
                   {/* Row 1: Title + Rating */}
                   <div className="flex items-baseline gap-2 mb-0.5">
-                    <h3 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide leading-tight">
+                    <h3 className="font-display text-sm font-medium text-[#e8e4dc] tracking-wide leading-tight">
                       {entry.title}
                     </h3>
                     <span
-                      className="font-mono-stats text-lg font-bold leading-none shrink-0"
+                      className="font-mono-stats text-base font-bold leading-none shrink-0"
                       style={{
                         color: `rgb(${ambient.r}, ${ambient.g}, ${ambient.b})`,
                         textShadow: `0 0 10px ${rgba(ambient, 0.5)}`,
@@ -129,30 +129,30 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
                     >
                       {Number(entry.my_rating).toFixed(1)}
                     </span>
-                    <span className="font-mono-stats text-xs text-[#5c5954] shrink-0">/10</span>
+                    <span className="font-mono-stats text-[10px] text-[#5c5954] shrink-0">/10</span>
                   </div>
 
                   {/* Row 2: Meta + Genres */}
                   <div className="flex items-center gap-1.5 flex-wrap text-[#5c5954]">
-                    <span className="font-mono-stats text-sm">{entry.year}</span>
+                    <span className="font-mono-stats text-xs">{entry.year}</span>
                     {isMovie && entry.runtime ? (
                       <>
-                        <span className="text-xs">·</span>
-                        <span className="font-mono-stats text-sm">{entry.runtime}m</span>
+                        <span className="text-[9px]">·</span>
+                        <span className="font-mono-stats text-xs">{entry.runtime}m</span>
                       </>
                     ) : null}
                     {!isMovie && entry.seasons ? (
                       <>
-                        <span className="text-xs">·</span>
-                        <span className="font-mono-stats text-sm">
+                        <span className="text-[9px]">·</span>
+                        <span className="font-mono-stats text-xs">
                           {entry.seasons}S·{entry.episodes}E
                         </span>
                       </>
                     ) : null}
                     {entry.tmdb_rating && (
                       <>
-                        <span className="text-xs">·</span>
-                        <span className="font-mono-stats text-sm text-[#5c5954]/70">
+                        <span className="text-[9px]">·</span>
+                        <span className="font-mono-stats text-xs text-[#5c5954]/70">
                           TMDB {Number(entry.tmdb_rating).toFixed(1)}
                         </span>
                       </>
@@ -160,7 +160,7 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
                     {entry.genres?.slice(0, 3).map((g) => (
                       <span
                         key={g}
-                        className="px-1.5 py-0.5 rounded-full text-[10px] font-display uppercase tracking-wider text-[#9a968e]"
+                        className="px-1.5 py-0.5 rounded-full text-[8px] font-display uppercase tracking-wider text-[#9a968e]"
                         style={{ border: `1px solid ${rgba(ambient, 0.15)}` }}
                       >
                         {g}
@@ -170,7 +170,7 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
 
                   {/* Row 3: Overview */}
                   {entry.overview && (
-                    <p className="text-xs text-[#9a968e]/50 font-body leading-relaxed mt-1 line-clamp-2">
+                    <p className="text-[10px] text-[#9a968e]/50 font-body leading-relaxed mt-1 line-clamp-2">
                       {entry.overview}
                     </p>
                   )}

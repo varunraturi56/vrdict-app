@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Star, Search, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
-import { MAJOR_GENRES, type Entry, type MediaType } from "@/lib/types";
+import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { PreviewBar } from "@/components/ui/preview-bar";
 
@@ -460,9 +460,9 @@ function EntryDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl border border-border-glow bg-bg-card animate-slide-in">
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-xl border border-border-glow bg-bg-card animate-slide-in">
         <div className="h-px rounded-t-xl" style={{ background: "linear-gradient(90deg, transparent 5%, #ffb800 30%, #a78bfa 70%, transparent 95%)" }} />
         <button onClick={onClose} className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors">✕</button>
 
@@ -522,7 +522,29 @@ function EntryDetailModal({
                 ))}
               </div>
             )}
-            <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]); setTagInput(""); } }} placeholder="Add tag..." className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40" />
+            {/* Desktop: text input + suggestion pills */}
+            <div className="hidden md:block">
+              <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]); setTagInput(""); } }} placeholder="Type a custom tag..." className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40 mb-2" />
+              <div className="flex flex-wrap gap-1.5">
+                {DEFAULT_TAGS.filter((t) => !tags.includes(t)).slice(0, 12).map((tag) => (
+                  <button key={tag} onClick={() => setTags([...tags, tag])} className="px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider border border-border-glow text-[#9a968e] bg-bg-deep/50 hover:border-vr-blue/30 hover:text-vr-blue hover:bg-vr-blue/10 transition-colors">{tag}</button>
+                ))}
+              </div>
+            </div>
+            {/* Mobile: dropdown select */}
+            <div className="md:hidden">
+              <select
+                value=""
+                onChange={(e) => { if (e.target.value && !tags.includes(e.target.value)) setTags([...tags, e.target.value]); }}
+                className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40 mb-2 appearance-none"
+              >
+                <option value="">Add a tag...</option>
+                {DEFAULT_TAGS.filter((t) => !tags.includes(t)).map((tag) => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+              <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]); setTagInput(""); } }} placeholder="Or type a custom tag..." className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40" />
+            </div>
           </div>
 
           <div className="flex gap-4 mb-5">
