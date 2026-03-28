@@ -1,0 +1,505 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-rajdhani);
+  --font-mono: var(--font-space-mono);
+  --font-heading: var(--font-orbitron);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* VRdict signature colours — exact from original */
+  --color-vr-blue: #0ea5e9;
+  --color-vr-blue-light: #38bdf8;
+  --color-vr-blue-dark: #0284c7;
+  --color-vr-violet: #a78bfa;
+  --color-vr-violet-light: #c4b5fd;
+  --color-vr-violet-dark: #8b5cf6;
+
+  /* Original palette backgrounds */
+  --color-bg-deep: #08080a;
+  --color-bg-card: #0e0e12;
+  --color-bg-3: #151519;
+  --color-bg-4: #1c1c22;
+  --color-bg-5: #24242c;
+
+  /* Original border */
+  --color-border-glow: #1e1e26;
+}
+
+:root {
+  --background: #08080a;
+  --foreground: #e8e4dc;
+  --card: #0e0e12;
+  --card-foreground: #e8e4dc;
+  --popover: #0e0e12;
+  --popover-foreground: #e8e4dc;
+  --primary: #0ea5e9;
+  --primary-foreground: #08080a;
+  --secondary: #151519;
+  --secondary-foreground: #e8e4dc;
+  --muted: #151519;
+  --muted-foreground: #9a968e;
+  --accent: #1c1c22;
+  --accent-foreground: #e8e4dc;
+  --destructive: #ef4444;
+  --border: #1e1e26;
+  --input: #1e1e26;
+  --ring: #0ea5e9;
+  --chart-1: #0ea5e9;
+  --chart-2: #a78bfa;
+  --chart-3: #38bdf8;
+  --chart-4: #8b5cf6;
+  --chart-5: #06b6d4;
+  --radius: 0.625rem;
+  --sidebar: #0a0a0e;
+  --sidebar-foreground: #e8e4dc;
+  --sidebar-primary: #0ea5e9;
+  --sidebar-primary-foreground: #08080a;
+  --sidebar-accent: #151519;
+  --sidebar-accent-foreground: #e8e4dc;
+  --sidebar-border: #1e1e26;
+  --sidebar-ring: #0ea5e9;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  body {
+    @apply bg-bg-deep text-[#e8e4dc] min-h-screen;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #08080a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(14, 165, 233, 0.3);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(14, 165, 233, 0.5);
+  }
+
+  ::selection {
+    background: rgba(14, 165, 233, 0.3);
+    color: #e8e4dc;
+  }
+}
+
+/* Font utility classes */
+.font-display {
+  font-family: var(--font-orbitron), system-ui, sans-serif;
+}
+
+.font-body {
+  font-family: var(--font-rajdhani), system-ui, sans-serif;
+}
+
+.font-mono-stats {
+  font-family: var(--font-space-mono), monospace;
+}
+
+/* VRdict gradient text */
+.text-gradient-vr {
+  background: linear-gradient(90deg, #38bdf8, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow text variants */
+.text-glow-blue {
+  text-shadow:
+    0 0 7px rgba(14, 165, 233, 0.6),
+    0 0 20px rgba(14, 165, 233, 0.3),
+    0 0 40px rgba(14, 165, 233, 0.1);
+}
+
+.text-glow-violet {
+  text-shadow:
+    0 0 7px rgba(167, 139, 250, 0.6),
+    0 0 20px rgba(167, 139, 250, 0.3);
+}
+
+/* Glass morphism */
+.glass {
+  background: rgba(8, 8, 10, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Gradient dividers */
+.divider-gradient {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #a78bfa, transparent);
+  opacity: 0.5;
+}
+
+/* ── TV Frame ── */
+@property --border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.tv-frame {
+  position: relative;
+  padding: 8px;
+  border-radius: 16px;
+  margin-bottom: 40px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background:
+    conic-gradient(
+      from var(--border-angle),
+      #0ea5e9, #38bdf8, #a78bfa, #c4b5fd, #06b6d4, #0ea5e9
+    );
+  box-shadow:
+    0 0 12px rgba(14, 165, 233, 0.35),
+    0 0 24px rgba(167, 139, 250, 0.2);
+  animation: spin-border 5s linear infinite;
+}
+
+/* TV stand — exact from original */
+.tv-frame::before {
+  content: "";
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30%;
+  height: 10px;
+  background: linear-gradient(180deg, #3a3a44, #2e2e38);
+  border-radius: 0 0 6px 6px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    0 2px 10px rgba(14, 165, 233, 0.12);
+}
+
+.tv-frame-inner {
+  flex: 1;
+  min-height: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background: #0e0e12;
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(14, 165, 233, 0.04);
+}
+
+/* Scrollable content inside TV */
+.tv-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+
+.tv-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tv-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tv-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #0ea5e9, #a78bfa);
+  border-radius: 2px;
+}
+
+@keyframes spin-border {
+  to { --border-angle: 360deg; }
+}
+
+/* TV off state */
+.tv-frame-off {
+  animation: none;
+  background: #1a1a22;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.tv-frame-off .tv-frame-inner {
+  background: #0a0a0e;
+}
+
+/* ── CRT Animations — exact from original ── */
+
+/* CRT overlay container */
+.tv-crt-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  z-index: 2;
+  pointer-events: none;
+  background: #0a0a0e;
+  opacity: 0;
+  overflow: hidden;
+}
+
+/* The scanline (pseudo-element) */
+.tv-crt-overlay::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 0;
+  background: #fff;
+  transform: translateY(-50%);
+  opacity: 0;
+  box-shadow:
+    0 0 20px 6px rgba(14, 165, 233, 0.6),
+    0 0 40px 10px rgba(14, 165, 233, 0.3);
+}
+
+/* Off state — overlay fully opaque */
+.tv-frame-off .tv-crt-overlay {
+  opacity: 1;
+}
+
+/* Shutdown animations */
+@keyframes tv-shutdown-bg {
+  0%   { opacity: 0; }
+  35%  { opacity: 0.9; }
+  50%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+@keyframes tv-shutdown-line {
+  0%   { height: 100%; opacity: 0; left: 0; right: 0; }
+  30%  { height: 100%; opacity: 0; left: 0; right: 0; }
+  38%  { height: 60%; opacity: 0.2; left: 0; right: 0; }
+  48%  { height: 20%; opacity: 0.5; left: 0; right: 0; }
+  58%  { height: 3px; opacity: 0.8; left: 0; right: 0; }
+  78%  { height: 2px; opacity: 0.7; left: 30%; right: 30%; }
+  92%  { height: 2px; opacity: 0.5; left: 48%; right: 48%; }
+  100% { height: 0; opacity: 0; left: 50%; right: 50%; }
+}
+
+.tv-crt-overlay.shutting-down {
+  animation: tv-shutdown-bg 1.4s ease-in forwards;
+}
+
+.tv-crt-overlay.shutting-down::after {
+  animation: tv-shutdown-line 1.4s ease-in forwards;
+}
+
+/* Boot animations */
+@keyframes tv-bootup-bg {
+  0%   { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes tv-bootup-line {
+  0%   { height: 0; opacity: 0; left: 50%; right: 50%; }
+  10%  { height: 2px; opacity: 0.8; left: 48%; right: 48%; }
+  30%  { height: 2px; opacity: 1; left: 30%; right: 30%; }
+  50%  { height: 3px; opacity: 1; left: 0; right: 0; }
+  80%  { height: 100%; opacity: 0; left: 0; right: 0; }
+  100% { height: 100%; opacity: 0; }
+}
+
+.tv-crt-overlay.booting-up {
+  animation: tv-bootup-bg 0.6s ease-out forwards;
+}
+
+.tv-crt-overlay.booting-up::after {
+  animation: tv-bootup-line 0.6s ease-out forwards;
+}
+
+/* ── Card entry animations ── */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease-out both;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.35s ease-out both;
+}
+
+/* ── Preview Bar (Bottom TV on Wooden Shelf) ── */
+
+/* Wooden shelf — dark walnut console */
+.preview-shelf {
+  height: 20px;
+  position: relative;
+  z-index: 2;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  background:
+    linear-gradient(180deg,
+      #4a3728 0px,
+      #3d2b1f 3px,
+      #543d2e 6px,
+      #3a2819 9px,
+      #4a3728 12px,
+      #3d2b1f 15px,
+      #2e1f14 18px,
+      #3a2819 20px
+    );
+}
+
+/* TV wrapper — sits directly on shelf, no margin gap */
+.preview-tv-wrap {
+  margin: 0;
+  position: relative;
+}
+
+/* Outer frame — thin subtle border */
+.preview-tv-outer {
+  padding: 2px;
+  border-radius: 4px 4px 0 0;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(14, 165, 233, 0.3),
+      rgba(167, 139, 250, 0.2),
+      rgba(6, 182, 212, 0.25)
+    );
+  box-shadow:
+    0 -2px 12px rgba(14, 165, 233, 0.1),
+    0 -1px 6px rgba(167, 139, 250, 0.06);
+}
+
+/* Inner screen */
+.preview-tv-screen {
+  position: relative;
+  height: 100px;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+  background: #0a0a0e;
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(14, 165, 233, 0.03);
+}
+
+/* CRT scanlines */
+.preview-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 3px
+  );
+  pointer-events: none;
+  z-index: 2;
+  border-radius: inherit;
+}
+
+/* Idle pulse — glowing light sweeps across the screen */
+.preview-idle-pulse {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(14, 165, 233, 0.06) 15%,
+    rgba(14, 165, 233, 0.12) 30%,
+    rgba(167, 139, 250, 0.08) 50%,
+    rgba(14, 165, 233, 0.12) 70%,
+    rgba(14, 165, 233, 0.06) 85%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: preview-idle-sweep 3s ease-in-out infinite;
+}
+
+@keyframes preview-idle-sweep {
+  0% {
+    background-position: 200% 0;
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    background-position: -200% 0;
+    opacity: 0.3;
+  }
+}
+
+/* Ambient blue glow — subtle like original */
+body::after {
+  content: "";
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.04), transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
