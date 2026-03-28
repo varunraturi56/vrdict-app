@@ -378,7 +378,7 @@ function DiscoverContent() {
   // Poster grid with hover actions
   const discoverGrid = (
     <div>
-      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
         {results.map((r, i) => {
           const inLibrary = isInLibrary(r);
           const inWatchlist = isInWatchlist(r);

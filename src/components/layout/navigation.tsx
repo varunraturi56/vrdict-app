@@ -52,7 +52,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-      <div className="glass border-t border-border-glow">
+      <div className="border-t border-border-glow bg-[#0a0a0e]">
         <div className="flex items-center justify-around px-1 py-1.5">
           {navItems.map((item) => {
             const isActive =

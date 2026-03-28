@@ -318,7 +318,18 @@ export function AddModal({ result, onClose, onAdded }: AddModalProps) {
                   ))}
                 </div>
               )}
-              {/* Tag input */}
+              {/* Tag dropdown — works on mobile (no keyboard needed) */}
+              <select
+                value=""
+                onChange={(e) => { if (e.target.value) addTag(e.target.value); }}
+                className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40 mb-2 appearance-none cursor-pointer"
+              >
+                <option value="" disabled>Add a tag...</option>
+                {suggestions.map((tag) => (
+                  <option key={tag} value={tag}>{tag}</option>
+                ))}
+              </select>
+              {/* Custom tag input */}
               <input
                 type="text"
                 value={tagInput}
@@ -329,21 +340,9 @@ export function AddModal({ result, onClose, onAdded }: AddModalProps) {
                     addTag(tagInput.trim());
                   }
                 }}
-                placeholder="Type to filter or add custom tag..."
-                className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40 mb-2"
+                placeholder="Or type a custom tag..."
+                className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40"
               />
-              {/* Suggested tags */}
-              <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
-                {suggestions.slice(0, 10).map((tag) => (
-                  <button
-                    key={tag}
-                    onClick={() => addTag(tag)}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-display uppercase tracking-wider border border-border-glow text-[#5c5954] hover:text-[#9a968e] hover:border-vr-blue/20 transition-colors"
-                  >
-                    + {tag}
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Checkboxes */}
