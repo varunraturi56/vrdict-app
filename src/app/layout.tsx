@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Orbitron, Rajdhani, Space_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
@@ -21,12 +22,19 @@ const spaceMono = Space_Mono({
   variable: "--font-space-mono",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#080811",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: "VRdict — Personal Cinelog",
   description:
     "Search, collect, rate, and analyse your film & TV watching habits.",
   manifest: "/manifest.json",
-  themeColor: "#080811",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -48,8 +56,14 @@ export default function RootLayout({
       lang="en"
       className={`${orbitron.variable} ${rajdhani.variable} ${spaceMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body className="min-h-full flex flex-col">
         <AppShell>{children}</AppShell>
+        <Script id="sw-register" strategy="afterInteractive">
+          {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }`}
+        </Script>
       </body>
     </html>
   );

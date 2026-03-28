@@ -1,13 +1,11 @@
 {
-  "name": "VRdict",
+  "name": "VRdict — Personal Cinelog",
   "short_name": "VRdict",
-  "description": "Search, collect, rate, and analyse your film & TV watching habits.",
-  "theme_color": "#080811",
-  "background_color": "#080811",
-  "display": "standalone",
-  "orientation": "portrait",
   "start_url": "/",
-  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080811",
+  "theme_color": "#080811",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "/icon-192.png",
