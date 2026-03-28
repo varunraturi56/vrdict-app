@@ -22,8 +22,33 @@ const navItems = [
   { href: "/stats", label: "Stats", icon: BarChart3 },
 ];
 
+// Per-tab accent colors: movie/tv text color, glow, bar underline, and sub-tab pill styles
+interface TabColors {
+  movie: string; tv: string;
+  movieGlow: string; tvGlow: string;
+  barColor: string; barGlow: string;
+  moviePill: string; tvPill: string;
+}
+const TAB_COLORS: Record<string, TabColors> = {
+  "/":           { movie: "text-vr-blue",       tv: "text-vr-violet",      movieGlow: "drop-shadow-[0_0_8px_rgba(14,165,233,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(139,92,246,0.6)]",  barColor: "rgba(14,165,233,0.6)",   barGlow: "rgba(14,165,233,0.10)",   moviePill: "text-vr-blue bg-vr-blue/10 border border-vr-blue/25",         tvPill: "text-vr-violet bg-vr-violet/10 border border-vr-violet/25" },
+  "/favourites": { movie: "text-amber-400",     tv: "text-gray-300",       movieGlow: "drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(209,213,219,0.6)]", barColor: "rgba(251,191,36,0.6)",   barGlow: "rgba(251,191,36,0.10)",   moviePill: "text-amber-400 bg-amber-400/10 border border-amber-400/25",   tvPill: "text-gray-300 bg-gray-300/10 border border-gray-300/25" },
+  "/watchlist":  { movie: "text-vr-violet",     tv: "text-cyan-400",       movieGlow: "drop-shadow-[0_0_8px_rgba(139,92,246,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]",  barColor: "rgba(139,92,246,0.6)",   barGlow: "rgba(139,92,246,0.10)",   moviePill: "text-vr-violet bg-vr-violet/10 border border-vr-violet/25",   tvPill: "text-cyan-400 bg-cyan-400/10 border border-cyan-400/25" },
+  "/discover":   { movie: "text-pink-400",      tv: "text-orange-400",     movieGlow: "drop-shadow-[0_0_8px_rgba(244,114,182,0.6)]",  tvGlow: "drop-shadow-[0_0_8px_rgba(251,146,60,0.6)]",  barColor: "rgba(244,114,182,0.6)",  barGlow: "rgba(244,114,182,0.10)",  moviePill: "text-pink-400 bg-pink-400/10 border border-pink-400/25",      tvPill: "text-orange-400 bg-orange-400/10 border border-orange-400/25" },
+  "/stats":      { movie: "text-teal-400",      tv: "text-teal-400",       movieGlow: "drop-shadow-[0_0_8px_rgba(45,212,191,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(45,212,191,0.6)]",  barColor: "rgba(45,212,191,0.6)",   barGlow: "rgba(45,212,191,0.10)",   moviePill: "text-teal-400 bg-teal-400/10 border border-teal-400/25",      tvPill: "text-teal-400 bg-teal-400/10 border border-teal-400/25" },
+};
+
+function getTabColors(pathname: string) {
+  if (pathname === "/") return TAB_COLORS["/"];
+  for (const key of Object.keys(TAB_COLORS)) {
+    if (key !== "/" && pathname.startsWith(key)) return TAB_COLORS[key];
+  }
+  return TAB_COLORS["/"];
+}
+
 export function BottomNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const mediaTab = searchParams.get("tab") || "movie";
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
@@ -34,27 +59,26 @@ export function BottomNav() {
               item.href === "/"
                 ? pathname === "/"
                 : pathname.startsWith(item.href);
+            const colors = getTabColors(item.href);
+            const iconColor = isActive ? (mediaTab === "tv" ? colors.tv : colors.movie) : "";
+            const iconGlow = isActive ? (mediaTab === "tv" ? colors.tvGlow : colors.movieGlow) : "";
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all duration-200 ${
                   isActive
-                    ? "text-vr-blue"
+                    ? iconColor
                     : "text-[#5c5954] hover:text-[#9a968e]"
                 }`}
               >
                 <item.icon
                   size={22}
-                  className={
-                    isActive
-                      ? "drop-shadow-[0_0_8px_rgba(14,165,233,0.6)]"
-                      : ""
-                  }
+                  className={iconGlow}
                 />
                 <span
                   className={`font-display text-[8px] uppercase tracking-wider ${
-                    isActive ? "text-glow-blue" : ""
+                    isActive ? iconColor : ""
                   }`}
                 >
                   {item.label}
@@ -104,6 +128,11 @@ export function TopNav() {
           const isThisTabActive = isActive;
           const isThisTabMediaHost = isMediaTabHost && isThisTabActive;
 
+          // Per-tab colors based on current page's color scheme
+          const colors = getTabColors(item.href);
+          const activeColor = mediaTab === "tv" ? colors.tv : colors.movie;
+          const activeGlow = mediaTab === "tv" ? colors.tvGlow : colors.movieGlow;
+
           return (
             <div key={item.href} className="flex items-center gap-0 transition-all duration-300">
               <Link
@@ -118,7 +147,7 @@ export function TopNav() {
                 }}
                 className={`relative flex flex-col items-center gap-0.5 transition-all duration-200 group ${
                   isActive
-                    ? "text-vr-blue"
+                    ? activeColor
                     : "text-[#5c5954] hover:text-[#9a968e]"
                 }`}
               >
@@ -126,24 +155,24 @@ export function TopNav() {
                   size={24}
                   className={
                     isActive
-                      ? "drop-shadow-[0_0_8px_rgba(14,165,233,0.6)]"
+                      ? activeGlow
                       : "group-hover:drop-shadow-[0_0_4px_rgba(14,165,233,0.15)]"
                   }
                 />
                 <span
                   className={`font-display text-[9px] uppercase tracking-[0.15em] ${
-                    isActive ? "text-glow-blue" : ""
+                    isActive ? activeColor : ""
                   }`}
                 >
                   {item.label}
                 </span>
-                {/* Active tab downward glow */}
+                {/* Active tab downward glow — matches tab color */}
                 {isActive && (
                   <div
                     className="absolute -bottom-[13px] left-1/2 -translate-x-1/2 w-12 h-[2px] rounded-full"
                     style={{
-                      background: "rgba(14, 165, 233, 0.6)",
-                      boxShadow: "0 4px 15px 2px rgba(14, 165, 233, 0.10)",
+                      background: colors.barColor,
+                      boxShadow: `0 4px 15px 2px ${colors.barGlow}`,
                     }}
                   />
                 )}
@@ -163,7 +192,7 @@ export function TopNav() {
                     href={`${item.href === "/" ? "/" : item.href}?tab=movie`}
                     className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all duration-200 ${
                       mediaTab === "movie"
-                        ? "text-vr-blue bg-vr-blue/10 border border-vr-blue/25"
+                        ? colors.moviePill
                         : "text-[#5c5954] hover:text-[#9a968e] border border-transparent"
                     }`}
                   >
@@ -173,7 +202,7 @@ export function TopNav() {
                     href={`${item.href === "/" ? "/" : item.href}?tab=tv`}
                     className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all duration-200 ml-1.5 ${
                       mediaTab === "tv"
-                        ? "text-vr-violet bg-vr-violet/10 border border-vr-violet/25"
+                        ? colors.tvPill
                         : "text-[#5c5954] hover:text-[#9a968e] border border-transparent"
                     }`}
                   >

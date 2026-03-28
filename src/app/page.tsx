@@ -324,7 +324,7 @@ function LibraryContent() {
       </div>
 
       {/* Desktop: compact filter rows — aligned with TV width */}
-      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-20">
+      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-20 relative z-10">
         {/* Row 1: Genre pills | Sort pills (tight, no gap) */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">

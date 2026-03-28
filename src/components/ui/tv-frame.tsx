@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type Ref } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { type ReactNode } from "react";
 import { getAmbientColor, rgba } from "@/lib/ambient-colors";
 
@@ -15,6 +15,8 @@ interface TvFrameProps {
 
 export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollRef }: TvFrameProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const mediaTab = searchParams.get("tab") || "movie";
   const ambient = getAmbientColor(pathname);
   const [animState, setAnimState] = useState<"shutting-down" | "booting-up" | null>(null);
 
@@ -30,28 +32,31 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollR
     }
   }
 
+  // Glow color helper
+  function glow(r: number, g: number, b: number, strength: number) {
+    const s1 = (0.18 * strength).toFixed(2);
+    const s2 = (0.08 * strength).toFixed(2);
+    return `0 0 80px 30px rgba(${r},${g},${b},${s1}), 0 0 150px 60px rgba(${r},${g},${b},${s2})`;
+  }
+
+  // Per-page glow colors: [movie RGB, tv RGB]
+  const PAGE_GLOWS: Record<string, { movie: [number, number, number]; tv: [number, number, number] }> = {
+    "/":           { movie: [14, 165, 233],  tv: [139, 92, 246] },   // blue / purple
+    "/favourites": { movie: [255, 184, 0],   tv: [200, 200, 210] },  // gold / silver
+    "/watchlist":  { movie: [139, 92, 246],  tv: [6, 182, 212] },    // purple / cyan
+    "/discover":   { movie: [244, 114, 182], tv: [249, 115, 22] },   // pink / orange
+  };
+
   return (
     <div className={`relative flex flex-col flex-1 min-h-0 px-20 ${className}`}>
-      {/* Ambient glow — three layers cycling, colours based on page */}
+      {/* Ambient glow — colour matches active media tab */}
       {isOn && (() => {
-        const glowSets: Record<string, [string, string, string]> = {
-          "/favourites": [
-            "0 0 80px 30px rgba(255,184,0,0.18), 0 0 150px 60px rgba(255,184,0,0.08)",
-            "0 0 80px 30px rgba(200,200,210,0.15), 0 0 150px 60px rgba(200,200,210,0.06)",
-            "0 0 80px 30px rgba(255,215,100,0.14), 0 0 150px 60px rgba(255,215,100,0.05)",
-          ],
-          "/watchlist": [
-            "0 0 80px 30px rgba(176,38,255,0.18), 0 0 150px 60px rgba(176,38,255,0.08)",
-            "0 0 80px 30px rgba(120,80,255,0.15), 0 0 150px 60px rgba(120,80,255,0.06)",
-            "0 0 80px 30px rgba(200,100,255,0.14), 0 0 150px 60px rgba(200,100,255,0.05)",
-          ],
-        };
-        const defaultGlow: [string, string, string] = [
-          "0 0 80px 30px rgba(14,165,233,0.18), 0 0 150px 60px rgba(14,165,233,0.08)",
-          "0 0 80px 30px rgba(167,139,250,0.18), 0 0 150px 60px rgba(167,139,250,0.08)",
-          "0 0 80px 30px rgba(6,182,212,0.15), 0 0 150px 60px rgba(6,182,212,0.06)",
-        ];
-        const [g1, g2, g3] = glowSets[pathname] || defaultGlow;
+        const colors = PAGE_GLOWS[pathname] || PAGE_GLOWS["/"];
+        const c = mediaTab === "tv" ? colors.tv : colors.movie;
+        // Three cycling layers at different intensities
+        const g1 = glow(c[0], c[1], c[2], 1.0);
+        const g2 = glow(c[0], c[1], c[2], 0.7);
+        const g3 = glow(c[0], c[1], c[2], 0.5);
         const pos = { top: 8, left: 88, right: 88, bottom: 8 };
         return (
           <>
@@ -80,12 +85,18 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollR
           className="absolute left-1/2 -translate-x-1/2 z-[5] w-[5px] h-[5px] rounded-full cursor-pointer transition-all duration-300 focus:outline-none hover:scale-[1.6]"
           style={{
             bottom: "-6.5px",
-            background: isOn
-              ? `radial-gradient(circle at 40% 35%, ${rgba(ambient, 1)}, ${rgba(ambient, 0.7)} 60%)`
-              : "radial-gradient(circle at 40% 35%, #555, #333 60%)",
-            boxShadow: isOn
-              ? `0 0 6px ${rgba(ambient, 0.6)}, 0 0 2px ${rgba(ambient, 0.8)}`
-              : "0 0 3px rgba(80,80,80,0.3)",
+            background: (() => {
+              if (!isOn) return "radial-gradient(circle at 40% 35%, #555, #333 60%)";
+              const colors = PAGE_GLOWS[pathname] || PAGE_GLOWS["/"];
+              const c = mediaTab === "tv" ? colors.tv : colors.movie;
+              return `radial-gradient(circle at 40% 35%, rgb(${c.join(",")}), rgba(${c.join(",")},0.7) 60%)`;
+            })(),
+            boxShadow: (() => {
+              if (!isOn) return "0 0 3px rgba(80,80,80,0.3)";
+              const colors = PAGE_GLOWS[pathname] || PAGE_GLOWS["/"];
+              const c = mediaTab === "tv" ? colors.tv : colors.movie;
+              return `0 0 6px rgba(${c.join(",")},0.6), 0 0 2px rgba(${c.join(",")},0.8)`;
+            })(),
           }}
           aria-label={isOn ? "Turn off TV" : "Turn on TV"}
         />
