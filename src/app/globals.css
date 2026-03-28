@@ -188,16 +188,34 @@
 }
 
 /* ── TV Ambient LED Glow Animation ── */
-@keyframes ambient-glow-cycle {
-  0%   { filter: hue-rotate(0deg) brightness(1); }
-  25%  { filter: hue-rotate(15deg) brightness(1.1); }
-  50%  { filter: hue-rotate(-20deg) brightness(0.95); }
-  75%  { filter: hue-rotate(10deg) brightness(1.05); }
-  100% { filter: hue-rotate(0deg) brightness(1); }
+@keyframes glow-cyan {
+  0%, 100% { opacity: 0.9; }
+  33%      { opacity: 0.3; }
+  66%      { opacity: 0.6; }
 }
 
-.tv-ambient-glow {
-  animation: ambient-glow-cycle 8s ease-in-out infinite;
+@keyframes glow-violet {
+  0%, 100% { opacity: 0.2; }
+  33%      { opacity: 0.8; }
+  66%      { opacity: 0.4; }
+}
+
+@keyframes glow-teal {
+  0%, 100% { opacity: 0.3; }
+  33%      { opacity: 0.5; }
+  66%      { opacity: 0.9; }
+}
+
+.tv-glow-cyan {
+  animation: glow-cyan 4s ease-in-out infinite;
+}
+
+.tv-glow-violet {
+  animation: glow-violet 4s ease-in-out infinite;
+}
+
+.tv-glow-teal {
+  animation: glow-teal 4s ease-in-out infinite;
 }
 
 /* ── Modern Flatscreen TV ── */
