@@ -150,12 +150,12 @@ function LibraryContent() {
 
   // Poster grid
   const posterGrid = (
-    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
+    <div className="poster-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
       {filteredEntries.map((entry, i) => (
         <div
           key={entry.id}
-          className="relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in transition-all hover:scale-[1.03]"
-          style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
+          className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in"
+          style={{ animationDelay: `${Math.min(i * 30, 400)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
           onClick={() => setSelectedEntry(entry)}
           onMouseEnter={() => handleMouseEnter(entry)}
         >
@@ -164,11 +164,11 @@ function LibraryContent() {
               <img
                 src={posterUrl(entry.poster, "small")}
                 alt={entry.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-[6px]"
                 loading="lazy"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[8px] font-display p-1 text-center bg-bg-card">
+              <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[8px] font-display p-1 text-center bg-bg-card rounded-[6px]">
                 {entry.title}
               </div>
             )}

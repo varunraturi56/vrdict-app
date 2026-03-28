@@ -270,6 +270,31 @@
   background: #0e0e12;
 }
 
+/* Vignette overlay — darkens TV edges like a real screen */
+.tv-flatscreen-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.3) 100%);
+}
+
+/* Poster grid spotlight effect — dim siblings on hover */
+.poster-grid:hover .poster-card {
+  opacity: 0.6;
+  transition: opacity 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+.poster-grid:hover .poster-card:hover {
+  opacity: 1;
+  transform: scale(1.08);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+.poster-card {
+  transition: opacity 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+
 /* Scrollable content inside TV */
 .tv-scroll {
   height: 100%;
