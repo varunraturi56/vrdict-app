@@ -31,20 +31,25 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle }: TvFra
 
   return (
     <div className={`relative flex flex-col flex-1 min-h-0 px-10 ${className}`}>
+      {/* Ambient glow — positioned behind the TV, inset to match screen area */}
+      <div
+        className="absolute z-0 pointer-events-none transition-all duration-[800ms]"
+        style={{
+          top: 8,
+          left: 48,
+          right: 48,
+          bottom: 8,
+          boxShadow: isOn
+            ? `0 0 60px 20px ${rgba(ambient, 0.08)}, 0 0 120px 50px ${rgba(ambient, 0.04)}`
+            : "none",
+        }}
+      />
+
       {/* TV — modern flatscreen */}
       <div
-        className={`tv-flatscreen relative ${!isOn && !animState ? "tv-flatscreen-off" : ""}`}
+        className={`tv-flatscreen relative z-[1] ${!isOn && !animState ? "tv-flatscreen-off" : ""}`}
       >
-        {/* Screen with ambient glow — glow comes from screen, not bezel */}
-        <div
-          className="tv-flatscreen-inner"
-          style={{
-            boxShadow: isOn
-              ? `0 0 60px 20px ${rgba(ambient, 0.08)}, 0 0 120px 50px ${rgba(ambient, 0.04)}`
-              : "none",
-            transition: "box-shadow 0.8s ease",
-          }}
-        >
+        <div className="tv-flatscreen-inner">
           <div className={`tv-scroll ${!isOn ? "pointer-events-none" : ""}`}>
             {children}
           </div>
