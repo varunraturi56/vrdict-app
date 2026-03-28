@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Library,
   Star,
@@ -11,6 +12,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { logout } from "@/app/login/actions/auth";
+import { useLibraryCounts } from "@/lib/library-context";
 
 const navItems = [
   { href: "/", label: "Library", icon: Library },
@@ -68,50 +70,111 @@ export function BottomNav() {
 
 export function TopNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const mediaTab = searchParams.get("tab") || "movie";
+  const { counts } = useLibraryCounts();
+  const isLibrary = pathname === "/";
+  const [libraryExpanded, setLibraryExpanded] = useState(false);
 
   return (
     <header className="hidden lg:flex fixed top-0 left-0 right-0 z-50 h-[52px] items-center px-6 border-b border-border-glow bg-bg-card/90 backdrop-blur-xl">
-      {/* Logo — far left */}
-      <Link href="/" className="shrink-0 mr-auto">
+      {/* Logo + divider — far left */}
+      <Link href="/" className="shrink-0 mr-auto flex items-center gap-3">
         <h1 className="font-display text-xl font-semibold tracking-wider">
           <span className="text-vr-blue text-glow-blue">VR</span>
           <span className="text-vr-violet">dict</span>
         </h1>
+        <div className="w-px h-6 bg-gradient-to-b from-transparent via-vr-blue/40 to-transparent" />
       </Link>
 
       {/* Nav tabs — centered */}
-      <nav className="flex items-center gap-8">
+      <nav className="flex items-center gap-8 transition-all duration-300">
         {navItems.map((item) => {
           const isActive =
             item.href === "/"
               ? pathname === "/"
               : pathname.startsWith(item.href);
+
+          const isLibraryTab = item.href === "/";
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center gap-0.5 transition-all duration-200 group ${
-                isActive
-                  ? "text-vr-blue"
-                  : "text-[#5c5954] hover:text-[#9a968e]"
-              }`}
-            >
-              <item.icon
-                size={24}
-                className={
+            <div key={item.href} className="flex items-center gap-0 transition-all duration-300">
+              <Link
+                href={item.href}
+                onClick={(e) => {
+                  if (isLibraryTab && isLibrary) {
+                    e.preventDefault();
+                    setLibraryExpanded(!libraryExpanded);
+                  } else {
+                    setLibraryExpanded(false);
+                  }
+                }}
+                className={`relative flex flex-col items-center gap-0.5 transition-all duration-200 group ${
                   isActive
-                    ? "drop-shadow-[0_0_8px_rgba(14,165,233,0.6)]"
-                    : "group-hover:drop-shadow-[0_0_4px_rgba(14,165,233,0.15)]"
-                }
-              />
-              <span
-                className={`font-display text-[9px] uppercase tracking-[0.15em] ${
-                  isActive ? "text-glow-blue" : ""
+                    ? "text-vr-blue"
+                    : "text-[#5c5954] hover:text-[#9a968e]"
                 }`}
               >
-                {item.label}
-              </span>
-            </Link>
+                <item.icon
+                  size={24}
+                  className={
+                    isActive
+                      ? "drop-shadow-[0_0_8px_rgba(14,165,233,0.6)]"
+                      : "group-hover:drop-shadow-[0_0_4px_rgba(14,165,233,0.15)]"
+                  }
+                />
+                <span
+                  className={`font-display text-[9px] uppercase tracking-[0.15em] ${
+                    isActive ? "text-glow-blue" : ""
+                  }`}
+                >
+                  {item.label}
+                </span>
+                {/* Active tab downward glow */}
+                {isActive && (
+                  <div
+                    className="absolute -bottom-[13px] left-1/2 -translate-x-1/2 w-12 h-[2px] rounded-full"
+                    style={{
+                      background: "rgba(14, 165, 233, 0.6)",
+                      boxShadow: "0 4px 15px 2px rgba(14, 165, 233, 0.10)",
+                    }}
+                  />
+                )}
+              </Link>
+
+              {/* Library sub-tabs — expand inline */}
+              {isLibraryTab && (
+                <div
+                  className="flex items-center overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{
+                    maxWidth: libraryExpanded && isLibrary ? 200 : 0,
+                    opacity: libraryExpanded && isLibrary ? 1 : 0,
+                    marginLeft: libraryExpanded && isLibrary ? 12 : 0,
+                  }}
+                >
+                  <Link
+                    href="/?tab=movie"
+                    className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all duration-200 ${
+                      mediaTab === "movie"
+                        ? "text-vr-blue bg-vr-blue/10 border border-vr-blue/25"
+                        : "text-[#5c5954] hover:text-[#9a968e] border border-transparent"
+                    }`}
+                  >
+                    Movies {counts.movieCount > 0 && <span className="font-mono-stats text-[9px] ml-0.5 opacity-60">{counts.movieCount}</span>}
+                  </Link>
+                  <Link
+                    href="/?tab=tv"
+                    className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all duration-200 ml-1.5 ${
+                      mediaTab === "tv"
+                        ? "text-vr-violet bg-vr-violet/10 border border-vr-violet/25"
+                        : "text-[#5c5954] hover:text-[#9a968e] border border-transparent"
+                    }`}
+                  >
+                    TV {counts.tvCount > 0 && <span className="font-mono-stats text-[9px] ml-0.5 opacity-60">{counts.tvCount}</span>}
+                  </Link>
+                </div>
+              )}
+            </div>
           );
         })}
       </nav>
