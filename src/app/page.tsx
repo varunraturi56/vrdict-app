@@ -131,8 +131,8 @@ function LibraryContent() {
   const pillClass = (active: boolean) =>
     `px-2.5 py-0.5 rounded-[20px] text-[10px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
       active
-        ? "text-vr-blue border-vr-blue/40 bg-[#0c1520]"
-        : "text-[#9a968e] border-[#2a2a32] bg-[#12121a] hover:text-[#e8e4dc]"
+        ? "text-vr-blue border-vr-blue/30 bg-[rgba(14,165,233,0.12)]"
+        : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
     }`;
 
   if (loading) {
@@ -317,14 +317,14 @@ function LibraryContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search..."
-              className="w-full h-7 rounded-[20px] border border-[#2a2a32] bg-[#12121a] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
             />
           </div>
         </div>
       </div>
 
       {/* Desktop: compact filter rows — aligned with TV width */}
-      <div className="hidden lg:block space-y-1.5 mb-2 flex-shrink-0 px-20 py-2 relative z-10 bg-bg-deep rounded-lg">
+      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-20">
         {/* Row 1: Genre pills | Sort pills (tight, no gap) */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">
@@ -368,7 +368,7 @@ function LibraryContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={`Search ${isMovie ? "movies" : "TV shows"}...`}
-              className="w-full h-7 rounded-[20px] border border-[#2a2a32] bg-[#12121a] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
             />
           </div>
         </div>
