@@ -44,65 +44,61 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
           <div className="ec-scanlines" />
 
           {/* Left speaker */}
-          <div className="absolute left-0 top-0 bottom-0 w-[50px] z-[3] flex items-center justify-center gap-1.5"
+          <div className="absolute left-0 top-0 bottom-0 w-[60px] z-[3] flex items-center justify-center"
             style={{ borderRight: "1px solid #1a1a1c" }}
           >
-            {/* Woofer */}
-            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center"
+            <div className="w-[44px] h-[44px] rounded-full flex items-center justify-center"
               style={{
-                background: "radial-gradient(circle at 45% 40%, #1a1a1e, #0e0e12 60%, #0a0a0e)",
-                border: "1px solid #222",
-                boxShadow: "inset 0 0 6px rgba(0,0,0,0.8), 0 0 2px rgba(255,255,255,0.02)",
+                background: "radial-gradient(circle at 45% 40%, #1a1a1e, #101014 50%, #0a0a0e 80%)",
+                border: "2px solid #1e1e22",
+                boxShadow: "inset 0 0 8px rgba(0,0,0,0.9), inset 0 0 2px rgba(255,255,255,0.03), 0 0 3px rgba(0,0,0,0.5)",
               }}
             >
-              <div className="w-[10px] h-[10px] rounded-full"
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center"
                 style={{
-                  background: "radial-gradient(circle at 40% 35%, #222, #151518)",
+                  background: "radial-gradient(circle at 45% 40%, #222226, #161618)",
                   border: "1px solid #2a2a2e",
                 }}
-              />
+              >
+                <div className="w-[8px] h-[8px] rounded-full"
+                  style={{
+                    background: "radial-gradient(circle at 40% 35%, #2a2a30, #1a1a1e)",
+                    border: "1px solid #333",
+                  }}
+                />
+              </div>
             </div>
-            {/* Tweeter */}
-            <div className="w-[14px] h-[14px] rounded-full"
-              style={{
-                background: "radial-gradient(circle at 45% 40%, #1c1c20, #0e0e12 60%)",
-                border: "1px solid #222",
-                boxShadow: "inset 0 0 4px rgba(0,0,0,0.7)",
-              }}
-            />
           </div>
 
           {/* Right speaker */}
-          <div className="absolute right-0 top-0 bottom-0 w-[50px] z-[3] flex items-center justify-center gap-1.5"
+          <div className="absolute right-0 top-0 bottom-0 w-[60px] z-[3] flex items-center justify-center"
             style={{ borderLeft: "1px solid #1a1a1c" }}
           >
-            {/* Tweeter */}
-            <div className="w-[14px] h-[14px] rounded-full"
+            <div className="w-[44px] h-[44px] rounded-full flex items-center justify-center"
               style={{
-                background: "radial-gradient(circle at 45% 40%, #1c1c20, #0e0e12 60%)",
-                border: "1px solid #222",
-                boxShadow: "inset 0 0 4px rgba(0,0,0,0.7)",
-              }}
-            />
-            {/* Woofer */}
-            <div className="w-[28px] h-[28px] rounded-full flex items-center justify-center"
-              style={{
-                background: "radial-gradient(circle at 45% 40%, #1a1a1e, #0e0e12 60%, #0a0a0e)",
-                border: "1px solid #222",
-                boxShadow: "inset 0 0 6px rgba(0,0,0,0.8), 0 0 2px rgba(255,255,255,0.02)",
+                background: "radial-gradient(circle at 45% 40%, #1a1a1e, #101014 50%, #0a0a0e 80%)",
+                border: "2px solid #1e1e22",
+                boxShadow: "inset 0 0 8px rgba(0,0,0,0.9), inset 0 0 2px rgba(255,255,255,0.03), 0 0 3px rgba(0,0,0,0.5)",
               }}
             >
-              <div className="w-[10px] h-[10px] rounded-full"
+              <div className="w-[22px] h-[22px] rounded-full flex items-center justify-center"
                 style={{
-                  background: "radial-gradient(circle at 40% 35%, #222, #151518)",
+                  background: "radial-gradient(circle at 45% 40%, #222226, #161618)",
                   border: "1px solid #2a2a2e",
                 }}
-              />
+              >
+                <div className="w-[8px] h-[8px] rounded-full"
+                  style={{
+                    background: "radial-gradient(circle at 40% 35%, #2a2a30, #1a1a1e)",
+                    border: "1px solid #333",
+                  }}
+                />
+              </div>
             </div>
           </div>
 
           {/* Film details — between speakers */}
-          <div className={`ec-content relative z-[2] flex items-center px-14 transition-opacity duration-500 ${isOn ? "opacity-100" : "opacity-0"}`}>
+          <div className={`ec-content relative z-[2] flex items-center px-16 transition-opacity duration-500 ${isOn ? "opacity-100" : "opacity-0"}`}>
             {entry ? (
               <div className="flex items-center gap-3 w-full min-w-0">
                 {/* Poster */}

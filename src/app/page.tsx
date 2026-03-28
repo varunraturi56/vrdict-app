@@ -387,7 +387,9 @@ function LibraryContent() {
                 style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03)" }}
               />
               {/* Base stand */}
-              <div className="w-[18px] h-[4px] rounded-b-[2px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]" />
+              <div className="w-[30px] h-[8px] rounded-b-[3px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]"
+                style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+              />
             </div>
 
             {/* LED Play bar — right (stands on console table) */}
@@ -399,7 +401,9 @@ function LibraryContent() {
                 style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03)" }}
               />
               {/* Base stand */}
-              <div className="w-[18px] h-[4px] rounded-b-[2px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]" />
+              <div className="w-[30px] h-[8px] rounded-b-[3px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]"
+                style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+              />
             </div>
 
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
