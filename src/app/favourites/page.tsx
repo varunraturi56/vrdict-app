@@ -462,13 +462,13 @@ function EntryDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden rounded-xl border border-border-glow bg-bg-card animate-slide-in">
+      <div className="relative w-full max-w-lg max-h-[calc(100vh-120px)] overflow-y-auto overflow-x-hidden rounded-xl border border-border-glow bg-bg-card animate-slide-in">
         <div className="h-px rounded-t-xl" style={{ background: "linear-gradient(90deg, transparent 5%, #ffb800 30%, #a78bfa 70%, transparent 95%)" }} />
         <button onClick={onClose} className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors">✕</button>
 
-        <div className="p-5">
-          <div className="flex gap-4 mb-4">
-            <div className="flex-shrink-0 w-28 rounded-lg overflow-hidden bg-bg-deep">
+        <div className="p-3 md:p-5">
+          <div className="flex gap-3 md:gap-4 mb-3 md:mb-4">
+            <div className="flex-shrink-0 w-20 md:w-28 max-h-[120px] md:max-h-none rounded-lg overflow-hidden bg-bg-deep">
               {entry.poster ? (
                 <img src={posterUrl(entry.poster, "medium")} alt={entry.title} className="w-full aspect-[2/3] object-cover" />
               ) : (
@@ -494,10 +494,10 @@ function EntryDetailModal({
             </div>
           </div>
 
-          {entry.overview && <p className="text-xs text-[#9a968e] font-body leading-relaxed mb-4 line-clamp-3">{entry.overview}</p>}
-          <div className="divider-gradient mb-4" />
+          {entry.overview && <p className="text-xs text-[#9a968e] font-body leading-relaxed mb-3 md:mb-4 line-clamp-3">{entry.overview}</p>}
+          <div className="divider-gradient mb-3 md:mb-4" />
 
-          <div className="mb-4">
+          <div className="mb-3 md:mb-4">
             <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Your Rating</label>
             <div className="flex items-center gap-4">
               <span className="font-mono-stats text-3xl font-bold min-w-[3ch] text-center" style={{ color: ratingColor(myRating) }}>{myRating.toFixed(1)}</span>
@@ -505,7 +505,7 @@ function EntryDetailModal({
             </div>
           </div>
 
-          <div className="mb-4">
+          <div className="mb-3 md:mb-4">
             <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Year Watched</label>
             <select value={yearWatched} onChange={(e) => setYearWatched(e.target.value)} className="w-full h-10 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-mono-stats text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40">
               <option value="">—</option>
@@ -513,7 +513,7 @@ function EntryDetailModal({
             </select>
           </div>
 
-          <div className="mb-4">
+          <div className="mb-3 md:mb-4">
             <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Tags</label>
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mb-2">
@@ -547,7 +547,7 @@ function EntryDetailModal({
             </div>
           </div>
 
-          <div className="flex gap-4 mb-5">
+          <div className="flex gap-4 mb-3 md:mb-5">
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={recommended} onChange={(e) => setRecommended(e.target.checked)} className="sr-only" />
               <div className={`w-5 h-5 rounded border transition-colors flex items-center justify-center ${recommended ? "bg-vr-violet/20 border-vr-violet/40" : "border-border-glow bg-bg-deep/50"}`}>
@@ -564,7 +564,7 @@ function EntryDetailModal({
             </label>
           </div>
 
-          <div className="flex gap-3">
+          <div className="sticky bottom-0 z-10 flex gap-3 pt-3 border-t border-border-glow bg-bg-card -mx-3 px-3 md:-mx-5 md:px-5 pb-3 md:pb-0 md:relative md:border-t-0 md:pt-0 md:bg-transparent">
             {!confirmDelete ? (
               <button onClick={() => setConfirmDelete(true)} className="px-4 h-11 rounded-lg border border-red-500/20 text-red-400/60 font-display text-sm uppercase tracking-wider hover:bg-red-500/10 hover:text-red-400 transition-colors">Remove</button>
             ) : (
