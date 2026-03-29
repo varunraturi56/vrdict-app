@@ -290,7 +290,7 @@ function FavouritesContent() {
       </div>
 
       {/* Desktop: compact filter rows */}
-      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-20 relative z-10">
+      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-32 relative z-10">
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
           <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">
             Genre
@@ -346,11 +346,12 @@ function FavouritesContent() {
             <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center"
               style={{ left: 36, top: "20%", bottom: 18 }}
             >
-              <div className="flex-1 w-[10px] rounded-[5px] bg-[#0c0c0e] border border-[#1a1a1c]"
-                style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03)" }}
+              <div className="absolute inset-0 -inset-x-6 rounded-full opacity-40 blur-xl" style={{ background: "linear-gradient(180deg, rgba(14,165,233,0.15), rgba(139,92,246,0.10))" }} />
+              <div className="relative flex-1 w-[16px] rounded-[8px] bg-[#0a0a0c] border border-[#1a1a1c]"
+                style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03), 0 0 20px 4px rgba(14,165,233,0.08), 0 0 40px 8px rgba(139,92,246,0.05)" }}
               />
-              <div className="w-[30px] h-[8px] rounded-b-[3px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]"
-                style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+              <div className="relative w-[36px] h-[10px] rounded-b-[4px] bg-[#060608] border border-t-0 border-[#151517] mt-[-1px]"
+                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02)" }}
               />
             </div>
 
@@ -358,16 +359,17 @@ function FavouritesContent() {
             <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center"
               style={{ right: 36, top: "20%", bottom: 18 }}
             >
-              <div className="flex-1 w-[10px] rounded-[5px] bg-[#0c0c0e] border border-[#1a1a1c]"
-                style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03)" }}
+              <div className="absolute inset-0 -inset-x-6 rounded-full opacity-40 blur-xl" style={{ background: "linear-gradient(180deg, rgba(14,165,233,0.15), rgba(139,92,246,0.10))" }} />
+              <div className="relative flex-1 w-[16px] rounded-[8px] bg-[#0a0a0c] border border-[#1a1a1c]"
+                style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03), 0 0 20px 4px rgba(14,165,233,0.08), 0 0 40px 8px rgba(139,92,246,0.05)" }}
               />
-              <div className="w-[30px] h-[8px] rounded-b-[3px] bg-[#0e0e10] border border-t-0 border-[#1a1a1c] mt-[-1px]"
-                style={{ boxShadow: "0 2px 6px rgba(0,0,0,0.5)" }}
+              <div className="relative w-[36px] h-[10px] rounded-b-[4px] bg-[#060608] border border-t-0 border-[#151517] mt-[-1px]"
+                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02)" }}
               />
             </div>
 
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
-            <div className="hidden lg:block px-20">
+            <div className="hidden lg:block px-32">
               <div className="tv-stand">
                 <div className="tv-stand-neck" />
                 <div className="tv-stand-base" />

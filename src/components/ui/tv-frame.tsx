@@ -48,7 +48,7 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollR
   };
 
   return (
-    <div className={`relative flex flex-col flex-1 min-h-0 px-20 ${className}`}>
+    <div className={`relative flex flex-col flex-1 min-h-0 px-32 ${className}`}>
       {/* Ambient glow — colour matches active media tab */}
       {isOn && (() => {
         const colors = PAGE_GLOWS[pathname] || PAGE_GLOWS["/"];
@@ -57,7 +57,7 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollR
         const g1 = glow(c[0], c[1], c[2], 1.0);
         const g2 = glow(c[0], c[1], c[2], 0.7);
         const g3 = glow(c[0], c[1], c[2], 0.5);
-        const pos = { top: 8, left: 88, right: 88, bottom: 8 };
+        const pos = { top: 8, left: 136, right: 136, bottom: 8 };
         return (
           <>
             <div className="absolute z-0 pointer-events-none tv-glow-cyan" style={{ ...pos, boxShadow: g1 }} />

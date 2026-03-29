@@ -17,9 +17,11 @@ interface AddModalProps {
   result: TmdbSearchResult;
   onClose: () => void;
   onAdded: (tmdbId: number, mediaType: string) => void;
+  onAddToWatchlist?: (result: TmdbSearchResult) => void;
+  isInWatchlist?: boolean;
 }
 
-export function AddModal({ result, onClose, onAdded }: AddModalProps) {
+export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatchlist }: AddModalProps) {
   const [detail, setDetail] = useState<TmdbMovieDetail | TmdbTvDetail | null>(
     null
   );
@@ -411,10 +413,18 @@ export function AddModal({ result, onClose, onAdded }: AddModalProps) {
             <div className="flex gap-3">
               <button
                 onClick={onClose}
-                className="flex-1 h-11 rounded-lg border border-border-glow font-display text-sm uppercase tracking-wider text-[#5c5954] hover:text-[#9a968e] hover:bg-white/[0.02] transition-colors"
+                className="h-11 px-4 rounded-lg border border-border-glow font-display text-sm uppercase tracking-wider text-[#5c5954] hover:text-[#9a968e] hover:bg-white/[0.02] transition-colors"
               >
                 Cancel
               </button>
+              {onAddToWatchlist && !isInWatchlist && (
+                <button
+                  onClick={() => { onAddToWatchlist(result); onClose(); }}
+                  className="flex-1 h-11 rounded-lg border border-vr-violet/30 font-display text-sm uppercase tracking-wider text-vr-violet hover:bg-vr-violet/10 transition-colors"
+                >
+                  Watchlist
+                </button>
+              )}
               <button
                 onClick={handleSave}
                 disabled={saving}
