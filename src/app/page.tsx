@@ -441,7 +441,7 @@ function EntryDetailModal({
   const [tagInput, setTagInput] = useState("");
   const [recommended, setRecommended] = useState(entry.recommended);
   const [rewatch, setRewatch] = useState(entry.rewatch);
-  const [seasonsWatched, setSeasonsWatched] = useState(entry.seasons_watched || (entry.media_type === "tv" ? entry.seasons : 0));
+  const [seasonsWatched, setSeasonsWatched] = useState(entry.seasons_watched > 0 ? entry.seasons_watched : (entry.media_type === "tv" ? entry.seasons : 0));
   const [yearWatched, setYearWatched] = useState(entry.year_watched || "");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);

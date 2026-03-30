@@ -73,7 +73,7 @@ export default function StatsPage() {
   // TV time: episodes watched (based on seasons_watched) * episode runtime
   const tvMin = tvShows.reduce((s, e) => {
     if (!e.runtime || !e.seasons || e.seasons === 0) return s;
-    const sw = e.seasons_watched || e.seasons;
+    const sw = e.seasons_watched > 0 ? e.seasons_watched : e.seasons;
     const avgEpsPerSeason = e.episodes / e.seasons;
     const epsWatched = Math.round(avgEpsPerSeason * sw);
     return s + (epsWatched * e.runtime);
