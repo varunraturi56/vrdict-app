@@ -378,7 +378,7 @@ function LibraryContent() {
       {/* Poster grid — TV frame on desktop, plain on mobile */}
       {filteredEntries.length > 0 ? (
         <>
-          <div className="hidden md:flex md:flex-col flex-1 min-h-0 relative">
+          <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
             <LedBars />
 
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
@@ -397,7 +397,7 @@ function LibraryContent() {
             />
           </div>
           {/* Mobile: plain grid — scrollable, hero+filters stay pinned above */}
-          <div className="md:hidden flex-1 min-h-0 overflow-y-auto pb-20">{posterGrid}</div>
+          <div className="lg:hidden flex-1 min-h-0 overflow-y-auto pb-20">{posterGrid}</div>
         </>
       ) : (
         <div className="flex flex-col items-center justify-center flex-1">

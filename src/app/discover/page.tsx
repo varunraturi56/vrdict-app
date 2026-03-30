@@ -703,7 +703,7 @@ function DiscoverContent() {
       {/* Content — TV frame on desktop */}
       {(results.length > 0 || loading) ? (
         <>
-          <div className="hidden md:flex md:flex-col flex-1 min-h-0 relative">
+          <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
             <LedBars />
 
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)} scrollRef={tvScrollRef}>
@@ -728,7 +728,7 @@ function DiscoverContent() {
             />
           </div>
           {/* Mobile: plain grid — scrollable, hero+filters stay pinned above */}
-          <div ref={mobileScrollRef} className="md:hidden flex-1 min-h-0 overflow-y-auto pb-20">
+          <div ref={mobileScrollRef} className="lg:hidden flex-1 min-h-0 overflow-y-auto pb-20">
             {initialLoad ? (
               <div className="flex items-center justify-center py-20">
                 <div className="w-8 h-8 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />

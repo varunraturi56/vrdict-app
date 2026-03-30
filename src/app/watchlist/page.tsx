@@ -555,7 +555,7 @@ function WatchlistContent() {
       {/* Content — TV frame on desktop */}
       {(filteredItems.length > 0 || showRewatch) ? (
         <>
-          <div className="hidden md:flex md:flex-col flex-1 min-h-0 relative">
+          <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
             <LedBars />
 
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{activeGrid}</TvFrame>
@@ -571,7 +571,7 @@ function WatchlistContent() {
               isOn={tvOn}
             />
           </div>
-          <div className="md:hidden flex-1 min-h-0 overflow-y-auto pb-20">{activeGrid}</div>
+          <div className="lg:hidden flex-1 min-h-0 overflow-y-auto pb-20">{activeGrid}</div>
         </>
       ) : (
         <div className="flex flex-col items-center justify-center flex-1">
