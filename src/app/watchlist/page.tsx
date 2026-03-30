@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
 import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
+import { LedBars } from "@/components/ui/led-bar";
 import { PreviewBar } from "@/components/ui/preview-bar";
 
 const SORT_OPTIONS = [
@@ -46,6 +47,7 @@ function WatchlistContent() {
   const [ratingFilter, setRatingFilter] = useState<RatingKey>("7+");
   const [searchQuery, setSearchQuery] = useState("");
   const [addQuery, setAddQuery] = useState("");
+  const [selectedItem, setSelectedItem] = useState<WatchlistItem | null>(null);
   const [addResults, setAddResults] = useState<any[]>([]);
   const [addLoading, setAddLoading] = useState(false);
   const [heroEntry, setHeroEntry] = useState<WatchlistItem | null>(null);
@@ -271,8 +273,9 @@ function WatchlistContent() {
         filteredRewatchItems.map((item, i) => (
           <div
             key={item.id}
-            className="flex gap-3 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border border-vr-violet/20 animate-slide-in hover:border-vr-violet/40 transition-all"
+            className="flex gap-3 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border border-vr-violet/20 animate-slide-in hover:border-vr-violet/40 hover:scale-[1.02] hover:shadow-lg hover:bg-[rgba(16,16,22,0.8)] cursor-pointer transition-all duration-200"
             style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
+            onClick={() => setSelectedItem(item)}
           >
             {item.poster && (
               <img
@@ -308,9 +311,10 @@ function WatchlistContent() {
       {filteredItems.map((item, i) => (
         <div
           key={item.id}
-          className="flex gap-3 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border border-border-glow/50 animate-slide-in hover:border-border-glow transition-all"
+          className="flex gap-3 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border border-border-glow/50 animate-slide-in hover:border-border-glow hover:scale-[1.02] hover:shadow-lg hover:bg-[rgba(16,16,22,0.8)] cursor-pointer transition-all duration-200"
           style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
           onMouseEnter={() => setPeekedEntry(item)}
+          onClick={() => setSelectedItem(item)}
         >
           {/* Poster */}
           {item.poster && (
@@ -550,17 +554,7 @@ function WatchlistContent() {
       {(filteredItems.length > 0 || showRewatch) ? (
         <>
           <div className="hidden md:flex md:flex-col flex-1 min-h-0 relative">
-            {/* LED Play bars */}
-            <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center" style={{ left: 36, top: "20%", bottom: 18 }}>
-              <div className="absolute inset-0 -inset-x-6 rounded-full opacity-40 blur-xl" style={{ background: "linear-gradient(180deg, rgba(14,165,233,0.15), rgba(139,92,246,0.10))" }} />
-              <div className="relative flex-1 w-[16px] rounded-[8px] bg-[#0a0a0c] border border-[#1a1a1c]" style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03), 0 0 20px 4px rgba(14,165,233,0.08), 0 0 40px 8px rgba(139,92,246,0.05)" }} />
-              <div className="relative w-[36px] h-[10px] rounded-b-[4px] bg-[#060608] border border-t-0 border-[#151517] mt-[-1px]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02)" }} />
-            </div>
-            <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center" style={{ right: 36, top: "20%", bottom: 18 }}>
-              <div className="absolute inset-0 -inset-x-6 rounded-full opacity-40 blur-xl" style={{ background: "linear-gradient(180deg, rgba(14,165,233,0.15), rgba(139,92,246,0.10))" }} />
-              <div className="relative flex-1 w-[16px] rounded-[8px] bg-[#0a0a0c] border border-[#1a1a1c]" style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03), 0 0 20px 4px rgba(14,165,233,0.08), 0 0 40px 8px rgba(139,92,246,0.05)" }} />
-              <div className="relative w-[36px] h-[10px] rounded-b-[4px] bg-[#060608] border border-t-0 border-[#151517] mt-[-1px]" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02)" }} />
-            </div>
+            <LedBars />
 
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{activeGrid}</TvFrame>
             <div className="hidden lg:block px-32">
@@ -585,6 +579,102 @@ function WatchlistContent() {
               ? "Nothing queued yet. Use the search above to add films."
               : "No matches for your filters."}
           </p>
+        </div>
+      )}
+
+      {/* Detail modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div
+            className="relative z-10 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl bg-[#0e0e14] border border-border-glow/30 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Backdrop */}
+            {selectedItem.poster && (
+              <div className="relative h-48 overflow-hidden rounded-t-xl">
+                <img
+                  src={posterUrl(selectedItem.poster, "large")}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  style={{ filter: "brightness(0.3) saturate(1.3) blur(2px)", transform: "scale(1.05)" }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0e0e14] via-transparent to-transparent" />
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="absolute top-3 right-3 p-1.5 rounded-full bg-black/50 text-white/70 hover:text-white transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+            <div className="p-5 -mt-16 relative z-10">
+              <div className="flex gap-4">
+                {selectedItem.poster && (
+                  <img
+                    src={posterUrl(selectedItem.poster, "small")}
+                    alt={selectedItem.title}
+                    className="w-[80px] h-[120px] rounded-md object-cover shadow-xl shrink-0"
+                  />
+                )}
+                <div className="flex-1 min-w-0 pt-2">
+                  <h2 className="font-display text-lg font-semibold text-[#e8e4dc] tracking-wide leading-tight">
+                    {selectedItem.title}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-1.5 text-[#5c5954]">
+                    <span className="font-mono-stats text-xs">{selectedItem.year}</span>
+                    {selectedItem.media_type === "movie" && selectedItem.runtime ? (
+                      <>
+                        <span className="text-[9px]">·</span>
+                        <span className="font-mono-stats text-xs">{selectedItem.runtime}m</span>
+                      </>
+                    ) : null}
+                    {selectedItem.media_type === "tv" && selectedItem.seasons ? (
+                      <>
+                        <span className="text-[9px]">·</span>
+                        <span className="font-mono-stats text-xs">{selectedItem.seasons}S · {selectedItem.episodes}E</span>
+                      </>
+                    ) : null}
+                    {selectedItem.tmdb_rating && (
+                      <>
+                        <span className="text-[9px]">·</span>
+                        <span className="font-mono-stats text-xs">
+                          <Star size={10} className="inline -mt-0.5 mr-0.5 text-amber-400" />
+                          {selectedItem.tmdb_rating}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {selectedItem.genres?.map((g) => (
+                      <span key={g} className="px-2 py-0.5 rounded-full text-[9px] font-display uppercase tracking-wider text-[#9a968e] border border-border-glow/30">
+                        {g}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {selectedItem.overview && (
+                <p className="text-[12px] text-[#9a968e]/70 font-body leading-relaxed mt-4">
+                  {selectedItem.overview}
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-5">
+                <button
+                  onClick={() => { moveToLibrary(selectedItem); setSelectedItem(null); }}
+                  className="flex-1 py-2 rounded-lg text-[11px] font-display uppercase tracking-wider text-vr-blue border border-vr-blue/25 bg-vr-blue/10 hover:bg-vr-blue/20 transition-all"
+                >
+                  Watched — Add to Library
+                </button>
+                <button
+                  onClick={() => { removeFromWatchlist(selectedItem.id); setSelectedItem(null); }}
+                  className="py-2 px-3 rounded-lg text-[11px] font-display uppercase tracking-wider text-red-400/70 border border-red-500/15 hover:bg-red-500/10 transition-all"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

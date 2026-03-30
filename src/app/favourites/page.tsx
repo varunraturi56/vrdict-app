@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
 import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
+import { LedBars } from "@/components/ui/led-bar";
 import { PreviewBar } from "@/components/ui/preview-bar";
 
 const SORT_OPTIONS = [
@@ -342,31 +343,7 @@ function FavouritesContent() {
       {filteredEntries.length > 0 ? (
         <>
           <div className="hidden md:flex md:flex-col flex-1 min-h-0 relative">
-            {/* LED Play bar — left */}
-            <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center"
-              style={{ left: 36, top: "20%", bottom: 18 }}
-            >
-              <div className="absolute inset-0 -inset-x-6 rounded-full opacity-40 blur-xl" style={{ background: "linear-gradient(180deg, rgba(14,165,233,0.15), rgba(139,92,246,0.10))" }} />
-              <div className="relative flex-1 w-[16px] rounded-[8px] bg-[#0a0a0c] border border-[#1a1a1c]"
-                style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03), 0 0 20px 4px rgba(14,165,233,0.08), 0 0 40px 8px rgba(139,92,246,0.05)" }}
-              />
-              <div className="relative w-[36px] h-[10px] rounded-b-[4px] bg-[#060608] border border-t-0 border-[#151517] mt-[-1px]"
-                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02)" }}
-              />
-            </div>
-
-            {/* LED Play bar — right */}
-            <div className="absolute z-[3] pointer-events-none hidden lg:flex flex-col items-center"
-              style={{ right: 36, top: "20%", bottom: 18 }}
-            >
-              <div className="absolute inset-0 -inset-x-6 rounded-full opacity-40 blur-xl" style={{ background: "linear-gradient(180deg, rgba(14,165,233,0.15), rgba(139,92,246,0.10))" }} />
-              <div className="relative flex-1 w-[16px] rounded-[8px] bg-[#0a0a0c] border border-[#1a1a1c]"
-                style={{ boxShadow: "inset 0 1px 4px rgba(0,0,0,0.9), 0 0 1px rgba(255,255,255,0.03), 0 0 20px 4px rgba(14,165,233,0.08), 0 0 40px 8px rgba(139,92,246,0.05)" }}
-              />
-              <div className="relative w-[36px] h-[10px] rounded-b-[4px] bg-[#060608] border border-t-0 border-[#151517] mt-[-1px]"
-                style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02)" }}
-              />
-            </div>
+            <LedBars />
 
             <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
             <div className="hidden lg:block px-32">

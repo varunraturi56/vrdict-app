@@ -3,7 +3,7 @@
 import { useState, type Ref } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { type ReactNode } from "react";
-import { getAmbientColor, rgba } from "@/lib/ambient-colors";
+import { getAmbientColor, rgba, PAGE_GLOWS } from "@/lib/ambient-colors";
 
 interface TvFrameProps {
   children: ReactNode;
@@ -39,13 +39,7 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollR
     return `0 0 80px 30px rgba(${r},${g},${b},${s1}), 0 0 150px 60px rgba(${r},${g},${b},${s2})`;
   }
 
-  // Per-page glow colors: [movie RGB, tv RGB]
-  const PAGE_GLOWS: Record<string, { movie: [number, number, number]; tv: [number, number, number] }> = {
-    "/":           { movie: [14, 165, 233],  tv: [139, 92, 246] },   // blue / purple
-    "/favourites": { movie: [255, 184, 0],   tv: [200, 200, 210] },  // gold / silver
-    "/watchlist":  { movie: [139, 92, 246],  tv: [6, 182, 212] },    // purple / cyan
-    "/discover":   { movie: [244, 114, 182], tv: [249, 115, 22] },   // pink / orange
-  };
+  // Per-page glow colors from shared config
 
   return (
     <div className={`relative flex flex-col flex-1 min-h-0 px-32 ${className}`}>
