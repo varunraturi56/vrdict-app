@@ -108,10 +108,14 @@
 
   html {
     @apply font-sans;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
     @apply bg-bg-deep text-[#e8e4dc] min-h-screen;
+    font-size: 16px;
   }
 
   /* Custom scrollbar */
