@@ -72,6 +72,8 @@ function DiscoverContent() {
   const tvScrollRef = useRef<HTMLDivElement>(null);
   // Mobile scroll container
   const mobileScrollRef = useRef<HTMLDivElement>(null);
+  // Sentinel for IntersectionObserver-based infinite scroll
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Hero banner (mobile) — auto-rotate every 5s
   const [heroResult, setHeroResult] = useState<TmdbSearchResult | null>(null);
@@ -275,6 +277,25 @@ function DiscoverContent() {
       tvEl?.removeEventListener("scroll", handleScroll);
       mobileEl?.removeEventListener("scroll", handleScroll);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingTmdbIds, initialLoad]);
+
+  // IntersectionObserver fallback — reliable on iOS/iPadOS standalone PWA
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && !loadingRef.current && hasMoreRef.current) {
+          fetchDiscover(pageRef.current, true);
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingTmdbIds, initialLoad]);
 
@@ -484,6 +505,9 @@ function DiscoverContent() {
           <div className="w-5 h-5 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />
         </div>
       )}
+
+      {/* Sentinel for IntersectionObserver infinite scroll */}
+      <div ref={sentinelRef} className="h-1" />
     </div>
   );
 
