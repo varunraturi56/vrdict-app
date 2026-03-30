@@ -130,7 +130,7 @@ function LibraryContent() {
 
   // Compact pill style
   const pillClass = (active: boolean) =>
-    `px-[14px] py-[6px] rounded-[20px] text-[13px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
+    `px-[10px] py-[4px] rounded-[20px] text-[11px] xl:px-[14px] xl:py-[6px] xl:text-[13px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
       active
         ? "text-vr-blue border-vr-blue/30 bg-[rgba(14,165,233,0.12)]"
         : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
@@ -326,8 +326,8 @@ function LibraryContent() {
 
       {/* Desktop: compact filter rows — aligned with TV width */}
       <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-32 relative z-10">
-        {/* Row 1: Genre pills | Sort pills (tight, no gap) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        {/* Row 1: Genre pills | Sort pills */}
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">
             Genre
           </span>
@@ -347,8 +347,8 @@ function LibraryContent() {
           ))}
         </div>
 
-        {/* Row 2: Tag pills + Search (tight) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        {/* Row 2: Tag pills + Search */}
+        <div className="flex items-center gap-1.5 flex-wrap">
           {topTags.length > 0 && (
             <>
               <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">

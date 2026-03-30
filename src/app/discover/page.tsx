@@ -90,7 +90,7 @@ function DiscoverContent() {
   const [resolvedKeywordIds, setResolvedKeywordIds] = useState<string>("");
 
   const pillClass = (active: boolean) =>
-    `px-[14px] py-[6px] rounded-[20px] text-[13px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
+    `px-[10px] py-[4px] rounded-[20px] text-[11px] xl:px-[14px] xl:py-[6px] xl:text-[13px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
       active
         ? "text-vr-blue border-vr-blue/30 bg-[rgba(14,165,233,0.12)]"
         : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
@@ -593,7 +593,7 @@ function DiscoverContent() {
       {/* Desktop: filter rows — aligned with TV width */}
       <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-32 relative z-10">
         {/* Row 1: Genre + Sort + Era */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">Genre</span>
           <button onClick={() => setGenreFilter(null)} className={pillClass(!genreFilter)}>All</button>
           {MAJOR_GENRES.map((g) => (
