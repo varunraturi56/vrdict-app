@@ -56,6 +56,8 @@ create table public.entries (
   year_watched text,
   added_at timestamptz default now() not null,
 
+  seasons_watched integer default 0,
+
   -- prevent duplicate entries per user
   unique (user_id, tmdb_id, media_type)
 );

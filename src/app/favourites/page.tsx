@@ -406,6 +406,7 @@ function EntryDetailModal({
   const [tagInput, setTagInput] = useState("");
   const [recommended, setRecommended] = useState(entry.recommended);
   const [rewatch, setRewatch] = useState(entry.rewatch);
+  const [seasonsWatched, setSeasonsWatched] = useState(entry.seasons_watched || (entry.media_type === "tv" ? entry.seasons : 0));
   const [yearWatched, setYearWatched] = useState(entry.year_watched || "");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -426,9 +427,10 @@ function EntryDetailModal({
     const supabase = createClient();
     const { data, error } = await supabase
       .from("entries")
-      .update({ my_rating: myRating, tags, recommended, rewatch, year_watched: yearWatched || null })
+      .update({ my_rating: myRating, tags, recommended, rewatch, seasons_watched: seasonsWatched, year_watched: yearWatched || null })
       .eq("id", entry.id).select().single();
     if (!error && data) onUpdate(data as Entry);
+    else onClose();
     setSaving(false);
   }
 
@@ -491,6 +493,26 @@ function EntryDetailModal({
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
+
+          {!isMovie && entry.seasons > 0 && (
+            <div className="mb-3 md:mb-4">
+              <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">
+                Seasons Watched
+                <span className="text-[#5c5954] ml-1 normal-case tracking-normal">({entry.seasons} total)</span>
+              </label>
+              <select
+                value={seasonsWatched}
+                onChange={(e) => setSeasonsWatched(Number(e.target.value))}
+                className="w-full h-10 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-mono-stats text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-violet/40"
+              >
+                {Array.from({ length: entry.seasons }, (_, i) => i + 1).map((s) => (
+                  <option key={s} value={s}>
+                    {s} of {entry.seasons} season{s !== 1 ? "s" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="mb-3 md:mb-4">
             <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Tags</label>

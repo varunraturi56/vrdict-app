@@ -17,6 +17,7 @@ export interface Entry {
   tags: string[];
   recommended: boolean;
   rewatch: boolean;
+  seasons_watched: number;
   year_watched: string | null;
   added_at: string;
 }

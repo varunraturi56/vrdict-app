@@ -30,6 +30,7 @@ export default function StatsPage() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeUnit, setTimeUnit] = useState<"hours" | "days">("hours");
+  const [timeFilter, setTimeFilter] = useState<"all" | "movies" | "tv">("all");
 
   useEffect(() => {
     async function load() {
@@ -65,9 +66,23 @@ export default function StatsPage() {
   // Compute stats
   const movies = entries.filter((e) => e.media_type === "movie");
   const tvShows = entries.filter((e) => e.media_type === "tv");
-  const totalMin = entries.reduce((s, e) => s + (e.runtime || 0), 0);
-  const hrs = Math.round(totalMin / 60);
-  const days = (totalMin / 1440).toFixed(1);
+
+  // Movie time: straightforward runtime
+  const movieMin = movies.reduce((s, e) => s + (e.runtime || 0), 0);
+
+  // TV time: episodes watched (based on seasons_watched) * episode runtime
+  const tvMin = tvShows.reduce((s, e) => {
+    if (!e.runtime || !e.seasons || e.seasons === 0) return s;
+    const sw = e.seasons_watched || e.seasons;
+    const avgEpsPerSeason = e.episodes / e.seasons;
+    const epsWatched = Math.round(avgEpsPerSeason * sw);
+    return s + (epsWatched * e.runtime);
+  }, 0);
+
+  const totalMin = movieMin + tvMin;
+  const filteredMin = timeFilter === "movies" ? movieMin : timeFilter === "tv" ? tvMin : totalMin;
+  const hrs = Math.round(filteredMin / 60);
+  const days = (filteredMin / 1440).toFixed(1);
   const avgRating = (entries.reduce((s, e) => s + e.my_rating, 0) / entries.length).toFixed(1);
 
   // Genre breakdown (top 8)
@@ -122,6 +137,23 @@ export default function StatsPage() {
             value={timeUnit === "hours" ? String(hrs) : days}
             sub={timeUnit}
           />
+          {/* Filter: All / Movies / TV */}
+          <div className="absolute top-3 right-3 flex gap-1">
+            {(["all", "movies", "tv"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setTimeFilter(f)}
+                className={`px-1.5 py-0.5 rounded text-[7px] font-display uppercase tracking-wider transition-colors ${
+                  timeFilter === f
+                    ? "text-vr-blue bg-vr-blue/15 border border-vr-blue/25"
+                    : "text-[#5c5954] hover:text-[#9a968e] border border-transparent"
+                }`}
+              >
+                {f === "all" ? "All" : f === "movies" ? "Film" : "TV"}
+              </button>
+            ))}
+          </div>
+          {/* Unit toggle */}
           <button
             onClick={() => setTimeUnit((u) => (u === "hours" ? "days" : "hours"))}
             className="absolute bottom-3 right-3 text-[#5c5954] hover:text-[#9a968e] text-sm transition-colors"

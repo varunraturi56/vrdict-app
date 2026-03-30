@@ -369,6 +369,7 @@ function DiscoverContent() {
         tags: [],
         recommended: false,
         rewatch: false,
+        seasons_watched: 0,
         year_watched: null,
         added_at: "",
       }
