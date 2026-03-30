@@ -80,6 +80,7 @@ export interface TmdbTvDetail {
   episode_run_time: number[];
   number_of_seasons: number;
   number_of_episodes: number;
+  seasons?: { season_number: number; episode_count: number }[];
   external_ids?: { imdb_id: string | null };
 }
 

@@ -255,6 +255,7 @@ function WatchlistContent() {
     recommended: false,
     rewatch: false,
     seasons_watched: 0,
+    season_episode_counts: null,
     year_watched: null,
   } : null;
 

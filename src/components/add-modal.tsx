@@ -116,6 +116,12 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
           : tvDetail.episode_run_time?.[0] || 0,
         seasons: isMovie ? 0 : tvDetail.number_of_seasons || 0,
         episodes: isMovie ? 0 : tvDetail.number_of_episodes || 0,
+        season_episode_counts: isMovie
+          ? []
+          : (tvDetail.seasons || [])
+              .filter((s) => s.season_number > 0)
+              .sort((a, b) => a.season_number - b.season_number)
+              .map((s) => s.episode_count),
         imdb_id: isMovie
           ? movieDetail.imdb_id || movieDetail.external_ids?.imdb_id || null
           : tvDetail.external_ids?.imdb_id || null,

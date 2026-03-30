@@ -57,6 +57,7 @@ create table public.entries (
   added_at timestamptz default now() not null,
 
   seasons_watched integer default 0,
+  season_episode_counts integer[] default '{}',
 
   -- prevent duplicate entries per user
   unique (user_id, tmdb_id, media_type)

@@ -18,6 +18,7 @@ export interface Entry {
   recommended: boolean;
   rewatch: boolean;
   seasons_watched: number;
+  season_episode_counts: number[] | null;
   year_watched: string | null;
   added_at: string;
 }

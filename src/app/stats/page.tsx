@@ -39,8 +39,40 @@ export default function StatsPage() {
         .from("entries")
         .select("*")
         .order("my_rating", { ascending: false });
-      setEntries(data || []);
+      const allEntries = (data || []) as Entry[];
+      setEntries(allEntries);
       setLoading(false);
+
+      // Backfill: fetch season episode counts for TV shows missing them
+      const tvNeedsFill = allEntries.filter(
+        (e) => e.media_type === "tv" && (!e.season_episode_counts || e.season_episode_counts.length === 0) && e.tmdb_id
+      );
+      if (tvNeedsFill.length > 0) {
+        const updated: Entry[] = [...allEntries];
+        for (const entry of tvNeedsFill) {
+          try {
+            const res = await fetch(`/api/tmdb?action=detail&id=${entry.tmdb_id}&media_type=tv`);
+            if (!res.ok) continue;
+            const detail = await res.json();
+            const counts = (detail.seasons || [])
+              .filter((s: { season_number: number }) => s.season_number > 0)
+              .sort((a: { season_number: number }, b: { season_number: number }) => a.season_number - b.season_number)
+              .map((s: { episode_count: number }) => s.episode_count);
+            if (counts.length > 0) {
+              const epRuntime = detail.episode_run_time?.[0] || 0;
+              await supabase.from("entries").update({
+                season_episode_counts: counts,
+                ...(epRuntime && !entry.runtime ? { runtime: epRuntime } : {}),
+              }).eq("id", entry.id);
+              const idx = updated.findIndex((e) => e.id === entry.id);
+              if (idx !== -1) {
+                updated[idx] = { ...updated[idx], season_episode_counts: counts, runtime: entry.runtime || epRuntime };
+              }
+            }
+          } catch { /* skip on error */ }
+        }
+        setEntries(updated);
+      }
     }
     load();
   }, []);
@@ -70,13 +102,24 @@ export default function StatsPage() {
   // Movie time: straightforward runtime
   const movieMin = movies.reduce((s, e) => s + (e.runtime || 0), 0);
 
-  // TV time: episodes watched (based on seasons_watched) * episode runtime
+  // TV time: sum episodes for watched seasons × episode runtime
   const tvMin = tvShows.reduce((s, e) => {
-    if (!e.runtime || !e.seasons || e.seasons === 0) return s;
+    if (!e.seasons || e.seasons === 0 || !e.episodes) return s;
+    const epRuntime = e.runtime || 45; // default 45 min if unknown
     const sw = e.seasons_watched > 0 ? e.seasons_watched : e.seasons;
-    const avgEpsPerSeason = e.episodes / e.seasons;
-    const epsWatched = Math.round(avgEpsPerSeason * sw);
-    return s + (epsWatched * e.runtime);
+
+    let epsWatched: number;
+    if (e.season_episode_counts && e.season_episode_counts.length > 0) {
+      // Use exact per-season episode counts
+      epsWatched = e.season_episode_counts
+        .slice(0, sw)
+        .reduce((sum, count) => sum + count, 0);
+    } else {
+      // Fallback: average episodes per season
+      epsWatched = Math.round((e.episodes / e.seasons) * sw);
+    }
+
+    return s + (epsWatched * epRuntime);
   }, 0);
 
   const totalMin = movieMin + tvMin;
