@@ -227,6 +227,7 @@
 .tv-flatscreen {
   flex: 1;
   min-height: 0;
+  max-height: 520px;
   display: flex;
   flex-direction: column;
   border: 9px solid #111113;
