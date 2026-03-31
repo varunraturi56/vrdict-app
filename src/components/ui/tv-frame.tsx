@@ -70,7 +70,7 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollR
         className={`tv-flatscreen relative z-[2] ${!isOn && !animState ? "tv-flatscreen-off" : ""}`}
       >
         <div className="tv-flatscreen-inner">
-          <div ref={scrollRef} className={`tv-scroll ${!isOn ? "pointer-events-none" : ""}`}>
+          <div ref={scrollRef} className={`tv-scroll ${!isOn || animState === "shutting-down" ? "pointer-events-none opacity-0" : "opacity-100"} transition-opacity duration-200`}>
             {children}
           </div>
           {/* CRT overlay for shutdown/boot */}

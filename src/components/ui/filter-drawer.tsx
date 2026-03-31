@@ -32,9 +32,9 @@ export function FilterDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-modal-backdrop" onClick={onClose} />
       <div
-        className="relative z-10 w-full max-w-md max-h-[80vh] overflow-y-auto rounded-xl bg-[#0e0e14] border border-border-glow/30 shadow-2xl"
+        className="relative z-10 w-full max-w-md max-h-[80vh] overflow-y-auto rounded-xl bg-[#0e0e14] border border-border-glow/30 shadow-2xl animate-drawer-enter"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -53,20 +53,6 @@ export function FilterDrawer({
         </div>
 
         <div className="p-4 space-y-5">
-          {/* Search */}
-          <div>
-            <label className="font-display text-[10px] uppercase tracking-[0.15em] text-[#5c5954] block mb-2">
-              Search
-            </label>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search titles..."
-              className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40"
-            />
-          </div>
-
           {/* Genre */}
           <div>
             <label className="font-display text-[10px] uppercase tracking-[0.15em] text-[#5c5954] block mb-2">

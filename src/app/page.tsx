@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
+import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Library as LibraryIcon, Search, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -30,7 +30,7 @@ type FlowState =
   | { stage: "category"; area: string }
   | { stage: "results"; area: string; mediaType: MediaType };
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 14;
 
 export default function LibraryPage() {
   return (
@@ -70,8 +70,11 @@ function LibraryContent() {
   // When URL changes (e.g. clicking Home in nav removes ?tab), update flow
   useEffect(() => {
     const tab = searchParams.get("tab");
+    const view = searchParams.get("view");
     if (tab) {
       setFlow({ stage: "results", area: "Library", mediaType: tab as MediaType });
+    } else if (view === "library") {
+      setFlow({ stage: "category", area: "Library" });
     } else {
       setFlow({ stage: "welcome" });
     }
@@ -115,9 +118,12 @@ function LibraryContent() {
     setCurrentPage(1);
   }, [mediaTab]);
 
+  // Use flow's mediaType when in results to avoid flash of old tab
+  const activeMediaType = flow.stage === "results" ? flow.mediaType : mediaTab;
+
   const mediaEntries = useMemo(
-    () => entries.filter((e) => e.media_type === mediaTab),
-    [entries, mediaTab]
+    () => entries.filter((e) => e.media_type === activeMediaType),
+    [entries, activeMediaType]
   );
 
   const topTags = useMemo(() => {
@@ -178,6 +184,7 @@ function LibraryContent() {
   function handleWelcomeNavigate(area: "library" | "favourites" | "watchlist" | "discover" | "stats") {
     if (area === "library") {
       setFlow({ stage: "category", area: "Library" });
+      router.push("/?view=library", { scroll: false });
     } else if (area === "favourites") {
       router.push("/favourites");
     } else if (area === "watchlist") {
@@ -197,11 +204,11 @@ function LibraryContent() {
 
   function handleBreadcrumbClick(index: number) {
     if (index === 0) {
-      setFlow({ stage: "welcome" });
-    } else if (index === 1) {
+      // Library breadcrumb → go to category select (pick Movies/TV)
       setFlow({ stage: "category", area: "Library" });
+      router.push("/?view=library", { scroll: false });
     }
-    // index 2 = current filter, just clear it
+    // index 1+ = current media type or filter, just clear filters
     if (index <= 1) {
       setGenreFilter(null);
       setTagFilter(null);
@@ -241,7 +248,7 @@ function LibraryContent() {
             tvCount={tvCount}
             favCount={favCount}
             onSelect={handleCategorySelect}
-            onBack={() => setFlow({ stage: "welcome" })}
+            onBack={() => { setFlow({ stage: "welcome" }); router.push("/", { scroll: false }); }}
             onFavourites={() => router.push("/favourites")}
           />
         );
@@ -257,10 +264,10 @@ function LibraryContent() {
               sortOptions={SORT_OPTIONS.map((o) => ({ key: o.key, label: o.label }))}
               onFilterOpen={() => setFilterOpen(true)}
               activeFilterCount={activeFilterCount}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onClearFilters={() => { setGenreFilter(null); setTagFilter(null); setSearchQuery(""); }}
+              accentColor={isMovie ? "blue" : "violet"}
             />
 
             {/* Active filters summary */}
@@ -284,54 +291,117 @@ function LibraryContent() {
               </div>
             )}
 
-            {/* Paginated poster grid — spacious 2×4 layout */}
-            <div className="flex-1 flex items-center justify-center px-8 py-4">
-              {pagedEntries.length > 0 ? (
-                <div className="poster-grid grid grid-cols-4 gap-3 w-full max-w-[700px]">
-                  {pagedEntries.map((entry, i) => (
-                    <div
-                      key={entry.id}
-                      className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-lg"
-                      style={{ animationDelay: `${Math.min(i * 40, 300)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
-                      onClick={() => setSelectedEntry(entry)}
-                      onMouseEnter={() => handleMouseEnter(entry)}
+            {/* Paginated poster grid — 7×2 with flashy arrows */}
+            {(() => {
+              const rgb = isMovie ? "14,165,233" : "139,92,246";
+              const tabColor = isMovie ? "text-vr-blue" : "text-vr-violet";
+              return (
+                <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-1 py-2">
+                  <div className="flex items-center w-full flex-1 min-h-0">
+                    {/* Left arrow — big & glowy */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={`shrink-0 w-10 h-full flex items-center justify-center ${tabColor} disabled:opacity-10 disabled:cursor-not-allowed transition-all group`}
                     >
-                      <div className="aspect-[2/3]">
-                        {entry.poster ? (
-                          <img
-                            src={posterUrl(entry.poster, "medium")}
-                            alt={entry.title}
-                            className="w-full h-full object-cover rounded-lg"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[9px] font-display p-2 text-center bg-bg-card rounded-lg">
-                            {entry.title}
+                      <ChevronDown
+                        size={44}
+                        className="rotate-90 transition-all duration-300 group-hover:scale-125"
+                        style={{
+                          filter: currentPage === 1 ? "none" : `drop-shadow(0 0 8px rgba(${rgb},0.6)) drop-shadow(0 0 20px rgba(${rgb},0.3))`,
+                        }}
+                      />
+                    </button>
+
+                    {pagedEntries.length > 0 ? (
+                      <div className="poster-grid grid grid-cols-7 gap-1.5 flex-1 min-h-0">
+                        {pagedEntries.map((entry, i) => (
+                          <div
+                            key={entry.id}
+                            className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md"
+                            style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
+                            onClick={() => setSelectedEntry(entry)}
+                            onMouseEnter={() => handleMouseEnter(entry)}
+                          >
+                            <div className="aspect-[2/3]">
+                              {entry.poster ? (
+                                <img
+                                  src={posterUrl(entry.poster, "small")}
+                                  alt={entry.title}
+                                  className="w-full h-full object-cover rounded-md"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[8px] font-display p-1 text-center bg-bg-card rounded-md">
+                                  {entry.title}
+                                </div>
+                              )}
+                            </div>
+                            {entry.recommended && (
+                              <div className="absolute top-0.5 left-0.5 text-[9px] drop-shadow-lg">⭐</div>
+                            )}
                           </div>
-                        )}
+                        ))}
                       </div>
-                      {entry.recommended && (
-                        <div className="absolute top-1 left-1 text-[10px] drop-shadow-lg">⭐</div>
-                      )}
-                      {/* Title overlay at bottom */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-2 rounded-b-lg">
-                        <p className="font-display text-[10px] text-white leading-tight truncate">{entry.title}</p>
-                        <p className="font-mono-stats text-[9px] text-vr-blue font-bold">{entry.my_rating}/10</p>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="text-center">
+                          <LibraryIcon size={28} className="text-[#5c5954]/20 mx-auto mb-3" />
+                          <p className="font-body text-sm text-[#5c5954]">
+                            {entries.length === 0
+                              ? "Your collection is empty."
+                              : "No matches for your filters."}
+                          </p>
+                        </div>
                       </div>
+                    )}
+
+                    {/* Right arrow — big & glowy */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`shrink-0 w-10 h-full flex items-center justify-center ${tabColor} disabled:opacity-10 disabled:cursor-not-allowed transition-all group`}
+                    >
+                      <ChevronDown
+                        size={44}
+                        className="-rotate-90 transition-all duration-300 group-hover:scale-125"
+                        style={{
+                          filter: currentPage === totalPages ? "none" : `drop-shadow(0 0 8px rgba(${rgb},0.6)) drop-shadow(0 0 20px rgba(${rgb},0.3))`,
+                        }}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Page indicator with first/last arrows */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className={`font-mono-stats text-[11px] font-bold ${tabColor} disabled:opacity-15 disabled:cursor-not-allowed transition-all hover:scale-110`}
+                        style={{ textShadow: currentPage === 1 ? "none" : `0 0 6px rgba(${rgb},0.4)` }}
+                      >
+                        ««
+                      </button>
+                      <span
+                        className={`font-mono-stats text-[12px] font-bold ${tabColor}`}
+                        style={{ textShadow: `0 0 8px rgba(${rgb},0.5)` }}
+                      >
+                        {currentPage} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className={`font-mono-stats text-[11px] font-bold ${tabColor} disabled:opacity-15 disabled:cursor-not-allowed transition-all hover:scale-110`}
+                        style={{ textShadow: currentPage === totalPages ? "none" : `0 0 6px rgba(${rgb},0.4)` }}
+                      >
+                        »»
+                      </button>
                     </div>
-                  ))}
+                  )}
                 </div>
-              ) : (
-                <div className="text-center">
-                  <LibraryIcon size={28} className="text-[#5c5954]/20 mx-auto mb-3" />
-                  <p className="font-body text-sm text-[#5c5954]">
-                    {entries.length === 0
-                      ? "Your collection is empty."
-                      : "No matches for your filters."}
-                  </p>
-                </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         );
     }
@@ -575,6 +645,19 @@ function EntryDetailModal({
   const [yearWatched, setYearWatched] = useState(entry.year_watched || "");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [yearDropOpen, setYearDropOpen] = useState(false);
+  const [seasonDropOpen, setSeasonDropOpen] = useState(false);
+  const yearRef = useRef<HTMLDivElement>(null);
+  const seasonRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (yearRef.current && !yearRef.current.contains(e.target as Node)) setYearDropOpen(false);
+      if (seasonRef.current && !seasonRef.current.contains(e.target as Node)) setSeasonDropOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const isMovie = entry.media_type === "movie";
   const currentYear = new Date().getFullYear();
@@ -606,142 +689,138 @@ function EntryDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[calc(100vh-120px)] overflow-y-auto overflow-x-hidden rounded-xl border border-border-glow bg-bg-card animate-slide-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:px-40 lg:py-16">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-modal-backdrop" onClick={onClose} />
+      <div className="relative w-full max-w-lg rounded-xl border border-border-glow bg-bg-card animate-modal-enter">
         <div className="h-px rounded-t-xl" style={{ background: "linear-gradient(90deg, transparent 5%, #38bdf8 30%, #a78bfa 70%, transparent 95%)" }} />
-        <button onClick={onClose} className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors">✕</button>
+        <button onClick={onClose} className="absolute top-2.5 right-2.5 z-10 p-1 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors text-xs">✕</button>
 
-        <div className="p-3 md:p-5">
-          <div className="flex gap-3 md:gap-4 mb-3 md:mb-4">
-            <div className="flex-shrink-0 w-20 md:w-28 max-h-[120px] md:max-h-none rounded-lg overflow-hidden bg-bg-deep">
+        <div className="p-3">
+          {/* Top: poster + info side by side */}
+          <div className="flex gap-3 mb-2">
+            <div className="flex-shrink-0 w-16 rounded-md overflow-hidden bg-bg-deep">
               {entry.poster ? (
-                <img src={posterUrl(entry.poster, "medium")} alt={entry.title} className="w-full aspect-[2/3] object-cover" />
+                <img src={posterUrl(entry.poster, "small")} alt={entry.title} className="w-full aspect-[2/3] object-cover" />
               ) : (
-                <div className="w-full aspect-[2/3] flex items-center justify-center text-[#5c5954] text-xs">No poster</div>
+                <div className="w-full aspect-[2/3] flex items-center justify-center text-[#5c5954] text-[9px]">No poster</div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-display uppercase tracking-wider mb-1 ${isMovie ? "bg-vr-blue/15 text-vr-blue" : "bg-vr-violet/15 text-vr-violet"}`}>
+              <span className={`inline-block px-1.5 py-px rounded text-[8px] font-display uppercase tracking-wider mb-0.5 ${isMovie ? "bg-vr-blue/15 text-vr-blue" : "bg-vr-violet/15 text-vr-violet"}`}>
                 {isMovie ? "Film" : "TV"}
               </span>
-              <h2 className="font-display text-lg font-medium text-[#e8e4dc] tracking-wide leading-tight">{entry.title}</h2>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="font-mono-stats text-xs text-[#5c5954]">{entry.year}</span>
-                {isMovie && entry.runtime ? (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-xs text-[#5c5954]">{entry.runtime} min</span></>) : null}
-                {!isMovie && (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-xs text-[#5c5954]">{entry.seasons}S · {entry.episodes}E</span></>)}
-                {entry.tmdb_rating && (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-xs text-vr-blue/70">TMDB {Number(entry.tmdb_rating).toFixed(1)}</span></>)}
+              <h2 className="font-display text-sm font-medium text-[#e8e4dc] tracking-wide leading-tight">{entry.title}</h2>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[10px]">
+                <span className="font-mono-stats text-[#5c5954]">{entry.year}</span>
+                {isMovie && entry.runtime ? (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-[#5c5954]">{entry.runtime}m</span></>) : null}
+                {!isMovie && (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-[#5c5954]">{entry.seasons}S·{entry.episodes}E</span></>)}
+                {entry.tmdb_rating && (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-vr-blue/70">TMDB {Number(entry.tmdb_rating).toFixed(1)}</span></>)}
+                {entry.imdb_id && (
+                  <a href={`https://www.imdb.com/title/${entry.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-vr-blue/50 hover:text-vr-blue transition-colors">IMDb ↗</a>
+                )}
               </div>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {entry.genres?.map((g) => (
-                  <span key={g} className="px-2 py-0.5 rounded-full text-[10px] font-display uppercase tracking-wider border border-border-glow text-[#9a968e]">{g}</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {entry.genres?.slice(0, 4).map((g) => (
+                  <span key={g} className="px-1.5 py-px rounded-full text-[8px] font-display uppercase tracking-wider border border-border-glow text-[#9a968e]">{g}</span>
                 ))}
               </div>
-              {entry.imdb_id && (
-                <a href={`https://www.imdb.com/title/${entry.imdb_id}`} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-[10px] font-display uppercase tracking-wider text-vr-blue/50 hover:text-vr-blue transition-colors">IMDb ↗</a>
-              )}
             </div>
           </div>
 
-          {entry.overview && <p className="text-xs text-[#9a968e] font-body leading-relaxed mb-3 md:mb-4 line-clamp-3">{entry.overview}</p>}
-          <div className="divider-gradient mb-3 md:mb-4" />
+          {entry.overview && <p className="text-[10px] text-[#9a968e] font-body leading-relaxed mb-2 line-clamp-2">{entry.overview}</p>}
+          <div className="divider-gradient mb-2" />
 
-          <div className="mb-3 md:mb-4">
-            <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Your Rating</label>
-            <div className="flex items-center gap-4">
-              <span className="font-mono-stats text-3xl font-bold min-w-[3ch] text-center" style={{ color: ratingColor(myRating) }}>{myRating.toFixed(1)}</span>
-              <input type="range" min="1" max="10" step="0.5" value={myRating} onChange={(e) => setMyRating(parseFloat(e.target.value))} className="flex-1 h-2 rounded-full appearance-none bg-bg-deep cursor-pointer accent-vr-blue" />
+          {/* Rating + Year Watched side by side */}
+          <div className="flex gap-3 mb-2">
+            <div className="flex-1">
+              <label className="font-display text-[9px] uppercase tracking-wider text-[#9a968e] block mb-1">Your Rating</label>
+              <div className="flex items-center gap-2">
+                <span className="font-mono-stats text-xl font-bold min-w-[2.5ch] text-center" style={{ color: ratingColor(myRating) }}>{myRating.toFixed(1)}</span>
+                <input type="range" min="1" max="10" step="0.5" value={myRating} onChange={(e) => setMyRating(parseFloat(e.target.value))} className="flex-1 h-1.5 rounded-full appearance-none bg-bg-deep cursor-pointer accent-vr-blue" />
+              </div>
             </div>
-          </div>
-
-          <div className="mb-3 md:mb-4">
-            <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Year Watched</label>
-            <select value={yearWatched} onChange={(e) => setYearWatched(e.target.value)} className="w-full h-10 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-mono-stats text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40">
-              <option value="">—</option>
-              {years.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
+            <div className="w-24 shrink-0" ref={yearRef}>
+              <label className="font-display text-[9px] uppercase tracking-wider text-[#9a968e] block mb-1">Year Watched</label>
+              <div className="relative">
+                <button
+                  onClick={() => setYearDropOpen(!yearDropOpen)}
+                  className="w-full h-7 rounded-md border border-vr-blue/20 bg-[#0e0e14] pl-2 pr-5 font-mono-stats text-[10px] text-vr-blue text-left cursor-pointer hover:bg-bg-deep/70 transition-all"
+                  style={{ textShadow: "0 0 6px rgba(14,165,233,0.3)" }}
+                >
+                  {yearWatched || "—"}
+                  <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-vr-blue/50 text-[8px]">{yearDropOpen ? "▲" : "▼"}</span>
+                </button>
+                {yearDropOpen && (
+                  <div className="absolute top-full left-0 mt-1 z-30 w-full max-h-[160px] overflow-y-auto rounded-lg border border-border-glow/30 bg-[#0e0e14] shadow-2xl animate-drawer-enter tv-grid-scroll">
+                    <button onClick={() => { setYearWatched(""); setYearDropOpen(false); }} className={`w-full text-left px-3 py-1.5 font-mono-stats text-[10px] transition-colors ${!yearWatched ? "text-vr-blue bg-bg-deep/60" : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"}`}>—</button>
+                    {years.map((y) => (
+                      <button key={y} onClick={() => { setYearWatched(y); setYearDropOpen(false); }} className={`w-full text-left px-3 py-1.5 font-mono-stats text-[10px] transition-colors ${yearWatched === y ? "text-vr-blue bg-bg-deep/60" : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"}`} style={yearWatched === y ? { textShadow: "0 0 6px rgba(14,165,233,0.4)" } : undefined}>{y}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {!isMovie && entry.seasons > 0 && (
-            <div className="mb-3 md:mb-4">
-              <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">
-                Seasons Watched
-                <span className="text-[#5c5954] ml-1 normal-case tracking-normal">({entry.seasons} total)</span>
-              </label>
-              <div className="flex items-center gap-3">
-                <select
-                  value={seasonsWatched}
-                  onChange={(e) => setSeasonsWatched(Number(e.target.value))}
-                  className="w-full h-10 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-mono-stats text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-violet/40"
+            <div className="mb-2">
+              <label className="font-display text-[9px] uppercase tracking-wider text-[#9a968e] block mb-1">Seasons Watched <span className="text-[#5c5954] normal-case tracking-normal">({entry.seasons} total)</span></label>
+              <div className="relative" ref={seasonRef}>
+                <button
+                  onClick={() => setSeasonDropOpen(!seasonDropOpen)}
+                  className="w-full h-7 rounded-md border border-vr-violet/20 bg-[#0e0e14] pl-2 pr-5 font-mono-stats text-[10px] text-vr-violet text-left cursor-pointer hover:bg-bg-deep/70 transition-all"
+                  style={{ textShadow: "0 0 6px rgba(139,92,246,0.3)" }}
                 >
-                  {Array.from({ length: entry.seasons }, (_, i) => i + 1).map((s) => (
-                    <option key={s} value={s}>
-                      {s} of {entry.seasons} season{s !== 1 ? "s" : ""}
-                    </option>
-                  ))}
-                </select>
+                  {seasonsWatched} of {entry.seasons}
+                  <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-vr-violet/50 text-[8px]">{seasonDropOpen ? "▲" : "▼"}</span>
+                </button>
+                {seasonDropOpen && (
+                  <div className="absolute top-full left-0 mt-1 z-30 w-full max-h-[120px] overflow-y-auto rounded-lg border border-border-glow/30 bg-[#0e0e14] shadow-2xl animate-drawer-enter tv-grid-scroll">
+                    {Array.from({ length: entry.seasons }, (_, i) => i + 1).map((s) => (
+                      <button key={s} onClick={() => { setSeasonsWatched(s); setSeasonDropOpen(false); }} className={`w-full text-left px-3 py-1.5 font-mono-stats text-[10px] transition-colors ${seasonsWatched === s ? "text-vr-violet bg-bg-deep/60" : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"}`} style={seasonsWatched === s ? { textShadow: "0 0 6px rgba(139,92,246,0.4)" } : undefined}>{s} of {entry.seasons}</button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          <div className="mb-3 md:mb-4">
-            <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Tags</label>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {tags.map((tag) => (
-                  <button key={tag} onClick={() => setTags(tags.filter((t) => t !== tag))} className="px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider bg-vr-blue/15 text-vr-blue border border-vr-blue/20 hover:bg-vr-blue/25 transition-colors">{tag} ×</button>
-                ))}
-              </div>
-            )}
-            <div className="hidden md:block">
-              <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]); setTagInput(""); } }} placeholder="Type a custom tag..." className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40 mb-2" />
-              <div className="flex flex-wrap gap-1.5">
-                {DEFAULT_TAGS.filter((t) => !tags.includes(t)).slice(0, 12).map((tag) => (
-                  <button key={tag} onClick={() => setTags([...tags, tag])} className="px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider border border-border-glow text-[#9a968e] bg-bg-deep/50 hover:border-vr-blue/30 hover:text-vr-blue hover:bg-vr-blue/10 transition-colors">{tag}</button>
-                ))}
-              </div>
-            </div>
-            <div className="md:hidden">
-              <select
-                value=""
-                onChange={(e) => { if (e.target.value && !tags.includes(e.target.value)) setTags([...tags, e.target.value]); }}
-                className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40 mb-2 appearance-none"
-              >
-                <option value="">Add a tag...</option>
-                {DEFAULT_TAGS.filter((t) => !tags.includes(t)).map((tag) => (
-                  <option key={tag} value={tag}>{tag}</option>
-                ))}
-              </select>
-              <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]); setTagInput(""); } }} placeholder="Or type a custom tag..." className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40" />
+          {/* Tags — compact */}
+          <div className="mb-2">
+            <label className="font-display text-[9px] uppercase tracking-wider text-[#9a968e] block mb-1">Tags</label>
+            <div className="flex flex-wrap gap-1">
+              {tags.map((tag) => (
+                <button key={tag} onClick={() => setTags(tags.filter((t) => t !== tag))} className="px-2 py-0.5 rounded-full text-[8px] font-display uppercase tracking-wider bg-vr-blue/15 text-vr-blue border border-vr-blue/20 hover:bg-vr-blue/25 transition-colors">{tag} ×</button>
+              ))}
+              {DEFAULT_TAGS.filter((t) => !tags.includes(t)).slice(0, 8).map((tag) => (
+                <button key={tag} onClick={() => setTags([...tags, tag])} className="px-2 py-0.5 rounded-full text-[8px] font-display uppercase tracking-wider border border-border-glow text-[#5c5954] hover:border-vr-blue/30 hover:text-vr-blue transition-colors">{tag}</button>
+              ))}
             </div>
           </div>
 
-          <div className="flex gap-4 mb-3 md:mb-5">
-            <label className="flex items-center gap-2 cursor-pointer">
+          {/* Checkboxes + Actions in one row */}
+          <div className="flex items-center gap-3 pt-2 border-t border-border-glow/30">
+            <label className="flex items-center gap-1.5 cursor-pointer">
               <input type="checkbox" checked={recommended} onChange={(e) => setRecommended(e.target.checked)} className="sr-only" />
-              <div className={`w-5 h-5 rounded border transition-colors flex items-center justify-center ${recommended ? "bg-vr-violet/20 border-vr-violet/40" : "border-border-glow bg-bg-deep/50"}`}>
-                {recommended && <span className="text-[10px]">⭐</span>}
+              <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center text-[8px] ${recommended ? "bg-vr-violet/20 border-vr-violet/40" : "border-border-glow bg-bg-deep/50"}`}>
+                {recommended && "⭐"}
               </div>
-              <span className="font-display text-[11px] uppercase tracking-wider text-[#9a968e]">Favourite</span>
+              <span className="font-display text-[9px] uppercase tracking-wider text-[#9a968e]">Fav</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-1.5 cursor-pointer">
               <input type="checkbox" checked={rewatch} onChange={(e) => setRewatch(e.target.checked)} className="sr-only" />
-              <div className={`w-5 h-5 rounded border transition-colors flex items-center justify-center ${rewatch ? "bg-vr-blue/20 border-vr-blue/40" : "border-border-glow bg-bg-deep/50"}`}>
-                {rewatch && <span className="text-[10px]">🔁</span>}
+              <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center text-[8px] ${rewatch ? "bg-vr-blue/20 border-vr-blue/40" : "border-border-glow bg-bg-deep/50"}`}>
+                {rewatch && "🔁"}
               </div>
-              <span className="font-display text-[11px] uppercase tracking-wider text-[#9a968e]">Rewatch</span>
+              <span className="font-display text-[9px] uppercase tracking-wider text-[#9a968e]">Rewatch</span>
             </label>
-          </div>
-
-          <div className="sticky bottom-0 z-10 flex gap-3 pt-3 border-t border-border-glow bg-bg-card -mx-3 px-3 md:-mx-5 md:px-5 pb-3 md:pb-0 md:relative md:border-t-0 md:pt-0 md:bg-transparent">
-            {!confirmDelete ? (
-              <button onClick={() => setConfirmDelete(true)} className="px-4 h-11 rounded-lg border border-red-500/20 text-red-400/60 font-display text-sm uppercase tracking-wider hover:bg-red-500/10 hover:text-red-400 transition-colors">Remove</button>
-            ) : (
-              <button onClick={handleDelete} className="px-4 h-11 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 font-display text-sm uppercase tracking-wider">Confirm Delete</button>
-            )}
             <div className="flex-1" />
-            <button onClick={onClose} className="px-4 h-11 rounded-lg border border-border-glow font-display text-sm uppercase tracking-wider text-[#5c5954] hover:text-[#9a968e] transition-colors">Cancel</button>
-            <button onClick={handleSave} disabled={saving} className="px-6 h-11 rounded-lg font-display text-sm uppercase tracking-wider text-white disabled:opacity-50 hover:shadow-[0_0_15px_rgba(14,165,233,0.3)] transition-all" style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+            {!confirmDelete ? (
+              <button onClick={() => setConfirmDelete(true)} className="px-2.5 h-7 rounded-md border border-red-500/20 text-red-400/60 font-display text-[9px] uppercase tracking-wider hover:bg-red-500/10 hover:text-red-400 transition-colors">Remove</button>
+            ) : (
+              <button onClick={handleDelete} className="px-2.5 h-7 rounded-md bg-red-500/20 border border-red-500/30 text-red-400 font-display text-[9px] uppercase tracking-wider">Confirm</button>
+            )}
+            <button onClick={handleSave} disabled={saving} className="px-4 h-7 rounded-md font-display text-[9px] uppercase tracking-wider text-white disabled:opacity-50 hover:shadow-[0_0_12px_rgba(14,165,233,0.3)] transition-all" style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
               {saving ? "..." : "Save"}
             </button>
           </div>

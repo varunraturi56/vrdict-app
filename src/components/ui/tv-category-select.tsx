@@ -1,6 +1,7 @@
 "use client";
 
-import { Film, Tv, Star, ChevronLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Film, Tv, ChevronLeft, Library } from "lucide-react";
 
 interface TvCategorySelectProps {
   area: string;
@@ -16,79 +17,87 @@ export function TvCategorySelect({
   area,
   movieCount,
   tvCount,
-  favCount,
   onSelect,
   onBack,
-  onFavourites,
 }: TvCategorySelectProps) {
+  const [phase, setPhase] = useState(0); // 0=hidden, 1=title, 2=subtitle, 3=cards
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase(1), 200);
+    const t2 = setTimeout(() => setPhase(2), 500);
+    const t3 = setTimeout(() => setPhase(3), 800);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center h-full px-8 py-12 lg:px-16">
       {/* Back button */}
       <button
         onClick={onBack}
-        className="absolute top-4 left-4 lg:top-6 lg:left-6 flex items-center gap-1.5 text-[#5c5954] hover:text-[#e8e4dc] transition-colors z-10"
+        className={`absolute top-4 left-4 lg:top-6 lg:left-6 flex items-center gap-1.5 text-[#5c5954] hover:text-[#e8e4dc] transition-all z-10 duration-500 ${phase >= 1 ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}`}
       >
         <ChevronLeft size={16} />
         <span className="font-display text-[10px] uppercase tracking-wider">Back</span>
       </button>
 
       {/* Area title */}
-      <div className="text-center mb-10 lg:mb-14">
-        <h2 className="font-display text-xl lg:text-2xl font-semibold tracking-wider text-[#e8e4dc] capitalize">
-          {area}
-        </h2>
-        <p className="font-body text-[12px] text-[#5c5954] mt-1.5 tracking-wide">
+      <div className={`text-center mb-10 lg:mb-14 transition-all duration-700 ease-out ${phase >= 1 ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-90 translate-y-4"}`}>
+        <div className="flex items-center justify-center gap-3 mb-1">
+          <Library size={36} className="text-vr-blue" style={{ filter: "drop-shadow(0 0 8px rgba(14,165,233,0.5))" }} />
+          <h2 className="font-display text-4xl lg:text-5xl font-bold tracking-[0.15em] text-vr-blue text-glow-blue">
+            {area}
+          </h2>
+        </div>
+        <p className={`font-body text-sm lg:text-base text-[#5c5954] mt-3 tracking-[0.2em] uppercase transition-all duration-600 ${phase >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
           Choose what to browse
         </p>
       </div>
 
-      {/* Category cards */}
-      <div className="flex gap-6 lg:gap-8 mb-8">
+      {/* Category cards — matching welcome card style */}
+      <div className="flex gap-5 lg:gap-8">
         <button
           onClick={() => onSelect("movie")}
-          className="group flex flex-col items-center justify-center w-40 h-44 lg:w-48 lg:h-52 rounded-xl border border-vr-blue/20 hover:border-vr-blue/40 bg-gradient-to-b from-vr-blue/15 to-vr-blue/3 transition-all duration-300 hover:scale-[1.03] group-hover:shadow-[0_0_30px_rgba(14,165,233,0.15)] cursor-pointer"
+          className={`group relative flex flex-col items-center justify-center w-[160px] lg:w-[190px] h-[240px] lg:h-[280px] rounded-2xl border border-vr-blue/15 hover:border-vr-blue/40 bg-gradient-to-b from-vr-blue/25 via-vr-blue/8 to-transparent cursor-pointer hover:w-[185px] lg:hover:w-[220px] hover:h-[260px] lg:hover:h-[300px] hover:shadow-[0_0_40px_rgba(14,165,233,0.25),0_12px_40px_rgba(0,0,0,0.5)] ${
+            phase >= 3 ? "opacity-100 translate-y-0 scale-100 rotate-0" : "opacity-0 translate-y-20 scale-50 -rotate-6"
+          }`}
+          style={{
+            transition: phase >= 3
+              ? "opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease"
+              : "opacity 200ms ease, transform 200ms ease",
+          }}
         >
           <Film
-            size={40}
-            className="text-vr-blue mb-4 transition-transform duration-300 group-hover:scale-110"
+            size={48}
+            className="text-vr-blue mb-4 transition-transform duration-300 group-hover:scale-125"
           />
-          <span className="font-display text-base font-medium text-[#e8e4dc] tracking-wider uppercase">
+          <span className="font-display text-[16px] lg:text-[18px] font-medium text-[#e8e4dc] tracking-wider uppercase">
             Movies
           </span>
-          <span className="font-mono-stats text-[11px] text-[#5c5954] mt-1.5">
+          <span className="font-mono-stats text-[12px] lg:text-[13px] text-[#5c5954] mt-2">
             {movieCount} titles
           </span>
         </button>
 
         <button
           onClick={() => onSelect("tv")}
-          className="group flex flex-col items-center justify-center w-40 h-44 lg:w-48 lg:h-52 rounded-xl border border-vr-violet/20 hover:border-vr-violet/40 bg-gradient-to-b from-vr-violet/15 to-vr-violet/3 transition-all duration-300 hover:scale-[1.03] group-hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] cursor-pointer"
+          className={`group relative flex flex-col items-center justify-center w-[160px] lg:w-[190px] h-[240px] lg:h-[280px] rounded-2xl border border-vr-violet/15 hover:border-vr-violet/40 bg-gradient-to-b from-vr-violet/25 via-vr-violet/8 to-transparent cursor-pointer hover:w-[185px] lg:hover:w-[220px] hover:h-[260px] lg:hover:h-[300px] hover:shadow-[0_0_40px_rgba(139,92,246,0.25),0_12px_40px_rgba(0,0,0,0.5)] ${
+            phase >= 3 ? "opacity-100 translate-y-0 scale-100 rotate-0" : "opacity-0 translate-y-20 scale-50 rotate-6"
+          }`}
+          style={{
+            transition: phase >= 3
+              ? "opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease"
+              : "opacity 200ms ease, transform 200ms ease",
+          }}
         >
           <Tv
-            size={40}
-            className="text-vr-violet mb-4 transition-transform duration-300 group-hover:scale-110"
+            size={48}
+            className="text-vr-violet mb-4 transition-transform duration-300 group-hover:scale-125"
           />
-          <span className="font-display text-base font-medium text-[#e8e4dc] tracking-wider uppercase">
+          <span className="font-display text-[16px] lg:text-[18px] font-medium text-[#e8e4dc] tracking-wider uppercase">
             TV Shows
           </span>
-          <span className="font-mono-stats text-[11px] text-[#5c5954] mt-1.5">
+          <span className="font-mono-stats text-[12px] lg:text-[13px] text-[#5c5954] mt-2">
             {tvCount} titles
-          </span>
-        </button>
-      </div>
-
-      {/* Quick chips */}
-      <div className="flex gap-3">
-        <button
-          onClick={onFavourites}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-amber-400/20 hover:border-amber-400/40 text-amber-400/70 hover:text-amber-400 bg-amber-400/5 transition-all duration-200"
-        >
-          <Star size={14} />
-          <span className="font-display text-[10px] uppercase tracking-wider">
-            Favourites
-          </span>
-          <span className="font-mono-stats text-[10px] text-[#5c5954] ml-1">
-            {favCount}
           </span>
         </button>
       </div>

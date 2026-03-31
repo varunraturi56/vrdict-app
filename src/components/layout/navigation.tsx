@@ -17,7 +17,7 @@ import { useLibraryCounts } from "@/lib/library-context";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
-  { href: "/?tab=movie", label: "Library", icon: Library },
+  { href: "/?view=library", label: "Library", icon: Library },
   { href: "/favourites", label: "Favourites", icon: Star },
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/discover", label: "Discover", icon: Radar },
@@ -124,33 +124,33 @@ export function TopNav() {
         {navItems.map((item) => {
           const isActive =
             item.href === "/"
-              ? pathname === "/" && !searchParams.get("tab")
-              : item.href.startsWith("/?")
-              ? pathname === "/" && !!searchParams.get("tab")
+              ? pathname === "/" && !searchParams.get("tab") && !searchParams.get("view")
+              : item.href === "/?view=library"
+              ? pathname === "/" && (!!searchParams.get("tab") || searchParams.get("view") === "library")
               : pathname.startsWith(item.href);
 
-          const isMediaTabHost = item.href.startsWith("/?tab=") || item.href === "/favourites" || item.href === "/watchlist" || item.href === "/discover";
+          const isMediaTabHost = item.href === "/?view=library" || item.href === "/favourites" || item.href === "/watchlist" || item.href === "/discover";
+          // Only show sub-tabs when a media tab is actually selected (not on category view)
+          const hasSelectedTab = !!searchParams.get("tab");
+          const isOnCategoryView = searchParams.get("view") === "library";
           const isThisTabActive = isActive;
-          const isThisTabMediaHost = isMediaTabHost && isThisTabActive;
+          const isThisTabMediaHost = isMediaTabHost && isThisTabActive && hasSelectedTab && !isOnCategoryView;
 
           // Per-tab colors — Home gets green
           const isHomeItem = item.href === "/";
           const colorPath = item.href.startsWith("/?") ? "/" : item.href;
           const colors = getTabColors(colorPath);
-          const activeColor = isHomeItem ? "text-green-400" : (mediaTab === "tv" ? colors.tv : colors.movie);
-          const activeGlow = isHomeItem ? "drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" : (mediaTab === "tv" ? colors.tvGlow : colors.movieGlow);
+          // Library on category view (no tab selected) gets default blue
+          const isLibraryCategory = item.href === "/?view=library" && isOnCategoryView;
+          const activeColor = isHomeItem ? "text-green-400" : isLibraryCategory ? colors.movie : (mediaTab === "tv" ? colors.tv : colors.movie);
+          const activeGlow = isHomeItem ? "drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" : isLibraryCategory ? colors.movieGlow : (mediaTab === "tv" ? colors.tvGlow : colors.movieGlow);
 
           return (
             <div key={item.href} className="flex items-center gap-0 transition-all duration-300">
               <Link
                 href={item.href}
-                onClick={(e) => {
-                  if (isThisTabMediaHost) {
-                    e.preventDefault();
-                    setMediaTabsCollapsed(!mediaTabsCollapsed);
-                  } else {
-                    setMediaTabsCollapsed(false);
-                  }
+                onClick={() => {
+                  setMediaTabsCollapsed(false);
                 }}
                 className={`relative flex flex-col items-center gap-0.5 transition-all duration-200 group ${
                   isActive
@@ -178,8 +178,8 @@ export function TopNav() {
                   <div
                     className="absolute -bottom-[13px] left-1/2 -translate-x-1/2 w-12 h-[2px] rounded-full"
                     style={{
-                      background: isHomeItem ? "rgba(34,197,94,0.6)" : colors.barColor,
-                      boxShadow: `0 4px 15px 2px ${isHomeItem ? "rgba(34,197,94,0.10)" : colors.barGlow}`,
+                      background: isHomeItem ? "rgba(34,197,94,0.6)" : isLibraryCategory ? "rgba(14,165,233,0.6)" : colors.barColor,
+                      boxShadow: `0 4px 15px 2px ${isHomeItem ? "rgba(34,197,94,0.10)" : isLibraryCategory ? "rgba(14,165,233,0.10)" : colors.barGlow}`,
                     }}
                   />
                 )}
@@ -190,13 +190,13 @@ export function TopNav() {
                 <div
                   className="flex items-center overflow-hidden transition-all duration-300 ease-in-out"
                   style={{
-                    maxWidth: mediaTabsExpanded && isThisTabActive ? 200 : 0,
-                    opacity: mediaTabsExpanded && isThisTabActive ? 1 : 0,
-                    marginLeft: mediaTabsExpanded && isThisTabActive ? 12 : 0,
+                    maxWidth: mediaTabsExpanded && isThisTabMediaHost ? 200 : 0,
+                    opacity: mediaTabsExpanded && isThisTabMediaHost ? 1 : 0,
+                    marginLeft: mediaTabsExpanded && isThisTabMediaHost ? 12 : 0,
                   }}
                 >
                   <Link
-                    href={`${item.href === "/" ? "/" : item.href}?tab=movie`}
+                    href={`${item.href.startsWith("/?") || item.href === "/" ? "/" : item.href}?tab=movie`}
                     className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all duration-200 ${
                       mediaTab === "movie"
                         ? colors.moviePill
@@ -206,7 +206,7 @@ export function TopNav() {
                     Movies
                   </Link>
                   <Link
-                    href={`${item.href === "/" ? "/" : item.href}?tab=tv`}
+                    href={`${item.href.startsWith("/?") || item.href === "/" ? "/" : item.href}?tab=tv`}
                     className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all duration-200 ml-1.5 ${
                       mediaTab === "tv"
                         ? colors.tvPill
