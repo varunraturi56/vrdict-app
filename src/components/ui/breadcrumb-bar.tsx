@@ -15,7 +15,15 @@ interface BreadcrumbBarProps {
   setSearchQuery: (q: string) => void;
   onClearFilters?: () => void;
   accentColor?: "blue" | "violet";
+  /** Custom RGB override — e.g. "255,184,0". Takes precedence over accentColor */
+  accentRgb?: string;
 }
+
+// Named presets
+const PRESETS: Record<string, string> = {
+  blue: "14,165,233",
+  violet: "139,92,246",
+};
 
 export function BreadcrumbBar({
   path,
@@ -29,13 +37,9 @@ export function BreadcrumbBar({
   setSearchQuery,
   onClearFilters,
   accentColor = "blue",
+  accentRgb,
 }: BreadcrumbBarProps) {
-  const isViolet = accentColor === "violet";
-  const accentText = isViolet ? "text-vr-violet" : "text-vr-blue";
-  const accentBorder = isViolet ? "border-vr-violet/20 focus:border-vr-violet/40" : "border-vr-blue/20 focus:border-vr-blue/40";
-  const accentHover = isViolet ? "hover:border-vr-violet/40 hover:text-vr-violet" : "hover:border-vr-blue/40 hover:text-vr-blue";
-  const badgeBg = isViolet ? "bg-vr-violet/20 text-vr-violet" : "bg-vr-blue/20 text-vr-blue";
-  const rgb = isViolet ? "139,92,246" : "14,165,233";
+  const rgb = accentRgb || PRESETS[accentColor] || PRESETS.blue;
 
   // Custom sort dropdown
   const [sortOpen, setSortOpen] = useState(false);
@@ -51,6 +55,12 @@ export function BreadcrumbBar({
 
   const currentSortLabel = sortOptions.find((o) => o.key === sortBy)?.label || "Rating";
 
+  // Dynamic styles from RGB
+  const accentStyle = { color: `rgb(${rgb})` };
+  const accentGlow = { color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.3)` };
+  const borderStyle = `rgba(${rgb},0.2)`;
+  const borderFocusStyle = `rgba(${rgb},0.4)`;
+
   return (
     <div className="flex items-center justify-between px-4 lg:px-6 py-2 border-b border-border-glow/15">
       {/* Left: Breadcrumb */}
@@ -62,9 +72,10 @@ export function BreadcrumbBar({
               onClick={() => onPathClick(i)}
               className={`font-display text-[11px] uppercase tracking-wider transition-colors truncate ${
                 i === path.length - 1
-                  ? accentText
+                  ? ""
                   : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
+              style={i === path.length - 1 ? accentStyle : undefined}
             >
               {segment}
             </button>
@@ -74,15 +85,18 @@ export function BreadcrumbBar({
 
       {/* Right: Search + Sort + Clear + Filter */}
       <div className="flex items-center gap-2 shrink-0">
-        {/* Search — wider */}
+        {/* Search */}
         <div className="relative">
-          <Search size={11} className={`absolute left-2 top-1/2 -translate-y-1/2 ${accentText} opacity-50`} />
+          <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={accentStyle} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search titles..."
-            className={`h-7 w-56 pl-6 pr-2 rounded-lg border ${accentBorder} bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none`}
+            className="h-7 w-56 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+            style={{ border: `1px solid ${borderStyle}` }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = borderFocusStyle; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = borderStyle; }}
           />
         </div>
 
@@ -90,8 +104,8 @@ export function BreadcrumbBar({
         <div className="relative" ref={sortRef}>
           <button
             onClick={() => setSortOpen(!sortOpen)}
-            className={`flex items-center gap-1 h-7 px-2.5 rounded-lg border ${accentBorder} bg-bg-deep/40 ${accentText} transition-all hover:bg-bg-deep/70`}
-            style={{ textShadow: `0 0 6px rgba(${rgb},0.3)` }}
+            className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+            style={{ border: `1px solid ${borderStyle}`, ...accentGlow }}
           >
             <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Sort by:</span>
             <span className="font-display text-[10px] uppercase tracking-wider">{currentSortLabel}</span>
@@ -105,10 +119,10 @@ export function BreadcrumbBar({
                   onClick={() => { setSortBy(opt.key); setSortOpen(false); }}
                   className={`w-full text-left px-3 py-2 font-display text-[10px] uppercase tracking-wider transition-colors ${
                     sortBy === opt.key
-                      ? `${accentText} bg-bg-deep/60`
+                      ? "bg-bg-deep/60"
                       : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"
                   }`}
-                  style={sortBy === opt.key ? { textShadow: `0 0 6px rgba(${rgb},0.4)` } : undefined}
+                  style={sortBy === opt.key ? { color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.4)` } : undefined}
                 >
                   {opt.label}
                 </button>
@@ -120,22 +134,29 @@ export function BreadcrumbBar({
         {/* Filter button */}
         <button
           onClick={onFilterOpen}
-          className={`flex items-center gap-1 h-7 px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] ${accentHover} transition-colors`}
+          className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors"
+          style={{ ["--hover-color" as any]: `rgb(${rgb})` }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = `rgb(${rgb})`; e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = ""; e.currentTarget.style.borderColor = ""; }}
         >
           <SlidersHorizontal size={12} />
           <span className="font-display text-[10px] uppercase tracking-wider">Filter</span>
           {activeFilterCount > 0 && (
-            <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats ${badgeBg}`}>
+            <span
+              className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats"
+              style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
+            >
               {activeFilterCount}
             </span>
           )}
         </button>
 
-        {/* Clear filters — circular arrow, after filter button */}
+        {/* Clear filters */}
         {(activeFilterCount > 0 || searchQuery) && onClearFilters && (
           <button
             onClick={onClearFilters}
-            className={`w-7 h-7 rounded-full flex items-center justify-center border border-border-glow/20 ${accentText} ${accentHover} transition-all hover:rotate-[-180deg] duration-300`}
+            className="w-7 h-7 rounded-full flex items-center justify-center border border-border-glow/20 transition-all hover:rotate-[-180deg] duration-300"
+            style={accentStyle}
             title="Clear all filters"
           >
             <RotateCcw size={12} />

@@ -12,6 +12,7 @@ import { PreviewBar } from "@/components/ui/preview-bar";
 import { TvCategorySelect } from "@/components/ui/tv-category-select";
 import { BreadcrumbBar } from "@/components/ui/breadcrumb-bar";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
+import { PAGE_GLOWS } from "@/lib/ambient-colors";
 
 const SORT_OPTIONS = [
   { key: "my_rating", label: "Rating" },
@@ -198,6 +199,11 @@ function FavouritesContent() {
   const isMovie = mediaTab === "movie";
   const displayEntry = peekedEntry || filteredEntries.find((e) => e.poster) || filteredEntries[0] || null;
 
+  // Theme colors from PAGE_GLOWS
+  const pageGlows = PAGE_GLOWS["/favourites"];
+  const themeRgb = isMovie ? pageGlows.movie : pageGlows.tv;
+  const rgb = themeRgb.join(",");
+
   // ─── Desktop: TV content based on flow state ───
   const desktopTvContent = (() => {
     switch (flow.stage) {
@@ -215,6 +221,8 @@ function FavouritesContent() {
             accentColor="text-[#ffb800]"
             accentGlow="drop-shadow(0 0 8px rgba(255,184,0,0.5))"
             glowClass=""
+            movieRgb={pageGlows.movie.join(",")}
+            tvRgb={pageGlows.tv.join(",")}
           />
         );
 
@@ -232,19 +240,19 @@ function FavouritesContent() {
               searchQuery={searchQuery}
               setSearchQuery={setSearchQuery}
               onClearFilters={() => { setGenreFilter(null); setTagFilter(null); setSearchQuery(""); }}
-              accentColor={isMovie ? "blue" : "violet"}
+              accentRgb={rgb}
             />
 
             {/* Active filters summary */}
             {activeFilterCount > 0 && (
               <div className="flex items-center gap-2 px-6 py-1.5">
                 {genreFilter && (
-                  <button onClick={() => setGenreFilter(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider text-vr-blue bg-vr-blue/10 border border-vr-blue/20 hover:bg-vr-blue/15 transition-colors">
+                  <button onClick={() => setGenreFilter(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-colors" style={{ color: `rgb(${rgb})`, backgroundColor: `rgba(${rgb},0.1)`, border: `1px solid rgba(${rgb},0.2)` }}>
                     {genreFilter} <span className="ml-0.5">×</span>
                   </button>
                 )}
                 {tagFilter && (
-                  <button onClick={() => setTagFilter(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider text-vr-violet bg-vr-violet/10 border border-vr-violet/20 hover:bg-vr-violet/15 transition-colors">
+                  <button onClick={() => setTagFilter(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-colors" style={{ color: `rgb(${rgb})`, backgroundColor: `rgba(${rgb},0.1)`, border: `1px solid rgba(${rgb},0.2)` }}>
                     {tagFilter} <span className="ml-0.5">×</span>
                   </button>
                 )}
@@ -258,8 +266,6 @@ function FavouritesContent() {
 
             {/* Paginated poster grid — 7×2 with flashy arrows */}
             {(() => {
-              const rgb = isMovie ? "14,165,233" : "139,92,246";
-              const tabColor = isMovie ? "text-vr-blue" : "text-vr-violet";
               return (
                 <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-1 py-2">
                   <div className="flex items-center w-full flex-1 min-h-0">
@@ -267,7 +273,8 @@ function FavouritesContent() {
                     <button
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className={`shrink-0 w-10 h-full flex items-center justify-center ${tabColor} disabled:opacity-10 disabled:cursor-not-allowed transition-all group`}
+                      className="shrink-0 w-10 h-full flex items-center justify-center disabled:opacity-10 disabled:cursor-not-allowed transition-all group"
+                      style={{ color: `rgb(${rgb})` }}
                     >
                       <ChevronDown
                         size={44}
@@ -323,7 +330,8 @@ function FavouritesContent() {
                     <button
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
-                      className={`shrink-0 w-10 h-full flex items-center justify-center ${tabColor} disabled:opacity-10 disabled:cursor-not-allowed transition-all group`}
+                      className={`shrink-0 w-10 h-full flex items-center justify-center disabled:opacity-10 disabled:cursor-not-allowed transition-all group`}
+                      style={{ color: `rgb(${rgb})` }}
                     >
                       <ChevronDown
                         size={44}
@@ -341,22 +349,22 @@ function FavouritesContent() {
                       <button
                         onClick={() => setCurrentPage(1)}
                         disabled={currentPage === 1}
-                        className={`font-mono-stats text-[11px] font-bold ${tabColor} disabled:opacity-15 disabled:cursor-not-allowed transition-all hover:scale-110`}
-                        style={{ textShadow: currentPage === 1 ? "none" : `0 0 6px rgba(${rgb},0.4)` }}
+                        className="font-mono-stats text-[11px] font-bold disabled:opacity-15 disabled:cursor-not-allowed transition-all hover:scale-110"
+                        style={{ color: `rgb(${rgb})`, textShadow: currentPage === 1 ? "none" : `0 0 6px rgba(${rgb},0.4)` }}
                       >
                         ««
                       </button>
                       <span
-                        className={`font-mono-stats text-[12px] font-bold ${tabColor}`}
-                        style={{ textShadow: `0 0 8px rgba(${rgb},0.5)` }}
+                        className="font-mono-stats text-[12px] font-bold"
+                        style={{ color: `rgb(${rgb})`, textShadow: `0 0 8px rgba(${rgb},0.5)` }}
                       >
                         {currentPage} / {totalPages}
                       </span>
                       <button
                         onClick={() => setCurrentPage(totalPages)}
                         disabled={currentPage === totalPages}
-                        className={`font-mono-stats text-[11px] font-bold ${tabColor} disabled:opacity-15 disabled:cursor-not-allowed transition-all hover:scale-110`}
-                        style={{ textShadow: currentPage === totalPages ? "none" : `0 0 6px rgba(${rgb},0.4)` }}
+                        className="font-mono-stats text-[11px] font-bold disabled:opacity-15 disabled:cursor-not-allowed transition-all hover:scale-110"
+                        style={{ color: `rgb(${rgb})`, textShadow: currentPage === totalPages ? "none" : `0 0 6px rgba(${rgb},0.4)` }}
                       >
                         »»
                       </button>
@@ -458,10 +466,9 @@ function FavouritesContent() {
             <a
               href="/favourites?tab=movie"
               className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
-                isMovie
-                  ? "bg-gradient-to-br from-vr-blue to-vr-blue-dark text-white"
-                  : "text-[#5c5954] hover:text-[#9a968e]"
+                isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
+              style={isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.movie.join(",")}), rgba(${pageGlows.movie.join(",")},0.7))` } : undefined}
             >
               🎬 Movies{" "}
               <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
@@ -471,10 +478,9 @@ function FavouritesContent() {
             <a
               href="/favourites?tab=tv"
               className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
-                !isMovie
-                  ? "bg-gradient-to-br from-vr-violet to-vr-violet-dark text-white"
-                  : "text-[#5c5954] hover:text-[#9a968e]"
+                !isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
+              style={!isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.tv.join(",")}), rgba(${pageGlows.tv.join(",")},0.7))` } : undefined}
             >
               📺 TV Shows{" "}
               <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">

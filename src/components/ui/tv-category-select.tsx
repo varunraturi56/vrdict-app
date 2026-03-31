@@ -15,6 +15,10 @@ interface TvCategorySelectProps {
   accentColor?: string;
   accentGlow?: string;
   glowClass?: string;
+  /** Custom RGB for movie card — e.g. "255,184,0" */
+  movieRgb?: string;
+  /** Custom RGB for TV card — e.g. "200,200,210" */
+  tvRgb?: string;
 }
 
 export function TvCategorySelect({
@@ -27,6 +31,8 @@ export function TvCategorySelect({
   accentColor = "text-vr-blue",
   accentGlow = "drop-shadow(0 0 8px rgba(14,165,233,0.5))",
   glowClass = "text-glow-blue",
+  movieRgb = "14,165,233",
+  tvRgb = "139,92,246",
 }: TvCategorySelectProps) {
   const [phase, setPhase] = useState(0); // 0=hidden, 1=title, 2=subtitle, 3=cards
 
@@ -61,22 +67,27 @@ export function TvCategorySelect({
         </p>
       </div>
 
-      {/* Category cards — matching welcome card style */}
+      {/* Category cards */}
       <div className="flex gap-5 lg:gap-8">
         <button
           onClick={() => onSelect("movie")}
-          className={`group relative flex flex-col items-center justify-center w-[160px] lg:w-[190px] h-[240px] lg:h-[280px] rounded-2xl border border-vr-blue/15 hover:border-vr-blue/40 bg-gradient-to-b from-vr-blue/25 via-vr-blue/8 to-transparent cursor-pointer hover:w-[185px] lg:hover:w-[220px] hover:h-[260px] lg:hover:h-[300px] hover:shadow-[0_0_40px_rgba(14,165,233,0.25),0_12px_40px_rgba(0,0,0,0.5)] ${
+          className={`group relative flex flex-col items-center justify-center w-[160px] lg:w-[190px] h-[240px] lg:h-[280px] rounded-2xl cursor-pointer hover:w-[185px] lg:hover:w-[220px] hover:h-[260px] lg:hover:h-[300px] ${
             phase >= 3 ? "opacity-100 translate-y-0 scale-100 rotate-0" : "opacity-0 translate-y-20 scale-50 -rotate-6"
           }`}
           style={{
+            border: `1px solid rgba(${movieRgb},0.15)`,
+            background: `linear-gradient(to bottom, rgba(${movieRgb},0.25), rgba(${movieRgb},0.08) 50%, transparent)`,
             transition: phase >= 3
               ? "opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease"
               : "opacity 200ms ease, transform 200ms ease",
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = `rgba(${movieRgb},0.4)`; e.currentTarget.style.boxShadow = `0 0 40px rgba(${movieRgb},0.25), 0 12px 40px rgba(0,0,0,0.5)`; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = `rgba(${movieRgb},0.15)`; e.currentTarget.style.boxShadow = ""; }}
         >
           <Film
             size={48}
-            className="text-vr-blue mb-4 transition-transform duration-300 group-hover:scale-125"
+            className="mb-4 transition-transform duration-300 group-hover:scale-125"
+            style={{ color: `rgb(${movieRgb})` }}
           />
           <span className="font-display text-[16px] lg:text-[18px] font-medium text-[#e8e4dc] tracking-wider uppercase">
             Movies
@@ -88,18 +99,23 @@ export function TvCategorySelect({
 
         <button
           onClick={() => onSelect("tv")}
-          className={`group relative flex flex-col items-center justify-center w-[160px] lg:w-[190px] h-[240px] lg:h-[280px] rounded-2xl border border-vr-violet/15 hover:border-vr-violet/40 bg-gradient-to-b from-vr-violet/25 via-vr-violet/8 to-transparent cursor-pointer hover:w-[185px] lg:hover:w-[220px] hover:h-[260px] lg:hover:h-[300px] hover:shadow-[0_0_40px_rgba(139,92,246,0.25),0_12px_40px_rgba(0,0,0,0.5)] ${
+          className={`group relative flex flex-col items-center justify-center w-[160px] lg:w-[190px] h-[240px] lg:h-[280px] rounded-2xl cursor-pointer hover:w-[185px] lg:hover:w-[220px] hover:h-[260px] lg:hover:h-[300px] ${
             phase >= 3 ? "opacity-100 translate-y-0 scale-100 rotate-0" : "opacity-0 translate-y-20 scale-50 rotate-6"
           }`}
           style={{
+            border: `1px solid rgba(${tvRgb},0.15)`,
+            background: `linear-gradient(to bottom, rgba(${tvRgb},0.25), rgba(${tvRgb},0.08) 50%, transparent)`,
             transition: phase >= 3
               ? "opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease"
               : "opacity 200ms ease, transform 200ms ease",
           }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = `rgba(${tvRgb},0.4)`; e.currentTarget.style.boxShadow = `0 0 40px rgba(${tvRgb},0.25), 0 12px 40px rgba(0,0,0,0.5)`; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = `rgba(${tvRgb},0.15)`; e.currentTarget.style.boxShadow = ""; }}
         >
           <Tv
             size={48}
-            className="text-vr-violet mb-4 transition-transform duration-300 group-hover:scale-125"
+            className="mb-4 transition-transform duration-300 group-hover:scale-125"
+            style={{ color: `rgb(${tvRgb})` }}
           />
           <span className="font-display text-[16px] lg:text-[18px] font-medium text-[#e8e4dc] tracking-wider uppercase">
             TV Shows
