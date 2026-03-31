@@ -17,6 +17,7 @@ import { useLibraryCounts } from "@/lib/library-context";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
+  { href: "/?tab=movie", label: "Library", icon: Library },
   { href: "/favourites", label: "Favourites", icon: Star },
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/discover", label: "Discover", icon: Radar },
@@ -123,15 +124,18 @@ export function TopNav() {
         {navItems.map((item) => {
           const isActive =
             item.href === "/"
-              ? pathname === "/"
+              ? pathname === "/" && !searchParams.get("tab")
+              : item.href.startsWith("/?")
+              ? pathname === "/" && !!searchParams.get("tab")
               : pathname.startsWith(item.href);
 
-          const isMediaTabHost = item.href === "/favourites" || item.href === "/watchlist" || item.href === "/discover";
+          const isMediaTabHost = item.href.startsWith("/?tab=") || item.href === "/favourites" || item.href === "/watchlist" || item.href === "/discover";
           const isThisTabActive = isActive;
           const isThisTabMediaHost = isMediaTabHost && isThisTabActive;
 
           // Per-tab colors based on current page's color scheme
-          const colors = getTabColors(item.href);
+          const colorPath = item.href.startsWith("/?") ? "/" : item.href;
+          const colors = getTabColors(colorPath);
           const activeColor = mediaTab === "tv" ? colors.tv : colors.movie;
           const activeGlow = mediaTab === "tv" ? colors.tvGlow : colors.movieGlow;
 

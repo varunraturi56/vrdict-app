@@ -59,7 +59,12 @@ function LibraryContent() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Desktop flow state — progressive disclosure
-  const [flow, setFlow] = useState<FlowState>({ stage: "welcome" });
+  // If URL has ?tab=, jump straight to results (e.g. from Library nav click)
+  const [flow, setFlow] = useState<FlowState>(
+    searchParams.get("tab")
+      ? { stage: "results", area: "Library", mediaType: (searchParams.get("tab") || "movie") as MediaType }
+      : { stage: "welcome" }
+  );
 
   // Preview bar (desktop only)
   const [peekedEntry, setPeekedEntry] = useState<Entry | null>(null);
