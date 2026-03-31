@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Library as LibraryIcon, Search, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
@@ -9,6 +9,10 @@ import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/ty
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
 import { PreviewBar } from "@/components/ui/preview-bar";
+import { TvWelcome } from "@/components/ui/tv-welcome";
+import { TvCategorySelect } from "@/components/ui/tv-category-select";
+import { BreadcrumbBar } from "@/components/ui/breadcrumb-bar";
+import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { useLibraryCounts } from "@/lib/library-context";
 
 const SORT_OPTIONS = [
@@ -20,6 +24,14 @@ const SORT_OPTIONS = [
 
 type SortKey = (typeof SORT_OPTIONS)[number]["key"];
 
+// Desktop flow state
+type FlowState =
+  | { stage: "welcome" }
+  | { stage: "category"; area: string }
+  | { stage: "results"; area: string; mediaType: MediaType };
+
+const ITEMS_PER_PAGE = 8;
+
 export default function LibraryPage() {
   return (
     <Suspense>
@@ -30,6 +42,7 @@ export default function LibraryPage() {
 
 function LibraryContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const mediaTab = (searchParams.get("tab") || "movie") as MediaType;
   const { setCounts } = useLibraryCounts();
 
@@ -42,8 +55,13 @@ function LibraryContent() {
   const [heroEntry, setHeroEntry] = useState<Entry | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [tvOn, setTvOn] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Preview bar (desktop only) — updates on hover
+  // Desktop flow state — progressive disclosure
+  const [flow, setFlow] = useState<FlowState>({ stage: "welcome" });
+
+  // Preview bar (desktop only)
   const [peekedEntry, setPeekedEntry] = useState<Entry | null>(null);
 
   function handleMouseEnter(entry: Entry) {
@@ -64,19 +82,21 @@ function LibraryContent() {
     load();
   }, []);
 
-  // Publish counts to sidebar via context
+  // Publish counts
   const movieCount = entries.filter((e) => e.media_type === "movie").length;
   const tvCount = entries.filter((e) => e.media_type === "tv").length;
+  const favCount = entries.filter((e) => e.recommended).length;
 
   useEffect(() => {
     setCounts({ movieCount, tvCount });
   }, [movieCount, tvCount, setCounts]);
 
-  // Reset filters when switching tabs
+  // Reset filters on tab change
   useEffect(() => {
     setGenreFilter(null);
     setTagFilter(null);
     setSearchQuery("");
+    setCurrentPage(1);
   }, [mediaTab]);
 
   const mediaEntries = useMemo(
@@ -114,7 +134,17 @@ function LibraryContent() {
     });
   }, [mediaEntries, genreFilter, tagFilter, searchQuery, sortBy]);
 
-  // Hero — auto-rotate every 5s (mobile only)
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / ITEMS_PER_PAGE));
+  const pagedEntries = filteredEntries.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [genreFilter, tagFilter, searchQuery, sortBy]);
+
+  // Hero — auto-rotate (mobile only)
   const pickHero = useCallback(() => {
     const candidates = mediaEntries.filter((e) => e.my_rating >= 7 && e.poster);
     if (candidates.length > 0) {
@@ -128,13 +158,45 @@ function LibraryContent() {
     return () => clearInterval(interval);
   }, [pickHero]);
 
-  // Compact pill style
-  const pillClass = (active: boolean) =>
-    `px-[10px] py-[4px] rounded-[20px] text-[11px] xl:px-[14px] xl:py-[6px] xl:text-[13px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
-      active
-        ? "text-vr-blue border-vr-blue/30 bg-[rgba(14,165,233,0.12)]"
-        : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
-    }`;
+  // Flow navigation handlers
+  function handleWelcomeNavigate(area: "library" | "watchlist" | "discover" | "stats") {
+    if (area === "library") {
+      setFlow({ stage: "category", area: "Library" });
+    } else if (area === "watchlist") {
+      router.push("/watchlist");
+    } else if (area === "discover") {
+      router.push("/discover");
+    } else if (area === "stats") {
+      router.push("/stats");
+    }
+  }
+
+  function handleCategorySelect(mediaType: MediaType) {
+    setFlow({ stage: "results", area: "Library", mediaType });
+    // Sync URL tab
+    router.push(`/?tab=${mediaType}`, { scroll: false });
+  }
+
+  function handleBreadcrumbClick(index: number) {
+    if (index === 0) {
+      setFlow({ stage: "welcome" });
+    } else if (index === 1) {
+      setFlow({ stage: "category", area: "Library" });
+    }
+    // index 2 = current filter, just clear it
+    if (index <= 1) {
+      setGenreFilter(null);
+      setTagFilter(null);
+      setSearchQuery("");
+    }
+  }
+
+  const activeFilterCount = (genreFilter ? 1 : 0) + (tagFilter ? 1 : 0) + (searchQuery ? 1 : 0);
+
+  // Breadcrumb path
+  const breadcrumbPath = flow.stage === "results"
+    ? ["Library", mediaTab === "movie" ? "Movies" : "TV Shows", ...(genreFilter ? [genreFilter] : [])]
+    : [];
 
   if (loading) {
     return (
@@ -145,20 +207,127 @@ function LibraryContent() {
   }
 
   const isMovie = mediaTab === "movie";
-
-  // The entry shown in the preview bar
   const displayEntry = peekedEntry || filteredEntries.find((e) => e.my_rating >= 7 && e.poster) || filteredEntries[0] || null;
 
-  // Poster grid
-  const posterGrid = (
-    <div className="poster-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
+  // ─── Desktop: TV content based on flow state ───
+  const desktopTvContent = (() => {
+    switch (flow.stage) {
+      case "welcome":
+        return <TvWelcome onNavigate={handleWelcomeNavigate} />;
+
+      case "category":
+        return (
+          <TvCategorySelect
+            area={flow.area}
+            movieCount={movieCount}
+            tvCount={tvCount}
+            favCount={favCount}
+            onSelect={handleCategorySelect}
+            onBack={() => setFlow({ stage: "welcome" })}
+            onFavourites={() => router.push("/favourites")}
+          />
+        );
+
+      case "results":
+        return (
+          <div className="flex flex-col h-full">
+            <BreadcrumbBar
+              path={breadcrumbPath}
+              onPathClick={handleBreadcrumbClick}
+              sortBy={sortBy}
+              setSortBy={(s) => setSortBy(s as SortKey)}
+              sortOptions={SORT_OPTIONS.map((o) => ({ key: o.key, label: o.label }))}
+              onFilterOpen={() => setFilterOpen(true)}
+              activeFilterCount={activeFilterCount}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            />
+
+            {/* Active filters summary */}
+            {activeFilterCount > 0 && (
+              <div className="flex items-center gap-2 px-6 py-1.5">
+                {genreFilter && (
+                  <button onClick={() => setGenreFilter(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider text-vr-blue bg-vr-blue/10 border border-vr-blue/20 hover:bg-vr-blue/15 transition-colors">
+                    {genreFilter} <span className="ml-0.5">×</span>
+                  </button>
+                )}
+                {tagFilter && (
+                  <button onClick={() => setTagFilter(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider text-vr-violet bg-vr-violet/10 border border-vr-violet/20 hover:bg-vr-violet/15 transition-colors">
+                    {tagFilter} <span className="ml-0.5">×</span>
+                  </button>
+                )}
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider text-[#9a968e] bg-[#1e1e26] border border-border-glow hover:bg-[#252530] transition-colors">
+                    &ldquo;{searchQuery}&rdquo; <span className="ml-0.5">×</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Paginated poster grid — spacious 2×4 layout */}
+            <div className="flex-1 flex items-center justify-center px-8 py-4">
+              {pagedEntries.length > 0 ? (
+                <div className="poster-grid grid grid-cols-4 gap-3 w-full max-w-[700px]">
+                  {pagedEntries.map((entry, i) => (
+                    <div
+                      key={entry.id}
+                      className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-lg"
+                      style={{ animationDelay: `${Math.min(i * 40, 300)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
+                      onClick={() => setSelectedEntry(entry)}
+                      onMouseEnter={() => handleMouseEnter(entry)}
+                    >
+                      <div className="aspect-[2/3]">
+                        {entry.poster ? (
+                          <img
+                            src={posterUrl(entry.poster, "medium")}
+                            alt={entry.title}
+                            className="w-full h-full object-cover rounded-lg"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[9px] font-display p-2 text-center bg-bg-card rounded-lg">
+                            {entry.title}
+                          </div>
+                        )}
+                      </div>
+                      {entry.recommended && (
+                        <div className="absolute top-1 left-1 text-[10px] drop-shadow-lg">⭐</div>
+                      )}
+                      {/* Title overlay at bottom */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-6 pb-2 px-2 rounded-b-lg">
+                        <p className="font-display text-[10px] text-white leading-tight truncate">{entry.title}</p>
+                        <p className="font-mono-stats text-[9px] text-vr-blue font-bold">{entry.my_rating}/10</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center">
+                  <LibraryIcon size={28} className="text-[#5c5954]/20 mx-auto mb-3" />
+                  <p className="font-body text-sm text-[#5c5954]">
+                    {entries.length === 0
+                      ? "Your collection is empty."
+                      : "No matches for your filters."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+    }
+  })();
+
+  // ─── Mobile: poster grid (unchanged scroll behaviour) ───
+  const mobilePosterGrid = (
+    <div className="poster-grid grid grid-cols-3 sm:grid-cols-4 gap-0.5">
       {filteredEntries.map((entry, i) => (
         <div
           key={entry.id}
           className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in"
           style={{ animationDelay: `${Math.min(i * 30, 400)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
           onClick={() => setSelectedEntry(entry)}
-          onMouseEnter={() => handleMouseEnter(entry)}
         >
           <div className="aspect-[2/3]">
             {entry.poster ? (
@@ -184,231 +353,176 @@ function LibraryContent() {
 
   return (
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
-      {/* Hero banner — mobile only */}
-      {heroEntry && (
-        <div
-          className="relative mb-2 cursor-pointer animate-fade-up flex-shrink-0 lg:hidden"
-          onClick={() => setSelectedEntry(heroEntry)}
-        >
+
+      {/* ═══ MOBILE LAYOUT ═══ */}
+      <div className="lg:hidden flex flex-col flex-1 min-h-0">
+        {/* Hero banner */}
+        {heroEntry && (
           <div
-            className="absolute inset-0 -mx-4"
-            style={{
-              backgroundImage: `url(${posterUrl(heroEntry.poster, "large")})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center 20%",
-              filter: "brightness(0.15) saturate(1.4) blur(40px)",
-              transform: "scale(1.1)",
-              maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-            }}
-          />
-          <div className="relative z-[1] flex items-center gap-4 py-2.5">
-            <img
-              src={posterUrl(heroEntry.poster, "small")}
-              alt={heroEntry.title}
-              className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
+            className="relative mb-2 cursor-pointer animate-fade-up flex-shrink-0"
+            onClick={() => setSelectedEntry(heroEntry)}
+          >
+            <div
+              className="absolute inset-0 -mx-4"
+              style={{
+                backgroundImage: `url(${posterUrl(heroEntry.poster, "large")})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center 20%",
+                filter: "brightness(0.15) saturate(1.4) blur(40px)",
+                transform: "scale(1.1)",
+                maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+              }}
             />
-            <div className="min-w-0">
-              <p
-                className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5"
-                style={{ color: heroEntry.media_type === "movie" ? "#38bdf8" : "#c4b5fd" }}
-              >
-                From Your Collection
-              </p>
-              <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
-                {heroEntry.title}
-              </h2>
-              <div className="flex items-center gap-2">
-                <span className="font-mono-stats text-sm text-vr-blue font-bold">
-                  {Number(heroEntry.my_rating).toFixed(0)}/10
-                </span>
-                <span className="font-mono-stats text-xs text-[#5c5954]">
-                  {heroEntry.year}
-                </span>
-                <span className="text-xs text-[#5c5954] truncate">
-                  {heroEntry.genres?.slice(0, 3).join(", ")}
-                </span>
+            <div className="relative z-[1] flex items-center gap-4 py-2.5">
+              <img
+                src={posterUrl(heroEntry.poster, "small")}
+                alt={heroEntry.title}
+                className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
+              />
+              <div className="min-w-0">
+                <p
+                  className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5"
+                  style={{ color: heroEntry.media_type === "movie" ? "#38bdf8" : "#c4b5fd" }}
+                >
+                  From Your Collection
+                </p>
+                <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
+                  {heroEntry.title}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono-stats text-sm text-vr-blue font-bold">
+                    {Number(heroEntry.my_rating).toFixed(0)}/10
+                  </span>
+                  <span className="font-mono-stats text-xs text-[#5c5954]">{heroEntry.year}</span>
+                  <span className="text-xs text-[#5c5954] truncate">{heroEntry.genres?.slice(0, 3).join(", ")}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Mobile: Movies/TV tabs */}
-      <div className="flex justify-center mb-2 flex-shrink-0 lg:hidden">
-        <div className="flex items-center gap-2">
-          <a
-            href="/?tab=movie"
-            className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
-              isMovie
-                ? "bg-gradient-to-br from-vr-blue to-vr-blue-dark text-white"
-                : "text-[#5c5954] hover:text-[#9a968e]"
-            }`}
-          >
-            🎬 Movies{" "}
-            <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
-              {movieCount}
-            </span>
-          </a>
-          <a
-            href="/?tab=tv"
-            className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
-              !isMovie
-                ? "bg-gradient-to-br from-vr-violet to-vr-violet-dark text-white"
-                : "text-[#5c5954] hover:text-[#9a968e]"
-            }`}
-          >
-            📺 TV Shows{" "}
-            <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
-              {tvCount}
-            </span>
-          </a>
-        </div>
-      </div>
-
-      {/* Mobile: filter dropdowns */}
-      <div className="lg:hidden space-y-1.5 mb-1 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <select
-              value={genreFilter || ""}
-              onChange={(e) => setGenreFilter(e.target.value || null)}
-              className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+        {/* Mobile: Movies/TV tabs */}
+        <div className="flex justify-center mb-2 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <a
+              href="/?tab=movie"
+              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                isMovie
+                  ? "bg-gradient-to-br from-vr-blue to-vr-blue-dark text-white"
+                  : "text-[#5c5954] hover:text-[#9a968e]"
+              }`}
             >
-              <option value="">All Genres</option>
-              {MAJOR_GENRES.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-            <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
+              🎬 Movies <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{movieCount}</span>
+            </a>
+            <a
+              href="/?tab=tv"
+              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                !isMovie
+                  ? "bg-gradient-to-br from-vr-violet to-vr-violet-dark text-white"
+                  : "text-[#5c5954] hover:text-[#9a968e]"
+              }`}
+            >
+              📺 TV Shows <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{tvCount}</span>
+            </a>
           </div>
-          {topTags.length > 0 && (
+        </div>
+
+        {/* Mobile: filter dropdowns */}
+        <div className="space-y-1.5 mb-1 flex-shrink-0">
+          <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <select
-                value={tagFilter || ""}
-                onChange={(e) => setTagFilter(e.target.value || null)}
+                value={genreFilter || ""}
+                onChange={(e) => setGenreFilter(e.target.value || null)}
                 className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
               >
-                <option value="">All Tags</option>
-                {topTags.map((t) => (
-                  <option key={t} value={t}>{t}</option>
+                <option value="">All Genres</option>
+                {MAJOR_GENRES.map((g) => (
+                  <option key={g} value={g}>{g}</option>
                 ))}
               </select>
               <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
             </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortKey)}
-              className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.key} value={opt.key}>{opt.label}</option>
-              ))}
-            </select>
-            <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-          </div>
-          <div className="relative flex-1">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop: compact filter rows — aligned with TV width */}
-      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-32 relative z-10">
-        {/* Row 1: Genre pills | Sort pills */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">
-            Genre
-          </span>
-          <button onClick={() => setGenreFilter(null)} className={pillClass(!genreFilter)}>All</button>
-          {MAJOR_GENRES.map((g) => (
-            <button key={g} onClick={() => setGenreFilter(genreFilter === g ? null : g)} className={pillClass(genreFilter === g)}>
-              {g}
-            </button>
-          ))}
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-violet shrink-0 ml-2">
-            Sort
-          </span>
-          {SORT_OPTIONS.map((opt) => (
-            <button key={opt.key} onClick={() => setSortBy(opt.key)} className={pillClass(sortBy === opt.key)}>
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Row 2: Tag pills + Search */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {topTags.length > 0 && (
-            <>
-              <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">
-                Tags
-              </span>
-              <button onClick={() => setTagFilter(null)} className={pillClass(!tagFilter)}>All</button>
-              {topTags.map((t) => (
-                <button key={t} onClick={() => setTagFilter(tagFilter === t ? null : t)} className={pillClass(tagFilter === t)}>
-                  {t}
-                </button>
-              ))}
-            </>
-          )}
-          <div className="relative flex-1 min-w-[140px] ml-auto">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search ${isMovie ? "movies" : "TV shows"}...`}
-              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Poster grid — TV frame on desktop, plain on mobile */}
-      {filteredEntries.length > 0 ? (
-        <>
-          <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
-            <LedBars />
-
-            <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
-            {/* TV stand — neck + base pedestal */}
-            <div className="hidden lg:block px-32">
-              <div className="tv-stand">
-                <div className="tv-stand-neck" />
-                <div className="tv-stand-base" />
+            {topTags.length > 0 && (
+              <div className="relative flex-1">
+                <select
+                  value={tagFilter || ""}
+                  onChange={(e) => setTagFilter(e.target.value || null)}
+                  className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+                >
+                  <option value="">All Tags</option>
+                  {topTags.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
               </div>
-            </div>
-            {/* Soundbar — now-playing bar */}
-            <PreviewBar
-              entry={displayEntry}
-              onEdit={(entry) => setSelectedEntry(entry)}
-              isOn={tvOn}
-            />
+            )}
           </div>
-          {/* Mobile: plain grid — scrollable, hero+filters stay pinned above */}
-          <div className="lg:hidden flex-1 min-h-0 overflow-y-auto pb-20">{posterGrid}</div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center flex-1">
-          <LibraryIcon size={36} className="text-[#5c5954]/20 mb-4" />
-          <p className="font-body text-[#5c5954]">
-            {entries.length === 0
-              ? "Your collection is empty. Head to Search to add films."
-              : "No matches for your filters."}
-          </p>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+                className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.key} value={opt.key}>{opt.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
+            </div>
+            <div className="relative flex-1">
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+              />
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Mobile grid */}
+        <div className="flex-1 min-h-0 overflow-y-auto pb-20">{mobilePosterGrid}</div>
+      </div>
+
+      {/* ═══ DESKTOP LAYOUT ═══ */}
+      <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
+        <LedBars />
+        <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>
+          {desktopTvContent}
+        </TvFrame>
+        <div className="hidden lg:block px-32">
+          <div className="tv-stand">
+            <div className="tv-stand-neck" />
+            <div className="tv-stand-base" />
+          </div>
+        </div>
+        {flow.stage === "results" && (
+          <PreviewBar
+            entry={displayEntry}
+            onEdit={(entry) => setSelectedEntry(entry)}
+            isOn={tvOn}
+          />
+        )}
+      </div>
+
+      {/* Filter drawer */}
+      <FilterDrawer
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        genreFilter={genreFilter}
+        setGenreFilter={setGenreFilter}
+        tagFilter={tagFilter}
+        setTagFilter={setTagFilter}
+        availableTags={topTags}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
 
       {/* Detail modal */}
       {selectedEntry && (
@@ -563,7 +677,6 @@ function EntryDetailModal({
                 ))}
               </div>
             )}
-            {/* Desktop: text input + suggestion pills */}
             <div className="hidden md:block">
               <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]); setTagInput(""); } }} placeholder="Type a custom tag..." className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40 mb-2" />
               <div className="flex flex-wrap gap-1.5">
@@ -572,7 +685,6 @@ function EntryDetailModal({
                 ))}
               </div>
             </div>
-            {/* Mobile: dropdown select */}
             <div className="md:hidden">
               <select
                 value=""
