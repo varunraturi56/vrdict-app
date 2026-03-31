@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
+  Home,
   Library,
   Star,
   Bookmark,
@@ -15,7 +16,7 @@ import { logout } from "@/app/login/actions/auth";
 import { useLibraryCounts } from "@/lib/library-context";
 
 const navItems = [
-  { href: "/", label: "Library", icon: Library },
+  { href: "/", label: "Home", icon: Home },
   { href: "/favourites", label: "Favourites", icon: Star },
   { href: "/watchlist", label: "Watchlist", icon: Bookmark },
   { href: "/discover", label: "Discover", icon: Radar },
@@ -125,7 +126,7 @@ export function TopNav() {
               ? pathname === "/"
               : pathname.startsWith(item.href);
 
-          const isMediaTabHost = item.href === "/" || item.href === "/favourites" || item.href === "/watchlist" || item.href === "/discover";
+          const isMediaTabHost = item.href === "/favourites" || item.href === "/watchlist" || item.href === "/discover";
           const isThisTabActive = isActive;
           const isThisTabMediaHost = isMediaTabHost && isThisTabActive;
 

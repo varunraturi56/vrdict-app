@@ -159,9 +159,11 @@ function LibraryContent() {
   }, [pickHero]);
 
   // Flow navigation handlers
-  function handleWelcomeNavigate(area: "library" | "watchlist" | "discover" | "stats") {
+  function handleWelcomeNavigate(area: "library" | "favourites" | "watchlist" | "discover" | "stats") {
     if (area === "library") {
       setFlow({ stage: "category", area: "Library" });
+    } else if (area === "favourites") {
+      router.push("/favourites");
     } else if (area === "watchlist") {
       router.push("/watchlist");
     } else if (area === "discover") {
@@ -502,13 +504,11 @@ function LibraryContent() {
             <div className="tv-stand-base" />
           </div>
         </div>
-        {flow.stage === "results" && (
-          <PreviewBar
-            entry={displayEntry}
-            onEdit={(entry) => setSelectedEntry(entry)}
-            isOn={tvOn}
-          />
-        )}
+        <PreviewBar
+          entry={flow.stage === "results" ? displayEntry : null}
+          onEdit={(entry) => setSelectedEntry(entry)}
+          isOn={tvOn}
+        />
       </div>
 
       {/* Filter drawer */}
