@@ -973,7 +973,7 @@ function WatchlistToolbar({
           )}
         </div>
 
-        {/* Filter button with icon */}
+        {/* Filter button with icon — badge always takes space to prevent layout shift */}
         <button
           onClick={onFilterOpen}
           className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors"
@@ -982,14 +982,12 @@ function WatchlistToolbar({
         >
           <SlidersHorizontal size={12} />
           <span className="font-display text-[10px] uppercase tracking-wider">Filter</span>
-          {activeFilterCount > 0 && (
-            <span
-              className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats"
-              style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
-            >
-              {activeFilterCount}
-            </span>
-          )}
+          <span
+            className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
+            style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
+          >
+            {activeFilterCount || 0}
+          </span>
         </button>
 
         {/* Rewatch toggle */}

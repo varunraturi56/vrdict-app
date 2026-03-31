@@ -17,6 +17,8 @@ interface BreadcrumbBarProps {
   accentColor?: "blue" | "violet";
   /** Custom RGB override — e.g. "255,184,0". Takes precedence over accentColor */
   accentRgb?: string;
+  /** Custom placeholder for the search input */
+  searchPlaceholder?: string;
 }
 
 // Named presets
@@ -38,6 +40,7 @@ export function BreadcrumbBar({
   onClearFilters,
   accentColor = "blue",
   accentRgb,
+  searchPlaceholder = "Search titles...",
 }: BreadcrumbBarProps) {
   const rgb = accentRgb || PRESETS[accentColor] || PRESETS.blue;
 
@@ -92,7 +95,7 @@ export function BreadcrumbBar({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search titles..."
+            placeholder={searchPlaceholder}
             className="h-7 w-56 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
             style={{ border: `1px solid ${borderStyle}` }}
             onFocus={(e) => { e.currentTarget.style.borderColor = borderFocusStyle; }}
@@ -131,7 +134,7 @@ export function BreadcrumbBar({
           )}
         </div>
 
-        {/* Filter button */}
+        {/* Filter button — badge always takes space to prevent layout shift */}
         <button
           onClick={onFilterOpen}
           className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors"
@@ -141,21 +144,19 @@ export function BreadcrumbBar({
         >
           <SlidersHorizontal size={12} />
           <span className="font-display text-[10px] uppercase tracking-wider">Filter</span>
-          {activeFilterCount > 0 && (
-            <span
-              className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats"
-              style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
-            >
-              {activeFilterCount}
-            </span>
-          )}
+          <span
+            className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
+            style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
+          >
+            {activeFilterCount || 0}
+          </span>
         </button>
 
-        {/* Clear filters */}
-        {(activeFilterCount > 0 || searchQuery) && onClearFilters && (
+        {/* Clear filters — always rendered, visibility toggled to prevent layout shift */}
+        {onClearFilters && (
           <button
             onClick={onClearFilters}
-            className="w-7 h-7 rounded-full flex items-center justify-center border border-border-glow/20 transition-all hover:rotate-[-180deg] duration-300"
+            className={`w-7 h-7 rounded-full flex items-center justify-center border border-border-glow/20 transition-all hover:rotate-[-180deg] duration-300 ${(activeFilterCount > 0 || searchQuery) ? "opacity-100" : "opacity-0 pointer-events-none"}`}
             style={accentStyle}
             title="Clear all filters"
           >

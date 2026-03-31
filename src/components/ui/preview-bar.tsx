@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { posterUrl } from "@/lib/tmdb";
 
-import { getAmbientColor, getPageGlow, getSparkGlow, rgba, type RGB } from "@/lib/ambient-colors";
+import { getPageGlow, getSparkGlow, rgba, type RGB } from "@/lib/ambient-colors";
 import type { Entry } from "@/lib/types";
 
 interface PreviewBarProps {
@@ -19,9 +19,10 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
   const mediaTab = searchParams.get("tab") || "movie";
   const isHome = pathname === "/" && !searchParams.get("tab");
   const homeGreen: RGB = [34, 197, 94];
-  const ambient = isHome ? { r: 34, g: 197, b: 94 } : getAmbientColor(pathname);
   const glowRgb = isHome ? homeGreen : getPageGlow(pathname, mediaTab);
   const sparkRgb = isHome ? homeGreen : getSparkGlow(pathname, mediaTab);
+  // Ambient derived from glowRgb so it switches with movie/tv
+  const ambient = { r: glowRgb[0], g: glowRgb[1], b: glowRgb[2] };
 
   const isMovie = entry?.media_type === "movie";
 

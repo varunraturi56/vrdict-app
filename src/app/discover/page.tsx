@@ -1,8 +1,8 @@
 "use client";
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
-import { Radar, Search, Plus, Bookmark, Check, ChevronDown } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Radar, Search, Plus, Bookmark, Check, ChevronDown, X, SlidersHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   posterUrl,
@@ -15,7 +15,9 @@ import { MAJOR_GENRES, ERAS, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
 import { PreviewBar } from "@/components/ui/preview-bar";
+import { TvCategorySelect } from "@/components/ui/tv-category-select";
 import { AddModal } from "@/components/add-modal";
+import { PAGE_GLOWS } from "@/lib/ambient-colors";
 
 const SORT_OPTIONS = [
   { key: "vote_average.desc", label: "TMDB" },
@@ -24,6 +26,12 @@ const SORT_OPTIONS = [
 ] as const;
 
 type SortKey = (typeof SORT_OPTIONS)[number]["key"];
+
+const ITEMS_PER_PAGE = 14;
+
+type FlowState =
+  | { stage: "category" }
+  | { stage: "results"; mediaType: MediaType };
 
 export default function DiscoverPage() {
   return (
@@ -35,6 +43,7 @@ export default function DiscoverPage() {
 
 function DiscoverContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const mediaTab = (searchParams.get("tab") || "movie") as MediaType;
 
   // Filters
@@ -42,22 +51,39 @@ function DiscoverContent() {
   const [eraFilter, setEraFilter] = useState<string>("All");
   const [sortBy, setSortBy] = useState<SortKey>("vote_average.desc");
   const [keywords, setKeywords] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<TmdbSearchResult[]>([]);
+  const [filterOpen, setFilterOpen] = useState(false);
 
-  // Results
+  // Results — all fetched results kept in a flat array, paginated client-side
   const [results, setResults] = useState<TmdbSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Guards via refs — never stale, no closure issues
+  // Custom dropdown state + refs
+  const [eraDropOpen, setEraDropOpen] = useState(false);
+  const [sortDropOpen, setSortDropOpen] = useState(false);
+  const eraDropRef = useRef<HTMLDivElement>(null);
+  const sortDropRef = useRef<HTMLDivElement>(null);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (eraDropRef.current && !eraDropRef.current.contains(e.target as Node)) setEraDropOpen(false);
+      if (sortDropRef.current && !sortDropRef.current.contains(e.target as Node)) setSortDropOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Guards via refs
   const loadingRef = useRef(false);
   const hasMoreRef = useRef(true);
   const pageRef = useRef(1);
 
-  // Search & add to library
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<TmdbSearchResult[]>([]);
-
-  // Existing IDs — ref always has the latest value for use inside fetchDiscover
+  // Existing IDs
   const [existingTmdbIds, setExistingTmdbIds] = useState<Set<string>>(new Set());
   const existingIdsRef = useRef(existingTmdbIds);
   existingIdsRef.current = existingTmdbIds;
@@ -67,13 +93,6 @@ function DiscoverContent() {
   // TV frame
   const [tvOn, setTvOn] = useState(true);
   const [peekedResult, setPeekedResult] = useState<TmdbSearchResult | null>(null);
-
-  // Scroll container ref — directly on the .tv-scroll element via TvFrame prop
-  const tvScrollRef = useRef<HTMLDivElement>(null);
-  // Mobile scroll container
-  const mobileScrollRef = useRef<HTMLDivElement>(null);
-  // Sentinel for IntersectionObserver-based infinite scroll
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Hero banner (mobile) — auto-rotate every 5s
   const [heroResult, setHeroResult] = useState<TmdbSearchResult | null>(null);
@@ -91,14 +110,24 @@ function DiscoverContent() {
   // Keyword resolution
   const [resolvedKeywordIds, setResolvedKeywordIds] = useState<string>("");
 
-  const pillClass = (active: boolean) =>
-    `px-[10px] py-[4px] rounded-[20px] text-[11px] xl:px-[14px] xl:py-[6px] xl:text-[13px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
-      active
-        ? "text-vr-blue border-vr-blue/30 bg-[rgba(14,165,233,0.12)]"
-        : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
-    }`;
+  // Desktop flow state
+  const hasTab = searchParams.get("tab");
+  const [flow, setFlow] = useState<FlowState>(
+    hasTab
+      ? { stage: "results", mediaType: (hasTab || "movie") as MediaType }
+      : { stage: "category" }
+  );
 
-  // Load existing entries + watchlist, then trigger initial discover
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setFlow({ stage: "results", mediaType: tab as MediaType });
+    } else {
+      setFlow({ stage: "category" });
+    }
+  }, [searchParams]);
+
+  // Load existing entries + watchlist
   const [existingLoaded, setExistingLoaded] = useState(false);
   useEffect(() => {
     async function loadExisting() {
@@ -134,7 +163,7 @@ function DiscoverContent() {
     return () => clearTimeout(timeout);
   }, [keywords]);
 
-  // Core fetch function — uses refs for page/loading guards, never stale
+  // Core fetch function
   async function fetchDiscover(startPage: number, append: boolean) {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -155,7 +184,6 @@ function DiscoverContent() {
         yearLte = String(decade + 9);
       }
 
-      // Fetch 3 pages with different sort orders (matches original HTML)
       const sortOrders = ["popularity.desc", "vote_average.desc", "vote_count.desc"];
       const minVotes = [50, 20, 20];
       const minRatings = [6, 5, 5];
@@ -181,7 +209,6 @@ function DiscoverContent() {
         );
       }
 
-      // Also fetch trending if no filters active
       if (!genreFilter && eraFilter === "All" && !resolvedKeywordIds) {
         fetches.push(
           fetch(`/api/tmdb?action=trending&media_type=${mediaTab}`).then((r) => r.json()).catch(() => ({ results: [] }))
@@ -189,14 +216,11 @@ function DiscoverContent() {
       }
 
       const pages = await Promise.all(fetches);
-
-      // Collect all raw results
       const allResults: TmdbSearchResult[] = [];
       pages.forEach((p) => {
         if (p.results) allResults.push(...p.results);
       });
 
-      // Deduplicate and filter — use state updater for latest prev
       setResults((prev) => {
         const seen = new Set<number>();
         if (append) prev.forEach((r) => seen.add(r.id));
@@ -217,9 +241,7 @@ function DiscoverContent() {
           hasMoreRef.current = false;
         }
 
-        // Advance page ref for next scroll trigger
         pageRef.current = startPage + 3;
-
         return append ? [...prev, ...newItems] : newItems;
       });
     } catch {
@@ -228,76 +250,31 @@ function DiscoverContent() {
       setLoading(false);
       setInitialLoad(false);
       loadingRef.current = false;
-
-      // Auto-fill: if content doesn't fill the scroll container, load more
-      // (same behaviour as original — observer fires immediately when sentinel is visible)
-      requestAnimationFrame(() => {
-        const el = tvScrollRef.current || mobileScrollRef.current;
-        if (el && hasMoreRef.current && !loadingRef.current) {
-          if (el.scrollHeight <= el.clientHeight + 50) {
-            fetchDiscover(pageRef.current, true);
-          }
-        }
-      });
     }
   }
 
-  // Reset and fetch fresh on filter/tab change (waits for existing IDs to load first)
+  // Reset and fetch fresh on filter/tab change
   useEffect(() => {
     if (!existingLoaded) return;
+    if (flow.stage !== "results") return;
     setResults([]);
+    setCurrentPage(1);
     pageRef.current = 1;
     hasMoreRef.current = true;
     loadingRef.current = false;
     setInitialLoad(true);
     fetchDiscover(1, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingLoaded]);
+  }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingLoaded, flow.stage]);
 
-  // Infinite scroll via scroll event listener on the actual scroll containers.
-  // Re-attaches when initialLoad flips to false (TV frame is now in the DOM)
-  // and when filters change (fetchDiscover closure captures filter values).
+  // Reset filters when switching media tabs
   useEffect(() => {
-    function handleScroll(e: Event) {
-      const el = e.currentTarget as HTMLElement;
-      if (loadingRef.current || !hasMoreRef.current) return;
-      const { scrollTop, scrollHeight, clientHeight } = el;
-      if (scrollHeight - scrollTop - clientHeight < 300) {
-        fetchDiscover(pageRef.current, true);
-      }
-    }
-
-    const tvEl = tvScrollRef.current;
-    const mobileEl = mobileScrollRef.current;
-
-    tvEl?.addEventListener("scroll", handleScroll, { passive: true });
-    mobileEl?.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      tvEl?.removeEventListener("scroll", handleScroll);
-      mobileEl?.removeEventListener("scroll", handleScroll);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingTmdbIds, initialLoad]);
-
-  // IntersectionObserver fallback — reliable on iOS/iPadOS standalone PWA
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && !loadingRef.current && hasMoreRef.current) {
-          fetchDiscover(pageRef.current, true);
-        }
-      },
-      { rootMargin: "300px" }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingTmdbIds, initialLoad]);
+    setGenreFilter(null);
+    setEraFilter("All");
+    setKeywords("");
+    setSearchQuery("");
+    setCurrentPage(1);
+  }, [mediaTab]);
 
   // Search & add to library (debounced)
   useEffect(() => {
@@ -368,6 +345,47 @@ function DiscoverContent() {
     setSelectedResult(null);
   }
 
+  // Flow navigation
+  function handleCategorySelect(mediaType: MediaType) {
+    setFlow({ stage: "results", mediaType });
+    router.push(`/discover?tab=${mediaType}`, { scroll: false });
+  }
+
+  function handleBreadcrumbClick(index: number) {
+    if (index === 0) {
+      setFlow({ stage: "category" });
+      router.push("/discover", { scroll: false });
+    }
+    if (index <= 1) {
+      setGenreFilter(null);
+      setEraFilter("All");
+      setKeywords("");
+      setSearchQuery("");
+    }
+  }
+
+  // Pagination — when pressing right arrow and we need more results, fetch from TMDB
+  const totalPages = Math.max(1, Math.ceil(results.length / ITEMS_PER_PAGE));
+  const pagedResults = results.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  function handleNextPage() {
+    if (currentPage < totalPages) {
+      setCurrentPage((p) => p + 1);
+    } else if (hasMoreRef.current && !loadingRef.current) {
+      // At the last page of current results — fetch more from TMDB
+      fetchDiscover(pageRef.current, true);
+      // After fetch completes, results grow and totalPages increases, so advance
+      setCurrentPage((p) => p + 1);
+    }
+  }
+
+  function handlePrevPage() {
+    setCurrentPage((p) => Math.max(1, p - 1));
+  }
+
   // Preview bar entry
   const displayResult = peekedResult || results[0] || null;
   const displayEntry = displayResult
@@ -398,378 +416,604 @@ function DiscoverContent() {
     : null;
 
   const isMovie = mediaTab === "movie";
+  const pageGlows = PAGE_GLOWS["/discover"];
+  const themeRgb = isMovie ? pageGlows.movie : pageGlows.tv;
+  const rgb = themeRgb.join(",");
 
-  // Poster grid with hover actions
-  const discoverGrid = (
-    <div>
-      <div className="poster-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
-        {results.map((r, i) => {
-          const inLibrary = isInLibrary(r);
-          const inWatchlist = isInWatchlist(r);
-          return (
-            <div
-              key={`${r.media_type}-${r.id}`}
-              className={`poster-card group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in ${
-                inLibrary ? "opacity-40" : ""
-              }`}
-              style={{ animationDelay: `${Math.min(i * 30, 400)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
-              onMouseEnter={() => setPeekedResult(r)}
-              onClick={() => { if (!inLibrary) setSelectedResult(r); }}
-            >
-              <div className="aspect-[2/3]">
-                <img
-                  src={posterUrl(r.poster_path, "small")}
-                  alt={getDisplayTitle(r)}
-                  className="w-full h-full object-cover rounded-[6px]"
-                  loading="lazy"
-                />
+  const activeFilterCount = (genreFilter ? 1 : 0);
+
+  const breadcrumbPath = flow.stage === "results"
+    ? ["Discover", mediaTab === "movie" ? "Movies" : "TV Shows", ...(genreFilter ? [genreFilter] : [])]
+    : [];
+
+  // ─── Desktop: TV content based on flow state ───
+  const desktopTvContent = (() => {
+    switch (flow.stage) {
+      case "category":
+        return (
+          <TvCategorySelect
+            area="Discover"
+            movieCount={0}
+            tvCount={0}
+            favCount={0}
+            onSelect={handleCategorySelect}
+            onBack={() => router.push("/", { scroll: false })}
+            onFavourites={() => {}}
+            icon={Radar}
+            accentColor="text-pink-400"
+            accentGlow="drop-shadow(0 0 8px rgba(244,114,182,0.5))"
+            glowClass=""
+            movieRgb={pageGlows.movie.join(",")}
+            tvRgb={pageGlows.tv.join(",")}
+          />
+        );
+
+      case "results":
+        return (
+          <div className="flex flex-col h-full relative">
+            {/* Single toolbar row */}
+            <div className="flex items-center justify-between px-4 lg:px-6 py-2 border-b border-border-glow/15">
+              {/* Left: Breadcrumb + active filter pills */}
+              <div className="flex items-center gap-2 min-w-0">
+                {breadcrumbPath.map((segment, i) => (
+                  <span key={i} className="flex items-center gap-1 min-w-0 shrink-0">
+                    {i > 0 && <ChevronDown size={12} className="rotate-[-90deg] text-[#5c5954]/40 shrink-0" />}
+                    <button
+                      onClick={() => handleBreadcrumbClick(i)}
+                      className={`font-display text-[11px] uppercase tracking-wider transition-colors truncate ${
+                        i === breadcrumbPath.length - 1
+                          ? ""
+                          : "text-[#5c5954] hover:text-[#9a968e]"
+                      }`}
+                      style={i === breadcrumbPath.length - 1 ? { color: `rgb(${rgb})` } : undefined}
+                    >
+                      {segment}
+                    </button>
+                  </span>
+                ))}
+
+                {/* Active filter pills */}
+                {genreFilter && (
+                  <button onClick={() => setGenreFilter(null)} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-display uppercase tracking-wider transition-colors shrink-0" style={{ color: `rgb(${rgb})`, backgroundColor: `rgba(${rgb},0.1)`, border: `1px solid rgba(${rgb},0.2)` }}>
+                    {genreFilter} <span className="ml-0.5">×</span>
+                  </button>
+                )}
               </div>
 
-              {/* Rating badge */}
-              {r.vote_average > 0 && (
-                <div className={`absolute top-1 right-1 px-1.5 py-0.5 rounded-full text-white text-[8px] font-mono-stats font-bold shadow-lg ${
-                  isMovie ? "bg-vr-blue/90" : "bg-vr-violet/90"
-                }`}>
-                  {r.vote_average.toFixed(1)}
+              {/* Right: Keywords + Search & add + Era + Sort + Filter + count */}
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Keywords input */}
+                <div className="relative shrink-0">
+                  <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={{ color: `rgb(${rgb})` }} />
+                  <input
+                    type="text"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                    placeholder="Keywords..."
+                    className="h-7 w-32 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+                    style={{ border: `1px solid rgba(${rgb},0.2)` }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.2)`; }}
+                  />
                 </div>
-              )}
 
-              {/* Mobile: always-visible bottom bar with add/watchlist */}
-              <div className="absolute bottom-0 left-0 right-0 md:hidden bg-gradient-to-t from-black/90 to-transparent pt-4 pb-1 px-1">
-                <div className="flex gap-0.5">
-                  {!inLibrary ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedResult(r); }}
-                      className="flex-1 flex items-center justify-center gap-0.5 py-0.5 rounded text-[6px] font-display uppercase tracking-wider text-white bg-vr-blue/80"
-                    >
-                      <Plus size={7} /> Add
-                    </button>
-                  ) : (
-                    <span className="flex-1 flex items-center justify-center gap-0.5 py-0.5 rounded text-[6px] font-display uppercase text-green-400/70">
-                      <Check size={7} />
-                    </span>
-                  )}
-                  {!inLibrary && !inWatchlist && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); addToWatchlist(r); }}
-                      disabled={addingToWatchlist === r.id}
-                      className="px-1 py-0.5 rounded text-[#9a968e] border border-border-glow/50 disabled:opacity-50"
-                    >
-                      <Bookmark size={7} />
-                    </button>
-                  )}
-                </div>
-              </div>
+                {/* Search & add to library */}
+                <div className="relative" ref={searchBoxRef}>
+                  <Plus size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={{ color: `rgb(${rgb})` }} />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search & add to library..."
+                    className="h-7 w-56 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+                    style={{ border: `1px solid rgba(${rgb},0.2)` }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.2)`; }}
+                  />
 
-              {/* Desktop: hover overlay with actions */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex flex-col justify-end p-1.5">
-                <p className="font-display text-[9px] text-white leading-tight truncate">{getDisplayTitle(r)}</p>
-                <p className="font-mono-stats text-[7px] text-[#9a968e] mb-1.5">{getYear(r)}</p>
-                <div className="flex gap-1">
-                  {!inLibrary ? (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedResult(r); }}
-                      className="flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[7px] font-display uppercase tracking-wider text-white bg-vr-blue/80 hover:bg-vr-blue transition-colors"
-                    >
-                      <Plus size={8} /> Add
-                    </button>
-                  ) : (
-                    <span className="flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[7px] font-display uppercase tracking-wider text-green-400/70">
-                      <Check size={8} /> Added
-                    </span>
-                  )}
-                  {!inLibrary && !inWatchlist && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); addToWatchlist(r); }}
-                      disabled={addingToWatchlist === r.id}
-                      className="p-1 rounded text-[#9a968e] hover:text-vr-violet border border-border-glow/50 hover:border-vr-violet/30 transition-all disabled:opacity-50"
-                    >
-                      <Bookmark size={8} />
-                    </button>
-                  )}
-                  {inWatchlist && (
-                    <span className="p-1 rounded text-vr-violet/50">
-                      <Bookmark size={8} className="fill-current" />
-                    </span>
+                  {/* Search results dropdown — anchored to search input */}
+                  {searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-bg-card shadow-xl z-50 overflow-hidden">
+                      {searchResults.map((r) => {
+                        const inLibrary = isInLibrary(r);
+                        return (
+                          <div
+                            key={`${r.media_type}-${r.id}`}
+                            className="flex items-center gap-2 w-full px-3 py-2 hover:bg-bg-3 transition-colors"
+                          >
+                            {r.poster_path && (
+                              <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-display text-[10px] text-[#e8e4dc] truncate">{getDisplayTitle(r)}</p>
+                              <p className="font-mono-stats text-[8px] text-[#5c5954]">
+                                {getYear(r)} · {r.media_type}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => { if (!inLibrary) setSelectedResult(r); }}
+                              disabled={inLibrary}
+                              className={`shrink-0 px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all ${
+                                inLibrary
+                                  ? "text-green-400/50 border border-green-400/20 cursor-default"
+                                  : "text-white border border-transparent hover:bg-white/10"
+                              }`}
+                              style={!inLibrary ? { backgroundColor: `rgba(${rgb},0.15)`, color: `rgb(${rgb})`, borderColor: `rgba(${rgb},0.25)` } : undefined}
+                            >
+                              {inLibrary ? "Added" : "+ Add"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
+
+                {/* Sort dropdown */}
+                <div className="relative" ref={sortDropRef}>
+                  <button
+                    onClick={() => setSortDropOpen(!sortDropOpen)}
+                    className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+                    style={{ border: `1px solid rgba(${rgb},0.2)`, color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.3)` }}
+                  >
+                    <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Sort:</span>
+                    <span className="font-display text-[10px] uppercase tracking-wider">{SORT_OPTIONS.find((o) => o.key === sortBy)?.label || "TMDB"}</span>
+                    <ChevronDown size={10} className={`${sortDropOpen ? "rotate-180" : ""} transition-transform duration-200 opacity-50`} />
+                  </button>
+                  {sortDropOpen && (
+                    <div className="absolute top-full right-0 mt-1 z-20 min-w-[120px] rounded-lg border border-border-glow/30 bg-[#0e0e14] shadow-2xl animate-drawer-enter overflow-hidden">
+                      {SORT_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.key}
+                          onClick={() => { setSortBy(opt.key); setSortDropOpen(false); }}
+                          className={`w-full text-left px-3 py-2 font-display text-[10px] uppercase tracking-wider transition-colors ${
+                            sortBy === opt.key
+                              ? "bg-bg-deep/60"
+                              : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"
+                          }`}
+                          style={sortBy === opt.key ? { color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.4)` } : undefined}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Era dropdown — next to Sort */}
+                <div className="relative" ref={eraDropRef}>
+                  <button
+                    onClick={() => setEraDropOpen(!eraDropOpen)}
+                    className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+                    style={{ border: `1px solid rgba(${rgb},0.2)`, color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.3)` }}
+                  >
+                    <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Era:</span>
+                    <span className="font-display text-[10px] uppercase tracking-wider">{eraFilter === "All" ? "All" : eraFilter}</span>
+                    <ChevronDown size={10} className={`${eraDropOpen ? "rotate-180" : ""} transition-transform duration-200 opacity-50`} />
+                  </button>
+                  {eraDropOpen && (
+                    <div className="absolute top-full right-0 mt-1 z-20 min-w-[120px] rounded-lg border border-border-glow/30 bg-[#0e0e14] shadow-2xl animate-drawer-enter overflow-hidden">
+                      {ERAS.map((era) => (
+                        <button
+                          key={era}
+                          onClick={() => { setEraFilter(era); setEraDropOpen(false); }}
+                          className={`w-full text-left px-3 py-2 font-display text-[10px] uppercase tracking-wider transition-colors ${
+                            eraFilter === era
+                              ? "bg-bg-deep/60"
+                              : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"
+                          }`}
+                          style={eraFilter === era ? { color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.4)` } : undefined}
+                        >
+                          {era === "All" ? "All Eras" : era}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Filter button */}
+                <button
+                  onClick={() => setFilterOpen(true)}
+                  className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors"
+                  onMouseEnter={(e) => { e.currentTarget.style.color = `rgb(${rgb})`; e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = ""; e.currentTarget.style.borderColor = ""; }}
+                >
+                  <SlidersHorizontal size={12} />
+                  <span className="font-display text-[10px] uppercase tracking-wider">Filter</span>
+                  <span
+                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
+                    style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
+                  >
+                    {activeFilterCount || 0}
+                  </span>
+                </button>
+
+                <span className="font-mono-stats text-[9px] text-[#5c5954] shrink-0">{results.length}</span>
               </div>
             </div>
-          );
-        })}
-      </div>
 
-      {/* Loading more spinner */}
-      {loading && results.length > 0 && (
-        <div className="flex items-center justify-center py-4">
-          <div className="w-5 h-5 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />
-        </div>
-      )}
+            {/* Paginated poster grid — 7-col with arrows, no page indicator */}
+            {initialLoad ? (
+              <div className="flex items-center justify-center flex-1">
+                <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: `rgba(${rgb},0.3)`, borderTopColor: `rgb(${rgb})` }} />
+              </div>
+            ) : pagedResults.length > 0 ? (
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-1 py-2">
+                <div className="flex items-center w-full flex-1 min-h-0">
+                  {/* Left arrow */}
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={currentPage === 1}
+                    className="shrink-0 w-10 h-full flex items-center justify-center disabled:opacity-10 disabled:cursor-not-allowed transition-all group"
+                    style={{ color: `rgb(${rgb})` }}
+                  >
+                    <ChevronDown
+                      size={44}
+                      className="rotate-90 transition-all duration-300 group-hover:scale-125"
+                      style={{
+                        filter: currentPage === 1 ? "none" : `drop-shadow(0 0 8px rgba(${rgb},0.6)) drop-shadow(0 0 20px rgba(${rgb},0.3))`,
+                      }}
+                    />
+                  </button>
 
-      {/* Sentinel for IntersectionObserver infinite scroll */}
-      <div ref={sentinelRef} className="h-1" />
-    </div>
-  );
+                  <div className="poster-grid grid grid-cols-7 gap-1.5 flex-1 min-h-0">
+                    {pagedResults.map((r, i) => {
+                      const inLibrary = isInLibrary(r);
+                      const inWatchlist = isInWatchlist(r);
+                      return (
+                        <div
+                          key={`${r.media_type}-${r.id}`}
+                          className={`poster-card group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md ${
+                            inLibrary ? "opacity-40" : ""
+                          }`}
+                          style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
+                          onMouseEnter={() => setPeekedResult(r)}
+                          onClick={() => { if (!inLibrary) setSelectedResult(r); }}
+                        >
+                          <div className="aspect-[2/3]">
+                            <img
+                              src={posterUrl(r.poster_path, "medium")}
+                              alt={getDisplayTitle(r)}
+                              className="w-full h-full object-cover rounded-md"
+                              loading="lazy"
+                            />
+                          </div>
+
+                          {/* Rating badge */}
+                          {r.vote_average > 0 && (
+                            <div
+                              className="absolute top-1 right-1 px-1.5 py-0.5 rounded-full text-white text-[8px] font-mono-stats font-bold shadow-lg"
+                              style={{ backgroundColor: `rgba(${rgb},0.9)` }}
+                            >
+                              {r.vote_average.toFixed(1)}
+                            </div>
+                          )}
+
+                          {/* Desktop: hover overlay with actions */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-1.5">
+                            <p className="font-display text-[9px] text-white leading-tight truncate">{getDisplayTitle(r)}</p>
+                            <p className="font-mono-stats text-[7px] text-[#9a968e] mb-1.5">{getYear(r)}</p>
+                            <div className="flex gap-1">
+                              {!inLibrary ? (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSelectedResult(r); }}
+                                  className="flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[7px] font-display uppercase tracking-wider text-white transition-colors"
+                                  style={{ backgroundColor: `rgba(${rgb},0.8)` }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = `rgb(${rgb})`; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = `rgba(${rgb},0.8)`; }}
+                                >
+                                  <Plus size={8} /> Add
+                                </button>
+                              ) : (
+                                <span className="flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[7px] font-display uppercase tracking-wider text-green-400/70">
+                                  <Check size={8} /> Added
+                                </span>
+                              )}
+                              {!inLibrary && !inWatchlist && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); addToWatchlist(r); }}
+                                  disabled={addingToWatchlist === r.id}
+                                  className="p-1 rounded border border-border-glow/50 transition-all disabled:opacity-50"
+                                  style={{ color: `rgb(${rgb})` }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = ""; }}
+                                >
+                                  <Bookmark size={8} />
+                                </button>
+                              )}
+                              {inWatchlist && (
+                                <span className="p-1 rounded" style={{ color: `rgba(${rgb},0.5)` }}>
+                                  <Bookmark size={8} className="fill-current" />
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Right arrow — loads more when at the edge */}
+                  <button
+                    onClick={handleNextPage}
+                    disabled={!hasMoreRef.current && currentPage >= totalPages}
+                    className="shrink-0 w-10 h-full flex items-center justify-center disabled:opacity-10 disabled:cursor-not-allowed transition-all group"
+                    style={{ color: `rgb(${rgb})` }}
+                  >
+                    <ChevronDown
+                      size={44}
+                      className="-rotate-90 transition-all duration-300 group-hover:scale-125"
+                      style={{
+                        filter: (!hasMoreRef.current && currentPage >= totalPages) ? "none" : `drop-shadow(0 0 8px rgba(${rgb},0.6)) drop-shadow(0 0 20px rgba(${rgb},0.3))`,
+                      }}
+                    />
+                  </button>
+                </div>
+
+                {/* Loading indicator when fetching more */}
+                {loading && (
+                  <div className="flex items-center justify-center py-1">
+                    <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: `rgba(${rgb},0.3)`, borderTopColor: `rgb(${rgb})` }} />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                  <Radar size={28} className="text-[#5c5954]/20 mx-auto mb-3" />
+                  <p className="font-body text-sm text-[#5c5954]">
+                    No results found. Try different filters.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+    }
+  })();
 
   return (
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
-      {/* Hero banner — mobile only */}
-      {heroResult && (
-        <div
-          className="relative mb-2 cursor-pointer animate-fade-up flex-shrink-0 lg:hidden"
-          onClick={() => setSelectedResult(heroResult)}
-        >
+
+      {/* ═══ MOBILE LAYOUT ═══ */}
+      <div className="lg:hidden flex flex-col flex-1 min-h-0">
+        {/* Hero banner */}
+        {heroResult && (
           <div
-            className="absolute inset-0 -mx-4"
-            style={{
-              backgroundImage: `url(${posterUrl(heroResult.poster_path, "large")})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center 20%",
-              filter: "brightness(0.15) saturate(1.4) blur(40px)",
-              transform: "scale(1.1)",
-              maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-            }}
-          />
-          <div className="relative z-[1] flex items-center gap-4 py-2.5">
-            <img
-              src={posterUrl(heroResult.poster_path, "small")}
-              alt={getDisplayTitle(heroResult)}
-              className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
-            />
-            <div className="min-w-0">
-              <p className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5 text-pink-400">
-                Discover
-              </p>
-              <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
-                {getDisplayTitle(heroResult)}
-              </h2>
-              <div className="flex items-center gap-2">
-                {heroResult.vote_average > 0 && (
-                  <span className="font-mono-stats text-sm text-pink-400 font-bold">
-                    {heroResult.vote_average.toFixed(1)}
-                  </span>
-                )}
-                <span className="font-mono-stats text-xs text-[#5c5954]">
-                  {getYear(heroResult)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mobile: filter dropdowns */}
-      <div className="lg:hidden mb-1 flex-shrink-0">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="relative flex-1">
-            <select
-              value={genreFilter || ""}
-              onChange={(e) => setGenreFilter(e.target.value || null)}
-              className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-            >
-              <option value="">All Genres</option>
-              {MAJOR_GENRES.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-            <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-          </div>
-          <div className="relative flex-1">
-            <select
-              value={eraFilter}
-              onChange={(e) => setEraFilter(e.target.value)}
-              className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-            >
-              {ERAS.map((era) => (
-                <option key={era} value={era}>{era}</option>
-              ))}
-            </select>
-            <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortKey)}
-              className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.key} value={opt.key}>{opt.label}</option>
-              ))}
-            </select>
-            <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-          </div>
-          <div className="relative flex-1">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
-            <input
-              type="text"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              placeholder="Keywords..."
-              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop: filter rows — aligned with TV width */}
-      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-32 relative z-10">
-        {/* Row 1: Genre + Sort + Era */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">Genre</span>
-          <button onClick={() => setGenreFilter(null)} className={pillClass(!genreFilter)}>All</button>
-          {MAJOR_GENRES.map((g) => (
-            <button
-              key={g}
-              onClick={() => setGenreFilter(genreFilter === g ? null : g)}
-              className={pillClass(genreFilter === g)}
-            >
-              {g}
-            </button>
-          ))}
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-violet shrink-0 ml-2">Sort</span>
-          {SORT_OPTIONS.map((opt) => (
-            <button key={opt.key} onClick={() => setSortBy(opt.key)} className={pillClass(sortBy === opt.key)}>
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Row 2: Era + Keywords + Discover button + Search & add */}
-        <div className="flex items-center gap-1.5">
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">Era</span>
-          {ERAS.map((era) => (
-            <button key={era} onClick={() => setEraFilter(era)} className={pillClass(eraFilter === era)}>
-              {era}
-            </button>
-          ))}
-
-          {/* Keywords */}
-          <div className="relative flex-1 min-w-[120px] ml-2">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
-            <input
-              type="text"
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              placeholder="Keywords (korean, heist...)"
-              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
-            />
-          </div>
-
-          {/* Discover button */}
-          <button
-            onClick={() => {
-              setResults([]);
-              pageRef.current = 1;
-              hasMoreRef.current = true;
-              loadingRef.current = false;
-              fetchDiscover(1, false);
-            }}
-            disabled={loading && results.length === 0}
-            className="px-4 py-1 rounded-[20px] text-[10px] font-display uppercase tracking-wider text-white transition-all hover:shadow-[0_0_15px_rgba(14,165,233,0.3)] disabled:opacity-50 shrink-0"
-            style={{ background: `linear-gradient(135deg, ${isMovie ? "#0ea5e9, #0284c7" : "#8b5cf6, #7c3aed"})` }}
+            className="relative mb-2 cursor-pointer animate-fade-up flex-shrink-0"
+            onClick={() => setSelectedResult(heroResult)}
           >
-            Discover
-          </button>
-
-          {/* Search & add to library */}
-          <div className="relative flex-1 min-w-[140px]">
-            <Plus size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-vr-violet" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search & add to library..."
-              className="w-full h-7 rounded-[20px] border border-vr-violet/20 bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-violet/40"
+            <div
+              className="absolute inset-0 -mx-4"
+              style={{
+                backgroundImage: `url(${posterUrl(heroResult.poster_path, "large")})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center 20%",
+                filter: "brightness(0.15) saturate(1.4) blur(40px)",
+                transform: "scale(1.1)",
+                maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+              }}
             />
-            {searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-bg-card shadow-xl z-50 overflow-hidden">
-                {searchResults.map((r) => {
-                  const inLibrary = isInLibrary(r);
-                  return (
-                    <div
-                      key={`${r.media_type}-${r.id}`}
-                      className="flex items-center gap-2 w-full px-3 py-2 hover:bg-bg-3 transition-colors"
-                    >
-                      {r.poster_path && (
-                        <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-display text-[10px] text-[#e8e4dc] truncate">{getDisplayTitle(r)}</p>
-                        <p className="font-mono-stats text-[8px] text-[#5c5954]">
-                          {getYear(r)} · {r.media_type}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => { if (!inLibrary) setSelectedResult(r); }}
-                        disabled={inLibrary}
-                        className={`shrink-0 px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all ${
-                          inLibrary
-                            ? "text-green-400/50 border border-green-400/20 cursor-default"
-                            : "bg-vr-violet/15 text-vr-violet border border-vr-violet/25 hover:bg-vr-violet/25"
-                        }`}
-                      >
-                        {inLibrary ? "Added" : "+ Add"}
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <span className="font-mono-stats text-[9px] text-[#5c5954] shrink-0">{results.length} titles</span>
-        </div>
-      </div>
-
-      {/* Content — TV frame on desktop */}
-      {(results.length > 0 || loading) ? (
-        <>
-          <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
-            <LedBars />
-
-            <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)} scrollRef={tvScrollRef}>
-              {initialLoad ? (
-                <div className="flex items-center justify-center py-20">
-                  <div className="w-8 h-8 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />
+            <div className="relative z-[1] flex items-center gap-4 py-2.5">
+              <img
+                src={posterUrl(heroResult.poster_path, "small")}
+                alt={getDisplayTitle(heroResult)}
+                className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5 text-pink-400">
+                  Discover
+                </p>
+                <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
+                  {getDisplayTitle(heroResult)}
+                </h2>
+                <div className="flex items-center gap-2">
+                  {heroResult.vote_average > 0 && (
+                    <span className="font-mono-stats text-sm text-pink-400 font-bold">
+                      {heroResult.vote_average.toFixed(1)}
+                    </span>
+                  )}
+                  <span className="font-mono-stats text-xs text-[#5c5954]">
+                    {getYear(heroResult)}
+                  </span>
                 </div>
-              ) : (
-                discoverGrid
-              )}
-            </TvFrame>
-            <div className="hidden lg:block px-32">
-              <div className="tv-stand">
-                <div className="tv-stand-neck" />
-                <div className="tv-stand-base" />
               </div>
             </div>
-            <PreviewBar
-              entry={displayEntry}
-              onEdit={() => {}}
-              isOn={tvOn}
-            />
           </div>
-          {/* Mobile: plain grid — scrollable, hero+filters stay pinned above */}
-          <div ref={mobileScrollRef} className="lg:hidden flex-1 min-h-0 overflow-y-auto pb-20">
-            {initialLoad ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="w-8 h-8 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />
+        )}
+
+        {/* Mobile: Movies/TV tabs */}
+        <div className="flex justify-center mb-2 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <a
+              href="/discover?tab=movie"
+              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
+              }`}
+              style={isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.movie.join(",")}), rgba(${pageGlows.movie.join(",")},0.7))` } : undefined}
+            >
+              Movies
+            </a>
+            <a
+              href="/discover?tab=tv"
+              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                !isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
+              }`}
+              style={!isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.tv.join(",")}), rgba(${pageGlows.tv.join(",")},0.7))` } : undefined}
+            >
+              TV Shows
+            </a>
+          </div>
+        </div>
+
+        {/* Mobile: filter dropdowns */}
+        <div className="space-y-1.5 mb-1 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <select
+                value={genreFilter || ""}
+                onChange={(e) => setGenreFilter(e.target.value || null)}
+                className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+              >
+                <option value="">All Genres</option>
+                {MAJOR_GENRES.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
+            </div>
+            <div className="relative flex-1">
+              <select
+                value={eraFilter}
+                onChange={(e) => setEraFilter(e.target.value)}
+                className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+              >
+                {ERAS.map((era) => (
+                  <option key={era} value={era}>{era}</option>
+                ))}
+              </select>
+              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+                className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.key} value={opt.key}>{opt.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
+            </div>
+            <div className="relative flex-1">
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
+              <input
+                type="text"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="Keywords..."
+                className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile grid — scrollable */}
+        {results.length > 0 ? (
+          <div className="flex-1 min-h-0 overflow-y-auto pb-20">
+            <div className="poster-grid grid grid-cols-3 sm:grid-cols-4 gap-0.5">
+              {results.map((r, i) => {
+                const inLibrary = isInLibrary(r);
+                const inWatchlist = isInWatchlist(r);
+                return (
+                  <div
+                    key={`${r.media_type}-${r.id}`}
+                    className={`poster-card group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in ${
+                      inLibrary ? "opacity-40" : ""
+                    }`}
+                    style={{ animationDelay: `${Math.min(i * 30, 400)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
+                    onClick={() => { if (!inLibrary) setSelectedResult(r); }}
+                  >
+                    <div className="aspect-[2/3]">
+                      <img
+                        src={posterUrl(r.poster_path, "small")}
+                        alt={getDisplayTitle(r)}
+                        className="w-full h-full object-cover rounded-[6px]"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {r.vote_average > 0 && (
+                      <div
+                        className="absolute top-1 right-1 px-1.5 py-0.5 rounded-full text-white text-[8px] font-mono-stats font-bold shadow-lg"
+                        style={{ backgroundColor: `rgba(${rgb},0.9)` }}
+                      >
+                        {r.vote_average.toFixed(1)}
+                      </div>
+                    )}
+
+                    {/* Mobile: always-visible bottom bar */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent pt-4 pb-1 px-1">
+                      <div className="flex gap-0.5">
+                        {!inLibrary ? (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelectedResult(r); }}
+                            className="flex-1 flex items-center justify-center gap-0.5 py-0.5 rounded text-[6px] font-display uppercase tracking-wider text-white"
+                            style={{ backgroundColor: `rgba(${rgb},0.8)` }}
+                          >
+                            <Plus size={7} /> Add
+                          </button>
+                        ) : (
+                          <span className="flex-1 flex items-center justify-center gap-0.5 py-0.5 rounded text-[6px] font-display uppercase text-green-400/70">
+                            <Check size={7} />
+                          </span>
+                        )}
+                        {!inLibrary && !inWatchlist && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); addToWatchlist(r); }}
+                            disabled={addingToWatchlist === r.id}
+                            className="px-1 py-0.5 rounded text-[#9a968e] border border-border-glow/50 disabled:opacity-50"
+                          >
+                            <Bookmark size={7} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {loading && (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: `rgba(${rgb},0.3)`, borderTopColor: `rgb(${rgb})` }} />
               </div>
-            ) : (
-              discoverGrid
             )}
           </div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center flex-1">
-          <Radar size={36} className="text-neon-cyan/20 mb-4" />
-          <p className="font-body text-[#5c5954] text-center">
-            Set your filters and hit Discover to find something new.
-          </p>
+        ) : initialLoad ? (
+          <div className="flex items-center justify-center flex-1">
+            <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: `rgba(${rgb},0.3)`, borderTopColor: `rgb(${rgb})` }} />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center flex-1">
+            <Radar size={36} className="text-[#5c5954]/20 mb-4" />
+            <p className="font-body text-[#5c5954] text-center">
+              No results found. Try different filters.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ═══ DESKTOP LAYOUT ═══ */}
+      <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
+        <LedBars />
+        <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>
+          {desktopTvContent}
+        </TvFrame>
+        <div className="hidden lg:block px-32">
+          <div className="tv-stand">
+            <div className="tv-stand-neck" />
+            <div className="tv-stand-base" />
+          </div>
         </div>
-      )}
+        <PreviewBar
+          entry={flow.stage === "results" ? displayEntry : null}
+          onEdit={() => {}}
+          isOn={tvOn}
+        />
+      </div>
+
+      {/* Discover Filter Drawer — genre only */}
+      <DiscoverFilterDrawer
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        genreFilter={genreFilter}
+        setGenreFilter={setGenreFilter}
+        accentRgb={rgb}
+      />
 
       {/* Add modal */}
       {selectedResult && (
@@ -781,6 +1025,101 @@ function DiscoverContent() {
           isInWatchlist={isInWatchlist(selectedResult)}
         />
       )}
+    </div>
+  );
+}
+
+/* ── Discover Filter Drawer — genre only (era & keywords live outside) ── */
+
+function DiscoverFilterDrawer({
+  open,
+  onClose,
+  genreFilter,
+  setGenreFilter,
+  accentRgb,
+}: {
+  open: boolean;
+  onClose: () => void;
+  genreFilter: string | null;
+  setGenreFilter: (g: string | null) => void;
+  accentRgb: string;
+}) {
+  if (!open) return null;
+
+  const rgb = accentRgb;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-modal-backdrop" onClick={onClose} />
+      <div
+        className="relative z-10 w-full max-w-md max-h-[80vh] overflow-y-auto rounded-xl bg-[#0e0e14] border border-border-glow/30 shadow-2xl animate-drawer-enter"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between p-4 border-b border-border-glow/20 bg-[#0e0e14]">
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-sm uppercase tracking-wider text-[#e8e4dc]">Genre</h3>
+            {genreFilter && (
+              <span
+                className="px-1.5 py-0.5 rounded-full text-[9px] font-mono-stats"
+                style={{ backgroundColor: `rgba(${rgb},0.15)`, color: `rgb(${rgb})` }}
+              >
+                1
+              </span>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-[#5c5954] hover:text-[#e8e4dc] transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="p-4">
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setGenreFilter(null)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-display uppercase tracking-wider border transition-all ${
+                !genreFilter
+                  ? "border-transparent"
+                  : "text-[#5c5954] border-border-glow/30 hover:text-[#9a968e]"
+              }`}
+              style={!genreFilter ? { color: `rgb(${rgb})`, borderColor: `rgba(${rgb},0.3)`, backgroundColor: `rgba(${rgb},0.1)` } : undefined}
+            >
+              All
+            </button>
+            {MAJOR_GENRES.map((g) => (
+              <button
+                key={g}
+                onClick={() => setGenreFilter(genreFilter === g ? null : g)}
+                className={`px-3 py-1.5 rounded-full text-[11px] font-display uppercase tracking-wider border transition-all ${
+                  genreFilter === g
+                    ? "border-transparent"
+                    : "text-[#5c5954] border-border-glow/30 hover:text-[#9a968e]"
+                }`}
+                style={genreFilter === g ? { color: `rgb(${rgb})`, borderColor: `rgba(${rgb},0.3)`, backgroundColor: `rgba(${rgb},0.1)` } : undefined}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 flex items-center justify-between p-4 border-t border-border-glow/20 bg-[#0e0e14]">
+          <button
+            onClick={() => setGenreFilter(null)}
+            className="font-display text-[10px] uppercase tracking-wider text-[#5c5954] hover:text-[#9a968e] transition-colors"
+          >
+            Clear
+          </button>
+          <button
+            onClick={onClose}
+            className="px-5 py-2 rounded-lg font-display text-[11px] uppercase tracking-wider text-white hover:shadow-lg transition-all"
+            style={{ background: `linear-gradient(135deg, rgb(${rgb}), rgba(${rgb},0.7))` }}
+          >
+            Apply
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

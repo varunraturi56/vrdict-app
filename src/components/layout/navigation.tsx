@@ -28,15 +28,16 @@ const navItems = [
 interface TabColors {
   movie: string; tv: string;
   movieGlow: string; tvGlow: string;
-  barColor: string; barGlow: string;
+  movieBarColor: string; movieBarGlow: string;
+  tvBarColor: string; tvBarGlow: string;
   moviePill: string; tvPill: string;
 }
 const TAB_COLORS: Record<string, TabColors> = {
-  "/":           { movie: "text-vr-blue",       tv: "text-vr-violet",      movieGlow: "drop-shadow-[0_0_8px_rgba(14,165,233,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(139,92,246,0.6)]",  barColor: "rgba(14,165,233,0.6)",   barGlow: "rgba(14,165,233,0.10)",   moviePill: "text-vr-blue bg-vr-blue/10 border border-vr-blue/25",         tvPill: "text-vr-violet bg-vr-violet/10 border border-vr-violet/25" },
-  "/favourites": { movie: "text-amber-400",     tv: "text-gray-300",       movieGlow: "drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(209,213,219,0.6)]", barColor: "rgba(251,191,36,0.6)",   barGlow: "rgba(251,191,36,0.10)",   moviePill: "text-amber-400 bg-amber-400/10 border border-amber-400/25",   tvPill: "text-gray-300 bg-gray-300/10 border border-gray-300/25" },
-  "/watchlist":  { movie: "text-vr-violet",     tv: "text-cyan-400",       movieGlow: "drop-shadow-[0_0_8px_rgba(139,92,246,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]",  barColor: "rgba(139,92,246,0.6)",   barGlow: "rgba(139,92,246,0.10)",   moviePill: "text-vr-violet bg-vr-violet/10 border border-vr-violet/25",   tvPill: "text-cyan-400 bg-cyan-400/10 border border-cyan-400/25" },
-  "/discover":   { movie: "text-pink-400",      tv: "text-orange-400",     movieGlow: "drop-shadow-[0_0_8px_rgba(244,114,182,0.6)]",  tvGlow: "drop-shadow-[0_0_8px_rgba(251,146,60,0.6)]",  barColor: "rgba(244,114,182,0.6)",  barGlow: "rgba(244,114,182,0.10)",  moviePill: "text-pink-400 bg-pink-400/10 border border-pink-400/25",      tvPill: "text-orange-400 bg-orange-400/10 border border-orange-400/25" },
-  "/stats":      { movie: "text-teal-400",      tv: "text-teal-400",       movieGlow: "drop-shadow-[0_0_8px_rgba(45,212,191,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(45,212,191,0.6)]",  barColor: "rgba(45,212,191,0.6)",   barGlow: "rgba(45,212,191,0.10)",   moviePill: "text-teal-400 bg-teal-400/10 border border-teal-400/25",      tvPill: "text-teal-400 bg-teal-400/10 border border-teal-400/25" },
+  "/":           { movie: "text-vr-blue",       tv: "text-vr-violet",      movieGlow: "drop-shadow-[0_0_8px_rgba(14,165,233,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(139,92,246,0.6)]",  movieBarColor: "rgba(14,165,233,0.6)",   movieBarGlow: "rgba(14,165,233,0.10)",   tvBarColor: "rgba(139,92,246,0.6)",   tvBarGlow: "rgba(139,92,246,0.10)",   moviePill: "text-vr-blue bg-vr-blue/10 border border-vr-blue/25",         tvPill: "text-vr-violet bg-vr-violet/10 border border-vr-violet/25" },
+  "/favourites": { movie: "text-amber-400",     tv: "text-gray-300",       movieGlow: "drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(209,213,219,0.6)]", movieBarColor: "rgba(251,191,36,0.6)",   movieBarGlow: "rgba(251,191,36,0.10)",   tvBarColor: "rgba(200,200,210,0.6)", tvBarGlow: "rgba(200,200,210,0.10)", moviePill: "text-amber-400 bg-amber-400/10 border border-amber-400/25",   tvPill: "text-gray-300 bg-gray-300/10 border border-gray-300/25" },
+  "/watchlist":  { movie: "text-vr-violet",     tv: "text-cyan-400",       movieGlow: "drop-shadow-[0_0_8px_rgba(139,92,246,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]",  movieBarColor: "rgba(139,92,246,0.6)",   movieBarGlow: "rgba(139,92,246,0.10)",   tvBarColor: "rgba(6,182,212,0.6)",   tvBarGlow: "rgba(6,182,212,0.10)",   moviePill: "text-vr-violet bg-vr-violet/10 border border-vr-violet/25",   tvPill: "text-cyan-400 bg-cyan-400/10 border border-cyan-400/25" },
+  "/discover":   { movie: "text-pink-400",      tv: "text-orange-400",     movieGlow: "drop-shadow-[0_0_8px_rgba(244,114,182,0.6)]",  tvGlow: "drop-shadow-[0_0_8px_rgba(251,146,60,0.6)]",  movieBarColor: "rgba(244,114,182,0.6)",  movieBarGlow: "rgba(244,114,182,0.10)",  tvBarColor: "rgba(249,115,22,0.6)",  tvBarGlow: "rgba(249,115,22,0.10)",  moviePill: "text-pink-400 bg-pink-400/10 border border-pink-400/25",      tvPill: "text-orange-400 bg-orange-400/10 border border-orange-400/25" },
+  "/stats":      { movie: "text-teal-400",      tv: "text-teal-400",       movieGlow: "drop-shadow-[0_0_8px_rgba(45,212,191,0.6)]",   tvGlow: "drop-shadow-[0_0_8px_rgba(45,212,191,0.6)]",  movieBarColor: "rgba(45,212,191,0.6)",   movieBarGlow: "rgba(45,212,191,0.10)",   tvBarColor: "rgba(45,212,191,0.6)",  tvBarGlow: "rgba(45,212,191,0.10)",  moviePill: "text-teal-400 bg-teal-400/10 border border-teal-400/25",      tvPill: "text-teal-400 bg-teal-400/10 border border-teal-400/25" },
 };
 
 function getTabColors(pathname: string) {
@@ -178,8 +179,8 @@ export function TopNav() {
                   <div
                     className="absolute -bottom-[13px] left-1/2 -translate-x-1/2 w-12 h-[2px] rounded-full"
                     style={{
-                      background: isHomeItem ? "rgba(34,197,94,0.6)" : isLibraryCategory ? "rgba(14,165,233,0.6)" : colors.barColor,
-                      boxShadow: `0 4px 15px 2px ${isHomeItem ? "rgba(34,197,94,0.10)" : isLibraryCategory ? "rgba(14,165,233,0.10)" : colors.barGlow}`,
+                      background: isHomeItem ? "rgba(34,197,94,0.6)" : isLibraryCategory ? "rgba(14,165,233,0.6)" : (mediaTab === "tv" ? colors.tvBarColor : colors.movieBarColor),
+                      boxShadow: `0 4px 15px 2px ${isHomeItem ? "rgba(34,197,94,0.10)" : isLibraryCategory ? "rgba(14,165,233,0.10)" : (mediaTab === "tv" ? colors.tvBarGlow : colors.movieBarGlow)}`,
                     }}
                   />
                 )}

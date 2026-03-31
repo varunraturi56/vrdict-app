@@ -3,7 +3,7 @@
 import { useState, type Ref } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { type ReactNode } from "react";
-import { getAmbientColor, rgba, PAGE_GLOWS } from "@/lib/ambient-colors";
+import { PAGE_GLOWS } from "@/lib/ambient-colors";
 
 interface TvFrameProps {
   children: ReactNode;
@@ -17,7 +17,6 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollR
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const mediaTab = searchParams.get("tab") || "movie";
-  const ambient = getAmbientColor(pathname);
   const [animState, setAnimState] = useState<"shutting-down" | "booting-up" | null>(null);
 
   function handlePower() {

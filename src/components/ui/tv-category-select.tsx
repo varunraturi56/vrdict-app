@@ -92,9 +92,11 @@ export function TvCategorySelect({
           <span className="font-display text-[16px] lg:text-[18px] font-medium text-[#e8e4dc] tracking-wider uppercase">
             Movies
           </span>
-          <span className="font-mono-stats text-[12px] lg:text-[13px] text-[#5c5954] mt-2">
-            {movieCount} titles
-          </span>
+          {movieCount > 0 && (
+            <span className="font-mono-stats text-[12px] lg:text-[13px] text-[#5c5954] mt-2">
+              {movieCount} titles
+            </span>
+          )}
         </button>
 
         <button
@@ -120,9 +122,11 @@ export function TvCategorySelect({
           <span className="font-display text-[16px] lg:text-[18px] font-medium text-[#e8e4dc] tracking-wider uppercase">
             TV Shows
           </span>
-          <span className="font-mono-stats text-[12px] lg:text-[13px] text-[#5c5954] mt-2">
-            {tvCount} titles
-          </span>
+          {tvCount > 0 && (
+            <span className="font-mono-stats text-[12px] lg:text-[13px] text-[#5c5954] mt-2">
+              {tvCount} titles
+            </span>
+          )}
         </button>
       </div>
     </div>
