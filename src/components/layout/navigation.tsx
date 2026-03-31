@@ -133,11 +133,12 @@ export function TopNav() {
           const isThisTabActive = isActive;
           const isThisTabMediaHost = isMediaTabHost && isThisTabActive;
 
-          // Per-tab colors based on current page's color scheme
+          // Per-tab colors — Home gets green
+          const isHomeItem = item.href === "/";
           const colorPath = item.href.startsWith("/?") ? "/" : item.href;
           const colors = getTabColors(colorPath);
-          const activeColor = mediaTab === "tv" ? colors.tv : colors.movie;
-          const activeGlow = mediaTab === "tv" ? colors.tvGlow : colors.movieGlow;
+          const activeColor = isHomeItem ? "text-green-400" : (mediaTab === "tv" ? colors.tv : colors.movie);
+          const activeGlow = isHomeItem ? "drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" : (mediaTab === "tv" ? colors.tvGlow : colors.movieGlow);
 
           return (
             <div key={item.href} className="flex items-center gap-0 transition-all duration-300">
@@ -177,8 +178,8 @@ export function TopNav() {
                   <div
                     className="absolute -bottom-[13px] left-1/2 -translate-x-1/2 w-12 h-[2px] rounded-full"
                     style={{
-                      background: colors.barColor,
-                      boxShadow: `0 4px 15px 2px ${colors.barGlow}`,
+                      background: isHomeItem ? "rgba(34,197,94,0.6)" : colors.barColor,
+                      boxShadow: `0 4px 15px 2px ${isHomeItem ? "rgba(34,197,94,0.10)" : colors.barGlow}`,
                     }}
                   />
                 )}

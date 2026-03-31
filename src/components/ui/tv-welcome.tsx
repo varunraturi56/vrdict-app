@@ -83,18 +83,18 @@ export function TvWelcome({ onNavigate }: TvWelcomeProps) {
         </p>
       </div>
 
-      {/* Area cards — horizontal row, tall poster-like */}
-      <div className="flex gap-4 lg:gap-5 justify-center">
+      {/* Area cards — horizontal row, hovered card expands pushing siblings */}
+      <div className="flex gap-3 lg:gap-4 justify-center items-center">
         {areas.map((area, i) => (
           <button
             key={area.key}
             onClick={() => onNavigate(area.key)}
-            className={`group relative flex flex-col items-center justify-center w-[130px] lg:w-[150px] aspect-[2/3] rounded-2xl border bg-gradient-to-b ${area.gradient} ${area.border} ${area.glowShadow} cursor-pointer ${
+            className={`group relative flex flex-col items-center justify-center w-[130px] lg:w-[150px] h-[195px] lg:h-[225px] rounded-2xl border bg-gradient-to-b ${area.gradient} ${area.border} ${area.glowShadow} cursor-pointer hover:w-[160px] lg:hover:w-[185px] hover:h-[215px] lg:hover:h-[248px] ${
               phase >= 3 ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-16 scale-75"
             }`}
             style={{
               transition: phase >= 3
-                ? `opacity 600ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 120 + 50}ms, transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 120 + 50}ms, box-shadow 300ms ease, border-color 300ms ease`
+                ? `opacity 600ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 120 + 50}ms, transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 120 + 50}ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease`
                 : "opacity 200ms ease, transform 200ms ease",
             }}
           >

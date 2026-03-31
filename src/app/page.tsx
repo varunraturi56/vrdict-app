@@ -60,11 +60,22 @@ function LibraryContent() {
 
   // Desktop flow state — progressive disclosure
   // If URL has ?tab=, jump straight to results (e.g. from Library nav click)
+  const hasTab = searchParams.get("tab");
   const [flow, setFlow] = useState<FlowState>(
-    searchParams.get("tab")
-      ? { stage: "results", area: "Library", mediaType: (searchParams.get("tab") || "movie") as MediaType }
+    hasTab
+      ? { stage: "results", area: "Library", mediaType: (hasTab || "movie") as MediaType }
       : { stage: "welcome" }
   );
+
+  // When URL changes (e.g. clicking Home in nav removes ?tab), update flow
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setFlow({ stage: "results", area: "Library", mediaType: tab as MediaType });
+    } else {
+      setFlow({ stage: "welcome" });
+    }
+  }, [searchParams]);
 
   // Preview bar (desktop only)
   const [peekedEntry, setPeekedEntry] = useState<Entry | null>(null);
