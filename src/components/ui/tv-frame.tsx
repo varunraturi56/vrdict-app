@@ -47,7 +47,7 @@ export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollR
   const activeGlowColor = isHome ? homeGreen : (mediaTab === "tv" ? glowColors.tv : glowColors.movie);
 
   return (
-    <div className={`relative flex flex-col flex-1 min-h-0 px-32 ${className}`}>
+    <div className={`relative flex flex-col flex-1 min-h-0 px-32 mt-8 ${className}`}>
       {/* Ambient glow — colour matches active media tab */}
       {isOn && (() => {
         const c = activeGlowColor;

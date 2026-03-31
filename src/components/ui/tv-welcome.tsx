@@ -61,51 +61,64 @@ const areas = [
 ];
 
 export function TvWelcome({ onNavigate }: TvWelcomeProps) {
-  const [phase, setPhase] = useState(0); // 0=hidden, 1=title, 2=subtitle, 3=cards
+  const [phase, setPhase] = useState(0); // 0=hidden, 1=glitch, 2=title solid, 3=subtitle, 4=cards
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 600);   // Title appears
-    const t2 = setTimeout(() => setPhase(2), 1200);  // Subtitle fades in
-    const t3 = setTimeout(() => setPhase(3), 1800);  // Cards bounce in
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t1 = setTimeout(() => setPhase(1), 400);   // Glitch flicker
+    const t2 = setTimeout(() => setPhase(2), 1000);  // Title solidifies
+    const t3 = setTimeout(() => setPhase(3), 1500);  // Subtitle types in
+    const t4 = setTimeout(() => setPhase(4), 2000);  // Cards fan out
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, []);
 
   return (
     <div className="flex flex-col items-center justify-center h-full px-6">
       {/* Welcome text — large, cinematic */}
-      <div className={`text-center mb-10 transition-all duration-1000 ease-out ${phase >= 1 ? "opacity-100 scale-100" : "opacity-0 scale-90"}`}>
-        <h1 className="font-display text-4xl lg:text-5xl font-bold tracking-[0.15em] mb-3">
-          <span className={`text-vr-blue transition-all duration-700 ${phase >= 1 ? "text-glow-blue" : ""}`}>VR</span>
-          <span className={`text-vr-violet transition-all duration-700 delay-200 ${phase >= 1 ? "text-glow-violet" : ""}`}>dict</span>
+      <div className={`text-center mb-8 transition-all duration-700 ease-out ${phase >= 1 ? "opacity-100 scale-100" : "opacity-0 scale-75"}`}>
+        <h1
+          className={`font-display text-5xl lg:text-7xl font-bold tracking-[0.18em] mb-4 inline-block ${phase >= 1 && phase < 2 ? "welcome-glitch" : ""}`}
+        >
+          <span className={`text-vr-blue transition-all duration-700 ${phase >= 2 ? "text-glow-blue" : ""}`}>VR</span>
+          <span className={`text-vr-violet transition-all duration-700 delay-200 ${phase >= 2 ? "text-glow-violet" : ""}`}>dict</span>
+          <div className={`mt-2 rounded-full transition-all duration-700 delay-300 ${phase >= 2 ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0"}`}
+            style={{
+              background: "linear-gradient(90deg, #0ea5e9, #a78bfa)",
+              height: "3px",
+              maskImage: "radial-gradient(ellipse 50% 100% at center, black 0%, transparent 100%)",
+              WebkitMaskImage: "radial-gradient(ellipse 50% 100% at center, black 0%, transparent 100%)",
+            }}
+          />
         </h1>
-        <p className={`font-body text-sm lg:text-base text-[#5c5954] tracking-[0.2em] uppercase transition-all duration-800 ${phase >= 2 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"}`}>
+        <p
+          className={`font-body text-base lg:text-lg text-[#5c5954] tracking-[0.25em] uppercase transition-all duration-800 ${phase >= 3 ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+        >
           Your personal cinema console
         </p>
       </div>
 
-      {/* Area cards — horizontal row, hovered card expands pushing siblings */}
-      <div className="flex gap-3 lg:gap-4 justify-center items-center">
+      {/* Area cards — horizontal row */}
+      <div className="flex gap-3 lg:gap-5 justify-center items-center">
         {areas.map((area, i) => (
           <button
             key={area.key}
             onClick={() => onNavigate(area.key)}
-            className={`group relative flex flex-col items-center justify-center w-[130px] lg:w-[150px] h-[195px] lg:h-[225px] rounded-2xl border bg-gradient-to-b ${area.gradient} ${area.border} ${area.glowShadow} cursor-pointer hover:w-[160px] lg:hover:w-[185px] hover:h-[215px] lg:hover:h-[248px] ${
-              phase >= 3 ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-16 scale-75"
+            className={`group relative flex flex-col items-center justify-center w-[140px] lg:w-[165px] h-[210px] lg:h-[250px] rounded-2xl border bg-gradient-to-b ${area.gradient} ${area.border} ${area.glowShadow} cursor-pointer hover:w-[170px] lg:hover:w-[200px] hover:h-[230px] lg:hover:h-[270px] ${
+              phase >= 4 ? "opacity-100 translate-y-0 scale-100 rotate-0" : "opacity-0 translate-y-24 scale-50 rotate-6"
             }`}
             style={{
-              transition: phase >= 3
-                ? `opacity 600ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 120 + 50}ms, transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 120 + 50}ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease`
+              transition: phase >= 4
+                ? `opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 100 + 50}ms, transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 100 + 50}ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease`
                 : "opacity 200ms ease, transform 200ms ease",
             }}
           >
             <area.icon
-              size={36}
+              size={42}
               className={`${area.iconColor} mb-3 transition-transform duration-300 group-hover:scale-125`}
             />
-            <span className="font-display text-[13px] lg:text-[14px] font-medium text-[#e8e4dc] tracking-wider uppercase">
+            <span className="font-display text-[14px] lg:text-[16px] font-medium text-[#e8e4dc] tracking-wider uppercase">
               {area.label}
             </span>
-            <span className="font-body text-[10px] lg:text-[11px] text-[#5c5954] mt-1 tracking-wide">
+            <span className="font-body text-[11px] lg:text-[12px] text-[#5c5954] mt-1 tracking-wide">
               {area.sub}
             </span>
           </button>
