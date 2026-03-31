@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Film, Tv, ChevronLeft, Library } from "lucide-react";
+import { Film, Tv, ChevronLeft, Library, type LucideIcon } from "lucide-react";
 
 interface TvCategorySelectProps {
   area: string;
@@ -11,6 +11,10 @@ interface TvCategorySelectProps {
   onSelect: (category: "movie" | "tv") => void;
   onBack: () => void;
   onFavourites: () => void;
+  icon?: LucideIcon;
+  accentColor?: string;
+  accentGlow?: string;
+  glowClass?: string;
 }
 
 export function TvCategorySelect({
@@ -19,6 +23,10 @@ export function TvCategorySelect({
   tvCount,
   onSelect,
   onBack,
+  icon: Icon = Library,
+  accentColor = "text-vr-blue",
+  accentGlow = "drop-shadow(0 0 8px rgba(14,165,233,0.5))",
+  glowClass = "text-glow-blue",
 }: TvCategorySelectProps) {
   const [phase, setPhase] = useState(0); // 0=hidden, 1=title, 2=subtitle, 3=cards
 
@@ -43,8 +51,8 @@ export function TvCategorySelect({
       {/* Area title */}
       <div className={`text-center mb-10 lg:mb-14 transition-all duration-700 ease-out ${phase >= 1 ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-90 translate-y-4"}`}>
         <div className="flex items-center justify-center gap-3 mb-1">
-          <Library size={36} className="text-vr-blue" style={{ filter: "drop-shadow(0 0 8px rgba(14,165,233,0.5))" }} />
-          <h2 className="font-display text-4xl lg:text-5xl font-bold tracking-[0.15em] text-vr-blue text-glow-blue">
+          <Icon size={36} className={accentColor} style={{ filter: accentGlow }} />
+          <h2 className={`font-display text-4xl lg:text-5xl font-bold tracking-[0.15em] ${accentColor} ${glowClass}`}>
             {area}
           </h2>
         </div>

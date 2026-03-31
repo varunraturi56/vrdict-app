@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Star, Search, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
@@ -9,6 +9,9 @@ import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/ty
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
 import { PreviewBar } from "@/components/ui/preview-bar";
+import { TvCategorySelect } from "@/components/ui/tv-category-select";
+import { BreadcrumbBar } from "@/components/ui/breadcrumb-bar";
+import { FilterDrawer } from "@/components/ui/filter-drawer";
 
 const SORT_OPTIONS = [
   { key: "my_rating", label: "Rating" },
@@ -18,6 +21,12 @@ const SORT_OPTIONS = [
 ] as const;
 
 type SortKey = (typeof SORT_OPTIONS)[number]["key"];
+
+type FlowState =
+  | { stage: "category" }
+  | { stage: "results"; mediaType: MediaType };
+
+const ITEMS_PER_PAGE = 14;
 
 export default function FavouritesPage() {
   return (
@@ -29,6 +38,7 @@ export default function FavouritesPage() {
 
 function FavouritesContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const mediaTab = (searchParams.get("tab") || "movie") as MediaType;
 
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -40,7 +50,27 @@ function FavouritesContent() {
   const [heroEntry, setHeroEntry] = useState<Entry | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [tvOn, setTvOn] = useState(true);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [peekedEntry, setPeekedEntry] = useState<Entry | null>(null);
+
+  // Desktop flow state
+  const hasTab = searchParams.get("tab");
+  const [flow, setFlow] = useState<FlowState>(
+    hasTab
+      ? { stage: "results", mediaType: (hasTab || "movie") as MediaType }
+      : { stage: "category" }
+  );
+
+  // Sync flow with URL
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setFlow({ stage: "results", mediaType: tab as MediaType });
+    } else {
+      setFlow({ stage: "category" });
+    }
+  }, [searchParams]);
 
   function handleMouseEnter(entry: Entry) {
     setPeekedEntry(entry);
@@ -66,12 +96,18 @@ function FavouritesContent() {
     setGenreFilter(null);
     setTagFilter(null);
     setSearchQuery("");
+    setCurrentPage(1);
   }, [mediaTab]);
 
+  const activeMediaType = flow.stage === "results" ? flow.mediaType : mediaTab;
+
   const mediaEntries = useMemo(
-    () => entries.filter((e) => e.media_type === mediaTab),
-    [entries, mediaTab]
+    () => entries.filter((e) => e.media_type === activeMediaType),
+    [entries, activeMediaType]
   );
+
+  const movieCount = entries.filter((e) => e.media_type === "movie").length;
+  const tvCount = entries.filter((e) => e.media_type === "tv").length;
 
   const topTags = useMemo(() => {
     const tagCount: Record<string, number> = {};
@@ -101,7 +137,17 @@ function FavouritesContent() {
         default: return 0;
       }
     });
-  }, [mediaEntries, genreFilter, searchQuery, sortBy]);
+  }, [mediaEntries, genreFilter, tagFilter, searchQuery, sortBy]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / ITEMS_PER_PAGE));
+  const pagedEntries = filteredEntries.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [genreFilter, tagFilter, searchQuery, sortBy]);
 
   // Hero — auto-rotate every 5s (mobile only)
   const pickHero = useCallback(() => {
@@ -117,12 +163,29 @@ function FavouritesContent() {
     return () => clearInterval(interval);
   }, [pickHero]);
 
-  const pillClass = (active: boolean) =>
-    `px-[10px] py-[4px] rounded-[20px] text-[11px] xl:px-[14px] xl:py-[6px] xl:text-[13px] tracking-[0.3px] border cursor-pointer transition-all whitespace-nowrap ${
-      active
-        ? "text-vr-blue border-vr-blue/30 bg-[rgba(14,165,233,0.12)]"
-        : "text-[#9a968e] border-border-glow bg-[rgba(12,12,16,0.85)] hover:text-[#e8e4dc]"
-    }`;
+  // Flow navigation handlers
+  function handleCategorySelect(mediaType: MediaType) {
+    setFlow({ stage: "results", mediaType });
+    router.push(`/favourites?tab=${mediaType}`, { scroll: false });
+  }
+
+  function handleBreadcrumbClick(index: number) {
+    if (index === 0) {
+      setFlow({ stage: "category" });
+      router.push("/favourites", { scroll: false });
+    }
+    if (index <= 1) {
+      setGenreFilter(null);
+      setTagFilter(null);
+      setSearchQuery("");
+    }
+  }
+
+  const activeFilterCount = (genreFilter ? 1 : 0) + (tagFilter ? 1 : 0) + (searchQuery ? 1 : 0);
+
+  const breadcrumbPath = flow.stage === "results"
+    ? ["Favourites", mediaTab === "movie" ? "Movies" : "TV Shows", ...(genreFilter ? [genreFilter] : [])]
+    : [];
 
   if (loading) {
     return (
@@ -133,25 +196,194 @@ function FavouritesContent() {
   }
 
   const isMovie = mediaTab === "movie";
-  const movieCount = entries.filter((e) => e.media_type === "movie").length;
-  const tvCount = entries.filter((e) => e.media_type === "tv").length;
+  const displayEntry = peekedEntry || filteredEntries.find((e) => e.poster) || filteredEntries[0] || null;
 
-  const displayEntry = peekedEntry || filteredEntries[0] || null;
+  // ─── Desktop: TV content based on flow state ───
+  const desktopTvContent = (() => {
+    switch (flow.stage) {
+      case "category":
+        return (
+          <TvCategorySelect
+            area="Favourites"
+            movieCount={movieCount}
+            tvCount={tvCount}
+            favCount={0}
+            onSelect={handleCategorySelect}
+            onBack={() => router.push("/", { scroll: false })}
+            onFavourites={() => {}}
+            icon={Star}
+            accentColor="text-[#ffb800]"
+            accentGlow="drop-shadow(0 0 8px rgba(255,184,0,0.5))"
+            glowClass=""
+          />
+        );
 
-  const posterGrid = (
-    <div className="poster-grid grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-0">
+      case "results":
+        return (
+          <div className="flex flex-col h-full">
+            <BreadcrumbBar
+              path={breadcrumbPath}
+              onPathClick={handleBreadcrumbClick}
+              sortBy={sortBy}
+              setSortBy={(s) => setSortBy(s as SortKey)}
+              sortOptions={SORT_OPTIONS.map((o) => ({ key: o.key, label: o.label }))}
+              onFilterOpen={() => setFilterOpen(true)}
+              activeFilterCount={activeFilterCount}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              onClearFilters={() => { setGenreFilter(null); setTagFilter(null); setSearchQuery(""); }}
+              accentColor={isMovie ? "blue" : "violet"}
+            />
+
+            {/* Active filters summary */}
+            {activeFilterCount > 0 && (
+              <div className="flex items-center gap-2 px-6 py-1.5">
+                {genreFilter && (
+                  <button onClick={() => setGenreFilter(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider text-vr-blue bg-vr-blue/10 border border-vr-blue/20 hover:bg-vr-blue/15 transition-colors">
+                    {genreFilter} <span className="ml-0.5">×</span>
+                  </button>
+                )}
+                {tagFilter && (
+                  <button onClick={() => setTagFilter(null)} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider text-vr-violet bg-vr-violet/10 border border-vr-violet/20 hover:bg-vr-violet/15 transition-colors">
+                    {tagFilter} <span className="ml-0.5">×</span>
+                  </button>
+                )}
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider text-[#9a968e] bg-[#1e1e26] border border-border-glow hover:bg-[#252530] transition-colors">
+                    &ldquo;{searchQuery}&rdquo; <span className="ml-0.5">×</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Paginated poster grid — 7×2 with flashy arrows */}
+            {(() => {
+              const rgb = isMovie ? "14,165,233" : "139,92,246";
+              const tabColor = isMovie ? "text-vr-blue" : "text-vr-violet";
+              return (
+                <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-1 py-2">
+                  <div className="flex items-center w-full flex-1 min-h-0">
+                    {/* Left arrow */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className={`shrink-0 w-10 h-full flex items-center justify-center ${tabColor} disabled:opacity-10 disabled:cursor-not-allowed transition-all group`}
+                    >
+                      <ChevronDown
+                        size={44}
+                        className="rotate-90 transition-all duration-300 group-hover:scale-125"
+                        style={{
+                          filter: currentPage === 1 ? "none" : `drop-shadow(0 0 8px rgba(${rgb},0.6)) drop-shadow(0 0 20px rgba(${rgb},0.3))`,
+                        }}
+                      />
+                    </button>
+
+                    {pagedEntries.length > 0 ? (
+                      <div className="poster-grid grid grid-cols-7 gap-1.5 flex-1 min-h-0">
+                        {pagedEntries.map((entry, i) => (
+                          <div
+                            key={entry.id}
+                            className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md"
+                            style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
+                            onClick={() => setSelectedEntry(entry)}
+                            onMouseEnter={() => handleMouseEnter(entry)}
+                          >
+                            <div className="aspect-[2/3]">
+                              {entry.poster ? (
+                                <img
+                                  src={posterUrl(entry.poster, "medium")}
+                                  alt={entry.title}
+                                  className="w-full h-full object-cover rounded-md"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[8px] font-display p-1 text-center bg-bg-card rounded-md">
+                                  {entry.title}
+                                </div>
+                              )}
+                            </div>
+                            <div className="absolute top-0.5 left-0.5 text-[9px] drop-shadow-lg">⭐</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center">
+                        <div className="text-center">
+                          <Star size={28} className="text-[#5c5954]/20 mx-auto mb-3" />
+                          <p className="font-body text-sm text-[#5c5954]">
+                            {entries.length === 0
+                              ? "No favourites yet. Mark entries as favourites in your Library."
+                              : "No matches for your filters."}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Right arrow */}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`shrink-0 w-10 h-full flex items-center justify-center ${tabColor} disabled:opacity-10 disabled:cursor-not-allowed transition-all group`}
+                    >
+                      <ChevronDown
+                        size={44}
+                        className="-rotate-90 transition-all duration-300 group-hover:scale-125"
+                        style={{
+                          filter: currentPage === totalPages ? "none" : `drop-shadow(0 0 8px rgba(${rgb},0.6)) drop-shadow(0 0 20px rgba(${rgb},0.3))`,
+                        }}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Page indicator */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        onClick={() => setCurrentPage(1)}
+                        disabled={currentPage === 1}
+                        className={`font-mono-stats text-[11px] font-bold ${tabColor} disabled:opacity-15 disabled:cursor-not-allowed transition-all hover:scale-110`}
+                        style={{ textShadow: currentPage === 1 ? "none" : `0 0 6px rgba(${rgb},0.4)` }}
+                      >
+                        ««
+                      </button>
+                      <span
+                        className={`font-mono-stats text-[12px] font-bold ${tabColor}`}
+                        style={{ textShadow: `0 0 8px rgba(${rgb},0.5)` }}
+                      >
+                        {currentPage} / {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(totalPages)}
+                        disabled={currentPage === totalPages}
+                        className={`font-mono-stats text-[11px] font-bold ${tabColor} disabled:opacity-15 disabled:cursor-not-allowed transition-all hover:scale-110`}
+                        style={{ textShadow: currentPage === totalPages ? "none" : `0 0 6px rgba(${rgb},0.4)` }}
+                      >
+                        »»
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        );
+    }
+  })();
+
+  // ─── Mobile: poster grid ───
+  const mobilePosterGrid = (
+    <div className="poster-grid grid grid-cols-3 sm:grid-cols-4 gap-0.5">
       {filteredEntries.map((entry, i) => (
         <div
           key={entry.id}
           className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in"
           style={{ animationDelay: `${Math.min(i * 30, 400)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
           onClick={() => setSelectedEntry(entry)}
-          onMouseEnter={() => handleMouseEnter(entry)}
         >
           <div className="aspect-[2/3]">
             {entry.poster ? (
               <img
-                src={posterUrl(entry.poster, "small")}
+                src={posterUrl(entry.poster, "medium")}
                 alt={entry.title}
                 className="w-full h-full object-cover rounded-[6px]"
                 loading="lazy"
@@ -170,206 +402,192 @@ function FavouritesContent() {
 
   return (
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
-      {/* Hero banner — mobile only */}
-      {heroEntry && (
-        <div
-          className="relative mb-2 cursor-pointer animate-fade-up flex-shrink-0 lg:hidden"
-          onClick={() => setSelectedEntry(heroEntry)}
-        >
+
+      {/* ═══ MOBILE LAYOUT ═══ */}
+      <div className="lg:hidden flex flex-col flex-1 min-h-0">
+        {/* Hero banner */}
+        {heroEntry && (
           <div
-            className="absolute inset-0 -mx-4"
-            style={{
-              backgroundImage: `url(${posterUrl(heroEntry.poster, "large")})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center 20%",
-              filter: "brightness(0.15) saturate(1.4) blur(40px)",
-              transform: "scale(1.1)",
-              maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
-            }}
-          />
-          <div className="relative z-[1] flex items-center gap-4 py-2.5">
-            <img
-              src={posterUrl(heroEntry.poster, "small")}
-              alt={heroEntry.title}
-              className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
+            className="relative mb-2 cursor-pointer animate-fade-up flex-shrink-0"
+            onClick={() => setSelectedEntry(heroEntry)}
+          >
+            <div
+              className="absolute inset-0 -mx-4"
+              style={{
+                backgroundImage: `url(${posterUrl(heroEntry.poster, "large")})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center 20%",
+                filter: "brightness(0.15) saturate(1.4) blur(40px)",
+                transform: "scale(1.1)",
+                maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+                WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
+              }}
             />
-            <div className="min-w-0">
-              <p className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5 text-[#ffb800]">
-                Your Favourite
-              </p>
-              <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
-                {heroEntry.title}
-              </h2>
-              <div className="flex items-center gap-2">
-                <span className="font-mono-stats text-sm font-bold" style={{ color: "#ffb800" }}>
-                  {Number(heroEntry.my_rating).toFixed(0)}/10
-                </span>
-                <span className="font-mono-stats text-xs text-[#5c5954]">
-                  {heroEntry.year}
-                </span>
-                <span className="text-xs text-[#5c5954] truncate">
-                  {heroEntry.genres?.slice(0, 3).join(", ")}
-                </span>
+            <div className="relative z-[1] flex items-center gap-4 py-2.5">
+              <img
+                src={posterUrl(heroEntry.poster, "small")}
+                alt={heroEntry.title}
+                className="w-[60px] h-[90px] rounded-[8px] object-cover shadow-[0_6px_30px_rgba(0,0,0,0.5)] flex-shrink-0"
+              />
+              <div className="min-w-0">
+                <p className="text-[8px] uppercase tracking-[2px] font-semibold mb-0.5 text-[#ffb800]">
+                  Your Favourite
+                </p>
+                <h2 className="font-display text-base font-medium text-[#e8e4dc] tracking-wide mb-0.5 truncate">
+                  {heroEntry.title}
+                </h2>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono-stats text-sm font-bold" style={{ color: "#ffb800" }}>
+                    {Number(heroEntry.my_rating).toFixed(0)}/10
+                  </span>
+                  <span className="font-mono-stats text-xs text-[#5c5954]">
+                    {heroEntry.year}
+                  </span>
+                  <span className="text-xs text-[#5c5954] truncate">
+                    {heroEntry.genres?.slice(0, 3).join(", ")}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Mobile: Movies/TV tabs */}
-      <div className="flex justify-center mb-2 flex-shrink-0 lg:hidden">
-        <div className="flex items-center gap-2">
-          <a
-            href="/favourites?tab=movie"
-            className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
-              isMovie
-                ? "bg-gradient-to-br from-vr-blue to-vr-blue-dark text-white"
-                : "text-[#5c5954] hover:text-[#9a968e]"
-            }`}
-          >
-            🎬 Movies{" "}
-            <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
-              {movieCount}
-            </span>
-          </a>
-          <a
-            href="/favourites?tab=tv"
-            className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
-              !isMovie
-                ? "bg-gradient-to-br from-vr-violet to-vr-violet-dark text-white"
-                : "text-[#5c5954] hover:text-[#9a968e]"
-            }`}
-          >
-            📺 TV Shows{" "}
-            <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
-              {tvCount}
-            </span>
-          </a>
-        </div>
-      </div>
-
-      {/* Mobile: filter dropdowns */}
-      <div className="lg:hidden space-y-1.5 mb-1 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <select
-              value={genreFilter || ""}
-              onChange={(e) => setGenreFilter(e.target.value || null)}
-              className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+        {/* Mobile: Movies/TV tabs */}
+        <div className="flex justify-center mb-2 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <a
+              href="/favourites?tab=movie"
+              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                isMovie
+                  ? "bg-gradient-to-br from-vr-blue to-vr-blue-dark text-white"
+                  : "text-[#5c5954] hover:text-[#9a968e]"
+              }`}
             >
-              <option value="">All Genres</option>
-              {MAJOR_GENRES.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
-            <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-          </div>
-          <div className="relative">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortKey)}
-              className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.key} value={opt.key}>{opt.label}</option>
-              ))}
-            </select>
-            <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-          </div>
-          <div className="relative flex-1">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop: compact filter rows */}
-      <div className="hidden lg:block space-y-1 mb-2 flex-shrink-0 px-32 relative z-10">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">
-            Genre
-          </span>
-          <button onClick={() => setGenreFilter(null)} className={pillClass(!genreFilter)}>All</button>
-          {MAJOR_GENRES.map((g) => (
-            <button key={g} onClick={() => setGenreFilter(genreFilter === g ? null : g)} className={pillClass(genreFilter === g)}>
-              {g}
-            </button>
-          ))}
-          <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-violet shrink-0 ml-2">
-            Sort
-          </span>
-          {SORT_OPTIONS.map((opt) => (
-            <button key={opt.key} onClick={() => setSortBy(opt.key)} className={pillClass(sortBy === opt.key)}>
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {topTags.length > 0 && (
-            <>
-              <span className="font-display text-[9px] uppercase tracking-[0.15em] text-vr-blue shrink-0">
-                Tags
+              🎬 Movies{" "}
+              <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
+                {movieCount}
               </span>
-              <button onClick={() => setTagFilter(null)} className={pillClass(!tagFilter)}>All</button>
-              {topTags.map((t) => (
-                <button key={t} onClick={() => setTagFilter(tagFilter === t ? null : t)} className={pillClass(tagFilter === t)}>
-                  {t}
-                </button>
-              ))}
-            </>
-          )}
-          <div className="relative flex-1 min-w-[140px] ml-auto">
-            <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={`Search ${isMovie ? "favourite movies" : "favourite TV shows"}...`}
-              className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
-            />
+            </a>
+            <a
+              href="/favourites?tab=tv"
+              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                !isMovie
+                  ? "bg-gradient-to-br from-vr-violet to-vr-violet-dark text-white"
+                  : "text-[#5c5954] hover:text-[#9a968e]"
+              }`}
+            >
+              📺 TV Shows{" "}
+              <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
+                {tvCount}
+              </span>
+            </a>
           </div>
         </div>
+
+        {/* Mobile: filter dropdowns */}
+        <div className="space-y-1.5 mb-1 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <select
+                value={genreFilter || ""}
+                onChange={(e) => setGenreFilter(e.target.value || null)}
+                className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+              >
+                <option value="">All Genres</option>
+                {MAJOR_GENRES.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
+            </div>
+            {topTags.length > 0 && (
+              <div className="relative flex-1">
+                <select
+                  value={tagFilter || ""}
+                  onChange={(e) => setTagFilter(e.target.value || null)}
+                  className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+                >
+                  <option value="">All Tags</option>
+                  {topTags.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortKey)}
+                className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.key} value={opt.key}>{opt.label}</option>
+                ))}
+              </select>
+              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
+            </div>
+            <div className="relative flex-1">
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile grid */}
+        {filteredEntries.length > 0 ? (
+          <div className="flex-1 min-h-0 overflow-y-auto pb-20">{mobilePosterGrid}</div>
+        ) : (
+          <div className="flex flex-col items-center justify-center flex-1">
+            <Star size={36} className="text-[#5c5954]/20 mb-4" />
+            <p className="font-body text-[#5c5954]">
+              {entries.length === 0
+                ? "No favourites yet. Mark entries as favourites in your Library."
+                : "No matches for your filters."}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Poster grid — TV frame on desktop, plain on mobile */}
-      {filteredEntries.length > 0 ? (
-        <>
-          <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
-            <LedBars />
-
-            <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>{posterGrid}</TvFrame>
-            <div className="hidden lg:block px-32">
-              <div className="tv-stand">
-                <div className="tv-stand-neck" />
-                <div className="tv-stand-base" />
-              </div>
-            </div>
-            <PreviewBar
-              entry={displayEntry}
-              onEdit={(entry) => setSelectedEntry(entry)}
-              isOn={tvOn}
-            />
+      {/* ═══ DESKTOP LAYOUT ═══ */}
+      <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
+        <LedBars />
+        <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>
+          {desktopTvContent}
+        </TvFrame>
+        <div className="hidden lg:block px-32">
+          <div className="tv-stand">
+            <div className="tv-stand-neck" />
+            <div className="tv-stand-base" />
           </div>
-          <div className="lg:hidden flex-1 min-h-0 overflow-y-auto pb-20">{posterGrid}</div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center flex-1">
-          <Star size={36} className="text-[#5c5954]/20 mb-4" />
-          <p className="font-body text-[#5c5954]">
-            {entries.length === 0
-              ? "No favourites yet. Mark entries as favourites in your Library."
-              : "No matches for your filters."}
-          </p>
         </div>
-      )}
+        <PreviewBar
+          entry={flow.stage === "results" ? displayEntry : null}
+          onEdit={(entry) => setSelectedEntry(entry)}
+          isOn={tvOn}
+        />
+      </div>
+
+      {/* Filter drawer */}
+      <FilterDrawer
+        open={filterOpen}
+        onClose={() => setFilterOpen(false)}
+        genreFilter={genreFilter}
+        setGenreFilter={setGenreFilter}
+        tagFilter={tagFilter}
+        setTagFilter={setTagFilter}
+        availableTags={topTags}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+      />
 
       {/* Detail modal */}
       {selectedEntry && (
@@ -394,7 +612,7 @@ function FavouritesContent() {
   );
 }
 
-/* ── Entry Detail / Edit Modal ── */
+/* ── Entry Detail / Edit Modal (matching Library's compact style) ── */
 
 function EntryDetailModal({
   entry, onClose, onUpdate, onDelete,
@@ -410,6 +628,19 @@ function EntryDetailModal({
   const [yearWatched, setYearWatched] = useState(entry.year_watched || "");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [yearDropOpen, setYearDropOpen] = useState(false);
+  const [seasonDropOpen, setSeasonDropOpen] = useState(false);
+  const yearRef = useRef<HTMLDivElement>(null);
+  const seasonRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (yearRef.current && !yearRef.current.contains(e.target as Node)) setYearDropOpen(false);
+      if (seasonRef.current && !seasonRef.current.contains(e.target as Node)) setSeasonDropOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const isMovie = entry.media_type === "movie";
   const currentYear = new Date().getFullYear();
@@ -441,139 +672,138 @@ function EntryDetailModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[calc(100vh-120px)] overflow-y-auto overflow-x-hidden rounded-xl border border-border-glow bg-bg-card animate-slide-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:px-40 lg:py-16">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-modal-backdrop" onClick={onClose} />
+      <div className="relative w-full max-w-lg rounded-xl border border-border-glow bg-bg-card animate-modal-enter">
         <div className="h-px rounded-t-xl" style={{ background: "linear-gradient(90deg, transparent 5%, #ffb800 30%, #a78bfa 70%, transparent 95%)" }} />
-        <button onClick={onClose} className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors">✕</button>
+        <button onClick={onClose} className="absolute top-2.5 right-2.5 z-10 p-1 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors text-xs">✕</button>
 
-        <div className="p-3 md:p-5">
-          <div className="flex gap-3 md:gap-4 mb-3 md:mb-4">
-            <div className="flex-shrink-0 w-20 md:w-28 max-h-[120px] md:max-h-none rounded-lg overflow-hidden bg-bg-deep">
+        <div className="p-3">
+          {/* Top: poster + info side by side */}
+          <div className="flex gap-3 mb-2">
+            <div className="flex-shrink-0 w-16 rounded-md overflow-hidden bg-bg-deep">
               {entry.poster ? (
-                <img src={posterUrl(entry.poster, "medium")} alt={entry.title} className="w-full aspect-[2/3] object-cover" />
+                <img src={posterUrl(entry.poster, "small")} alt={entry.title} className="w-full aspect-[2/3] object-cover" />
               ) : (
-                <div className="w-full aspect-[2/3] flex items-center justify-center text-[#5c5954] text-xs">No poster</div>
+                <div className="w-full aspect-[2/3] flex items-center justify-center text-[#5c5954] text-[9px]">No poster</div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-display uppercase tracking-wider mb-1 ${isMovie ? "bg-vr-blue/15 text-vr-blue" : "bg-vr-violet/15 text-vr-violet"}`}>
+              <span className={`inline-block px-1.5 py-px rounded text-[8px] font-display uppercase tracking-wider mb-0.5 ${isMovie ? "bg-vr-blue/15 text-vr-blue" : "bg-vr-violet/15 text-vr-violet"}`}>
                 {isMovie ? "Film" : "TV"}
               </span>
-              <h2 className="font-display text-lg font-medium text-[#e8e4dc] tracking-wide leading-tight">{entry.title}</h2>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span className="font-mono-stats text-xs text-[#5c5954]">{entry.year}</span>
-                {isMovie && entry.runtime ? (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-xs text-[#5c5954]">{entry.runtime} min</span></>) : null}
-                {!isMovie && (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-xs text-[#5c5954]">{entry.seasons}S · {entry.episodes}E</span></>)}
-                {entry.tmdb_rating && (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-xs text-vr-blue/70">TMDB {Number(entry.tmdb_rating).toFixed(1)}</span></>)}
+              <h2 className="font-display text-sm font-medium text-[#e8e4dc] tracking-wide leading-tight">{entry.title}</h2>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap text-[10px]">
+                <span className="font-mono-stats text-[#5c5954]">{entry.year}</span>
+                {isMovie && entry.runtime ? (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-[#5c5954]">{entry.runtime}m</span></>) : null}
+                {!isMovie && (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-[#5c5954]">{entry.seasons}S·{entry.episodes}E</span></>)}
+                {entry.tmdb_rating && (<><span className="text-[#5c5954]">·</span><span className="font-mono-stats text-vr-blue/70">TMDB {Number(entry.tmdb_rating).toFixed(1)}</span></>)}
+                {entry.imdb_id && (
+                  <a href={`https://www.imdb.com/title/${entry.imdb_id}`} target="_blank" rel="noopener noreferrer" className="text-vr-blue/50 hover:text-vr-blue transition-colors">IMDb ↗</a>
+                )}
               </div>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {entry.genres?.map((g) => (
-                  <span key={g} className="px-2 py-0.5 rounded-full text-[10px] font-display uppercase tracking-wider border border-border-glow text-[#9a968e]">{g}</span>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {entry.genres?.slice(0, 4).map((g) => (
+                  <span key={g} className="px-1.5 py-px rounded-full text-[8px] font-display uppercase tracking-wider border border-border-glow text-[#9a968e]">{g}</span>
                 ))}
               </div>
             </div>
           </div>
 
-          {entry.overview && <p className="text-xs text-[#9a968e] font-body leading-relaxed mb-3 md:mb-4 line-clamp-3">{entry.overview}</p>}
-          <div className="divider-gradient mb-3 md:mb-4" />
+          {entry.overview && <p className="text-[10px] text-[#9a968e] font-body leading-relaxed mb-2 line-clamp-2">{entry.overview}</p>}
+          <div className="divider-gradient mb-2" />
 
-          <div className="mb-3 md:mb-4">
-            <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Your Rating</label>
-            <div className="flex items-center gap-4">
-              <span className="font-mono-stats text-3xl font-bold min-w-[3ch] text-center" style={{ color: ratingColor(myRating) }}>{myRating.toFixed(1)}</span>
-              <input type="range" min="1" max="10" step="0.5" value={myRating} onChange={(e) => setMyRating(parseFloat(e.target.value))} className="flex-1 h-2 rounded-full appearance-none bg-bg-deep cursor-pointer accent-vr-blue" />
+          {/* Rating + Year Watched side by side */}
+          <div className="flex gap-3 mb-2">
+            <div className="flex-1">
+              <label className="font-display text-[9px] uppercase tracking-wider text-[#9a968e] block mb-1">Your Rating</label>
+              <div className="flex items-center gap-2">
+                <span className="font-mono-stats text-xl font-bold min-w-[2.5ch] text-center" style={{ color: ratingColor(myRating) }}>{myRating.toFixed(1)}</span>
+                <input type="range" min="1" max="10" step="0.5" value={myRating} onChange={(e) => setMyRating(parseFloat(e.target.value))} className="flex-1 h-1.5 rounded-full appearance-none bg-bg-deep cursor-pointer accent-vr-blue" />
+              </div>
             </div>
-          </div>
-
-          <div className="mb-3 md:mb-4">
-            <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Year Watched</label>
-            <select value={yearWatched} onChange={(e) => setYearWatched(e.target.value)} className="w-full h-10 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-mono-stats text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40">
-              <option value="">—</option>
-              {years.map((y) => <option key={y} value={y}>{y}</option>)}
-            </select>
+            <div className="w-24 shrink-0" ref={yearRef}>
+              <label className="font-display text-[9px] uppercase tracking-wider text-[#9a968e] block mb-1">Year Watched</label>
+              <div className="relative">
+                <button
+                  onClick={() => setYearDropOpen(!yearDropOpen)}
+                  className="w-full h-7 rounded-md border border-vr-blue/20 bg-[#0e0e14] pl-2 pr-5 font-mono-stats text-[10px] text-vr-blue text-left cursor-pointer hover:bg-bg-deep/70 transition-all"
+                  style={{ textShadow: "0 0 6px rgba(14,165,233,0.3)" }}
+                >
+                  {yearWatched || "—"}
+                  <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-vr-blue/50 text-[8px]">{yearDropOpen ? "▲" : "▼"}</span>
+                </button>
+                {yearDropOpen && (
+                  <div className="absolute top-full left-0 mt-1 z-30 w-full max-h-[160px] overflow-y-auto rounded-lg border border-border-glow/30 bg-[#0e0e14] shadow-2xl animate-drawer-enter tv-grid-scroll">
+                    <button onClick={() => { setYearWatched(""); setYearDropOpen(false); }} className={`w-full text-left px-3 py-1.5 font-mono-stats text-[10px] transition-colors ${!yearWatched ? "text-vr-blue bg-bg-deep/60" : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"}`}>—</button>
+                    {years.map((y) => (
+                      <button key={y} onClick={() => { setYearWatched(y); setYearDropOpen(false); }} className={`w-full text-left px-3 py-1.5 font-mono-stats text-[10px] transition-colors ${yearWatched === y ? "text-vr-blue bg-bg-deep/60" : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"}`} style={yearWatched === y ? { textShadow: "0 0 6px rgba(14,165,233,0.4)" } : undefined}>{y}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {!isMovie && entry.seasons > 0 && (
-            <div className="mb-3 md:mb-4">
-              <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">
-                Seasons Watched
-                <span className="text-[#5c5954] ml-1 normal-case tracking-normal">({entry.seasons} total)</span>
-              </label>
-              <select
-                value={seasonsWatched}
-                onChange={(e) => setSeasonsWatched(Number(e.target.value))}
-                className="w-full h-10 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-mono-stats text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-violet/40"
-              >
-                {Array.from({ length: entry.seasons }, (_, i) => i + 1).map((s) => (
-                  <option key={s} value={s}>
-                    {s} of {entry.seasons} season{s !== 1 ? "s" : ""}
-                  </option>
-                ))}
-              </select>
+            <div className="mb-2">
+              <label className="font-display text-[9px] uppercase tracking-wider text-[#9a968e] block mb-1">Seasons Watched <span className="text-[#5c5954] normal-case tracking-normal">({entry.seasons} total)</span></label>
+              <div className="relative" ref={seasonRef}>
+                <button
+                  onClick={() => setSeasonDropOpen(!seasonDropOpen)}
+                  className="w-full h-7 rounded-md border border-vr-violet/20 bg-[#0e0e14] pl-2 pr-5 font-mono-stats text-[10px] text-vr-violet text-left cursor-pointer hover:bg-bg-deep/70 transition-all"
+                  style={{ textShadow: "0 0 6px rgba(139,92,246,0.3)" }}
+                >
+                  {seasonsWatched} of {entry.seasons}
+                  <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-vr-violet/50 text-[8px]">{seasonDropOpen ? "▲" : "▼"}</span>
+                </button>
+                {seasonDropOpen && (
+                  <div className="absolute top-full left-0 mt-1 z-30 w-full max-h-[120px] overflow-y-auto rounded-lg border border-border-glow/30 bg-[#0e0e14] shadow-2xl animate-drawer-enter tv-grid-scroll">
+                    {Array.from({ length: entry.seasons }, (_, i) => i + 1).map((s) => (
+                      <button key={s} onClick={() => { setSeasonsWatched(s); setSeasonDropOpen(false); }} className={`w-full text-left px-3 py-1.5 font-mono-stats text-[10px] transition-colors ${seasonsWatched === s ? "text-vr-violet bg-bg-deep/60" : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"}`} style={seasonsWatched === s ? { textShadow: "0 0 6px rgba(139,92,246,0.4)" } : undefined}>{s} of {entry.seasons}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          <div className="mb-3 md:mb-4">
-            <label className="font-display text-[11px] uppercase tracking-wider text-[#9a968e] block mb-2">Tags</label>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {tags.map((tag) => (
-                  <button key={tag} onClick={() => setTags(tags.filter((t) => t !== tag))} className="px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider bg-vr-blue/15 text-vr-blue border border-vr-blue/20 hover:bg-vr-blue/25 transition-colors">{tag} ×</button>
-                ))}
-              </div>
-            )}
-            {/* Desktop: text input + suggestion pills */}
-            <div className="hidden md:block">
-              <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]); setTagInput(""); } }} placeholder="Type a custom tag..." className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40 mb-2" />
-              <div className="flex flex-wrap gap-1.5">
-                {DEFAULT_TAGS.filter((t) => !tags.includes(t)).slice(0, 12).map((tag) => (
-                  <button key={tag} onClick={() => setTags([...tags, tag])} className="px-2.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider border border-border-glow text-[#9a968e] bg-bg-deep/50 hover:border-vr-blue/30 hover:text-vr-blue hover:bg-vr-blue/10 transition-colors">{tag}</button>
-                ))}
-              </div>
-            </div>
-            {/* Mobile: dropdown select */}
-            <div className="md:hidden">
-              <select
-                value=""
-                onChange={(e) => { if (e.target.value && !tags.includes(e.target.value)) setTags([...tags, e.target.value]); }}
-                className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] focus:outline-none focus:border-vr-blue/40 mb-2 appearance-none"
-              >
-                <option value="">Add a tag...</option>
-                {DEFAULT_TAGS.filter((t) => !tags.includes(t)).map((tag) => (
-                  <option key={tag} value={tag}>{tag}</option>
-                ))}
-              </select>
-              <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && tagInput.trim()) { e.preventDefault(); if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]); setTagInput(""); } }} placeholder="Or type a custom tag..." className="w-full h-9 rounded-lg border border-border-glow bg-bg-deep/50 px-3 font-body text-xs text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/40" />
+          {/* Tags — compact */}
+          <div className="mb-2">
+            <label className="font-display text-[9px] uppercase tracking-wider text-[#9a968e] block mb-1">Tags</label>
+            <div className="flex flex-wrap gap-1">
+              {tags.map((tag) => (
+                <button key={tag} onClick={() => setTags(tags.filter((t) => t !== tag))} className="px-2 py-0.5 rounded-full text-[8px] font-display uppercase tracking-wider bg-vr-blue/15 text-vr-blue border border-vr-blue/20 hover:bg-vr-blue/25 transition-colors">{tag} ×</button>
+              ))}
+              {DEFAULT_TAGS.filter((t) => !tags.includes(t)).slice(0, 8).map((tag) => (
+                <button key={tag} onClick={() => setTags([...tags, tag])} className="px-2 py-0.5 rounded-full text-[8px] font-display uppercase tracking-wider border border-border-glow text-[#5c5954] hover:border-vr-blue/30 hover:text-vr-blue transition-colors">{tag}</button>
+              ))}
             </div>
           </div>
 
-          <div className="flex gap-4 mb-3 md:mb-5">
-            <label className="flex items-center gap-2 cursor-pointer">
+          {/* Checkboxes + Actions in one row */}
+          <div className="flex items-center gap-3 pt-2 border-t border-border-glow/30">
+            <label className="flex items-center gap-1.5 cursor-pointer">
               <input type="checkbox" checked={recommended} onChange={(e) => setRecommended(e.target.checked)} className="sr-only" />
-              <div className={`w-5 h-5 rounded border transition-colors flex items-center justify-center ${recommended ? "bg-vr-violet/20 border-vr-violet/40" : "border-border-glow bg-bg-deep/50"}`}>
-                {recommended && <span className="text-[10px]">⭐</span>}
+              <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center text-[8px] ${recommended ? "bg-vr-violet/20 border-vr-violet/40" : "border-border-glow bg-bg-deep/50"}`}>
+                {recommended && "⭐"}
               </div>
-              <span className="font-display text-[11px] uppercase tracking-wider text-[#9a968e]">Favourite</span>
+              <span className="font-display text-[9px] uppercase tracking-wider text-[#9a968e]">Fav</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-1.5 cursor-pointer">
               <input type="checkbox" checked={rewatch} onChange={(e) => setRewatch(e.target.checked)} className="sr-only" />
-              <div className={`w-5 h-5 rounded border transition-colors flex items-center justify-center ${rewatch ? "bg-vr-blue/20 border-vr-blue/40" : "border-border-glow bg-bg-deep/50"}`}>
-                {rewatch && <span className="text-[10px]">🔁</span>}
+              <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center text-[8px] ${rewatch ? "bg-vr-blue/20 border-vr-blue/40" : "border-border-glow bg-bg-deep/50"}`}>
+                {rewatch && "🔁"}
               </div>
-              <span className="font-display text-[11px] uppercase tracking-wider text-[#9a968e]">Rewatch</span>
+              <span className="font-display text-[9px] uppercase tracking-wider text-[#9a968e]">Rewatch</span>
             </label>
-          </div>
-
-          <div className="sticky bottom-0 z-10 flex gap-3 pt-3 border-t border-border-glow bg-bg-card -mx-3 px-3 md:-mx-5 md:px-5 pb-3 md:pb-0 md:relative md:border-t-0 md:pt-0 md:bg-transparent">
-            {!confirmDelete ? (
-              <button onClick={() => setConfirmDelete(true)} className="px-4 h-11 rounded-lg border border-red-500/20 text-red-400/60 font-display text-sm uppercase tracking-wider hover:bg-red-500/10 hover:text-red-400 transition-colors">Remove</button>
-            ) : (
-              <button onClick={handleDelete} className="px-4 h-11 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 font-display text-sm uppercase tracking-wider">Confirm Delete</button>
-            )}
             <div className="flex-1" />
-            <button onClick={onClose} className="px-4 h-11 rounded-lg border border-border-glow font-display text-sm uppercase tracking-wider text-[#5c5954] hover:text-[#9a968e] transition-colors">Cancel</button>
-            <button onClick={handleSave} disabled={saving} className="px-6 h-11 rounded-lg font-display text-sm uppercase tracking-wider text-white disabled:opacity-50 hover:shadow-[0_0_15px_rgba(14,165,233,0.3)] transition-all" style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
+            {!confirmDelete ? (
+              <button onClick={() => setConfirmDelete(true)} className="px-2.5 h-7 rounded-md border border-red-500/20 text-red-400/60 font-display text-[9px] uppercase tracking-wider hover:bg-red-500/10 hover:text-red-400 transition-colors">Remove</button>
+            ) : (
+              <button onClick={handleDelete} className="px-2.5 h-7 rounded-md bg-red-500/20 border border-red-500/30 text-red-400 font-display text-[9px] uppercase tracking-wider">Confirm</button>
+            )}
+            <button onClick={handleSave} disabled={saving} className="px-4 h-7 rounded-md font-display text-[9px] uppercase tracking-wider text-white disabled:opacity-50 hover:shadow-[0_0_12px_rgba(14,165,233,0.3)] transition-all" style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}>
               {saving ? "..." : "Save"}
             </button>
           </div>

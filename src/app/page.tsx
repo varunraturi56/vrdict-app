@@ -326,7 +326,7 @@ function LibraryContent() {
                             <div className="aspect-[2/3]">
                               {entry.poster ? (
                                 <img
-                                  src={posterUrl(entry.poster, "small")}
+                                  src={posterUrl(entry.poster, "medium")}
                                   alt={entry.title}
                                   className="w-full h-full object-cover rounded-md"
                                   loading="lazy"
@@ -420,7 +420,7 @@ function LibraryContent() {
           <div className="aspect-[2/3]">
             {entry.poster ? (
               <img
-                src={posterUrl(entry.poster, "small")}
+                src={posterUrl(entry.poster, "medium")}
                 alt={entry.title}
                 className="w-full h-full object-cover rounded-[6px]"
                 loading="lazy"
