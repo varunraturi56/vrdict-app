@@ -89,9 +89,10 @@ function WatchlistContent() {
     }
   }, [searchParams]);
 
-  // Fetch rewatch entries from library
+  // Fetch rewatch entries from library (on mount + when toggled on)
+  const rewatchFetchedRef = useRef(false);
   useEffect(() => {
-    if (!showRewatch) return;
+    if (rewatchFetchedRef.current && !showRewatch) return;
     async function loadRewatch() {
       setRewatchLoading(true);
       const supabase = createClient();
@@ -102,6 +103,7 @@ function WatchlistContent() {
         .order("my_rating", { ascending: false });
       if (data) setRewatchItems(data as Entry[]);
       setRewatchLoading(false);
+      rewatchFetchedRef.current = true;
     }
     loadRewatch();
   }, [showRewatch]);
@@ -120,8 +122,11 @@ function WatchlistContent() {
     load();
   }, []);
 
-  // Reset filters on tab switch
+  // Reset filters on tab switch (skip initial mount)
+  const prevTabRef = useRef(mediaTab);
   useEffect(() => {
+    if (mediaTab === prevTabRef.current) return;
+    prevTabRef.current = mediaTab;
     setGenreFilter(null);
     setSearchQuery("");
     setCurrentPage(1);
@@ -167,10 +172,12 @@ function WatchlistContent() {
   // Reset page on filter change
   useEffect(() => { setCurrentPage(1); }, [genreFilter, ratingFilter, searchQuery, sortBy]);
 
-  // Rewatch items filtered by current tab
+  // Rewatch items filtered by current tab (desktop only — mobile shows all)
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
   const filteredRewatchItems = useMemo(
-    () => rewatchItems.filter((e) => e.media_type === activeMediaType),
-    [rewatchItems, activeMediaType]
+    () => isMobile ? rewatchItems : rewatchItems.filter((e) => e.media_type === activeMediaType),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rewatchItems, activeMediaType, isMobile]
   );
 
   const rewatchTotalPages = Math.max(1, Math.ceil(filteredRewatchItems.length / ITEMS_PER_PAGE));
@@ -676,27 +683,36 @@ function WatchlistContent() {
           </div>
         )}
 
-        {/* Mobile: Movies/TV tabs */}
+        {/* Mobile: Movies/TV/Rewatch tabs */}
         <div className="flex justify-center mb-2 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <a
-              href="/watchlist?tab=movie"
-              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
-                isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
+            <button
+              onClick={() => { setShowRewatch(false); if (mediaTab !== "movie") router.push("/watchlist?tab=movie"); }}
+              className={`px-5 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                isMovie && !showRewatch ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
-              style={isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.movie.join(",")}), rgba(${pageGlows.movie.join(",")},0.7))` } : undefined}
+              style={isMovie && !showRewatch ? { background: `linear-gradient(135deg, rgb(${pageGlows.movie.join(",")}), rgba(${pageGlows.movie.join(",")},0.7))` } : undefined}
             >
               🎬 Movies <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{movieCount}</span>
-            </a>
-            <a
-              href="/watchlist?tab=tv"
-              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
-                !isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
+            </button>
+            <button
+              onClick={() => { setShowRewatch(false); if (mediaTab !== "tv") router.push("/watchlist?tab=tv"); }}
+              className={`px-5 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                !isMovie && !showRewatch ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
-              style={!isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.tv.join(",")}), rgba(${pageGlows.tv.join(",")},0.7))` } : undefined}
+              style={!isMovie && !showRewatch ? { background: `linear-gradient(135deg, rgb(${pageGlows.tv.join(",")}), rgba(${pageGlows.tv.join(",")},0.7))` } : undefined}
             >
               📺 TV <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{tvCount}</span>
-            </a>
+            </button>
+            <button
+              onClick={() => setShowRewatch(!showRewatch)}
+              className={`px-5 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+                showRewatch ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
+              }`}
+              style={showRewatch ? { background: `linear-gradient(135deg, rgb(139,92,246), rgba(139,92,246,0.7))` } : undefined}
+            >
+              🔄 Rewatch <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{rewatchItems.length}</span>
+            </button>
           </div>
         </div>
 
