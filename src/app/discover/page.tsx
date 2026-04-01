@@ -52,10 +52,13 @@ function DiscoverContent() {
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [eraFilter, setEraFilter] = useState<string>("All");
   const [sortBy, setSortBy] = useState<SortKey>("vote_average.desc");
+  const [ratingFilter, setRatingFilter] = useState<string>("Any");
   const [keywords, setKeywords] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<TmdbSearchResult[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [ratingDropOpen, setRatingDropOpen] = useState(false);
+  const ratingDropRef = useRef<HTMLDivElement>(null);
 
   // Results — restore from sessionStorage if available for instant display
   const [results, setResults] = useState<TmdbSearchResult[]>(() => {
@@ -84,6 +87,7 @@ function DiscoverContent() {
     function handleClick(e: MouseEvent) {
       if (eraDropRef.current && !eraDropRef.current.contains(e.target as Node)) setEraDropOpen(false);
       if (sortDropRef.current && !sortDropRef.current.contains(e.target as Node)) setSortDropOpen(false);
+      if (ratingDropRef.current && !ratingDropRef.current.contains(e.target as Node)) setRatingDropOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -216,7 +220,8 @@ function DiscoverContent() {
 
       const sortOrders = ["popularity.desc", "vote_average.desc", "vote_count.desc"];
       const minVotes = [50, 20, 20];
-      const minRatings = [6, 5, 5];
+      const ratingMin = ratingFilter !== "Any" ? parseInt(ratingFilter) : 0;
+      const minRatings = ratingMin > 0 ? [ratingMin, ratingMin, ratingMin] : [6, 5, 5];
       const fetches = [];
 
       for (let i = 0; i < 3; i++) {
@@ -286,7 +291,7 @@ function DiscoverContent() {
   // Reset and fetch fresh on filter/tab change
   // On mobile there's no category stage — always fetch when existingLoaded
   // Track the filter key to avoid re-fetching on remount when cached results exist
-  const initialFilterKey = `${mediaTab}|${null}|${"All"}|${sortBy}|${""}`;
+  const initialFilterKey = `${mediaTab}|${null}|${"All"}|${sortBy}|${""}|${"Any"}`;
   const filterKeyRef = useRef(results.length > 0 ? initialFilterKey : "");
   const prevMediaTabRef = useRef(mediaTab);
   const hasFetchedRef = useRef(false);
@@ -301,9 +306,10 @@ function DiscoverContent() {
       prevMediaTabRef.current = mediaTab;
       setGenreFilter(null);
       setEraFilter("All");
+      setRatingFilter("Any");
       setKeywords("");
       setSearchQuery("");
-      const filterKey = `${mediaTab}|${null}|${"All"}|${sortBy}|${""}`;
+      const filterKey = `${mediaTab}|${null}|${"All"}|${sortBy}|${""}|${"Any"}`;
       filterKeyRef.current = filterKey;
       setResults([]);
       setCurrentPage(1);
@@ -316,7 +322,7 @@ function DiscoverContent() {
       return;
     }
 
-    const filterKey = `${mediaTab}|${genreFilter}|${eraFilter}|${sortBy}|${resolvedKeywordIds}`;
+    const filterKey = `${mediaTab}|${genreFilter}|${eraFilter}|${sortBy}|${resolvedKeywordIds}|${ratingFilter}`;
     // Skip fetch if filter key unchanged and we already have results (from cache or prior fetch)
     if (filterKey === filterKeyRef.current && results.length > 0) return;
     filterKeyRef.current = filterKey;
@@ -337,7 +343,7 @@ function DiscoverContent() {
     fetchDiscover(1, false);
     hasFetchedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingLoaded, flow.stage]);
+  }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingLoaded, flow.stage, ratingFilter]);
 
   // Cache discover results in sessionStorage for instant restore
   useEffect(() => {
@@ -491,7 +497,7 @@ function DiscoverContent() {
   const themeRgb = isMovie ? pageGlows.movie : pageGlows.tv;
   const rgb = themeRgb.join(",");
 
-  const activeFilterCount = (genreFilter ? 1 : 0);
+  const activeFilterCount = (genreFilter ? 1 : 0) + (ratingFilter !== "Any" ? 1 : 0);
 
   const breadcrumbPath = flow.stage === "results"
     ? ["Discover", mediaTab === "movie" ? "Movies" : "TV Shows", ...(genreFilter ? [genreFilter] : [])]
@@ -676,6 +682,37 @@ function DiscoverContent() {
                           style={eraFilter === era ? { color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.4)` } : undefined}
                         >
                           {era === "All" ? "All Eras" : era}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Rating dropdown */}
+                <div className="relative" ref={ratingDropRef}>
+                  <button
+                    onClick={() => setRatingDropOpen(!ratingDropOpen)}
+                    className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+                    style={{ border: `1px solid rgba(${rgb},0.2)`, color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.3)` }}
+                  >
+                    <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Rating:</span>
+                    <span className="font-display text-[10px] uppercase tracking-wider">{ratingFilter === "Any" ? "Any" : `${ratingFilter}+`}</span>
+                    <ChevronDown size={10} className={`${ratingDropOpen ? "rotate-180" : ""} transition-transform duration-200 opacity-50`} />
+                  </button>
+                  {ratingDropOpen && (
+                    <div className="absolute top-full right-0 mt-1 z-20 min-w-[100px] rounded-lg border border-border-glow/30 bg-[#0e0e14] shadow-2xl animate-drawer-enter overflow-hidden">
+                      {["Any", "6", "7", "8", "9"].map((r) => (
+                        <button
+                          key={r}
+                          onClick={() => { setRatingFilter(r); setRatingDropOpen(false); }}
+                          className={`w-full text-left px-3 py-2 font-display text-[10px] uppercase tracking-wider transition-colors ${
+                            ratingFilter === r
+                              ? "bg-bg-deep/60"
+                              : "text-[#5c5954] hover:text-[#9a968e] hover:bg-bg-deep/30"
+                          }`}
+                          style={ratingFilter === r ? { color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.4)` } : undefined}
+                        >
+                          {r === "Any" ? "Any" : `${r}+`}
                         </button>
                       ))}
                     </div>
@@ -932,6 +969,13 @@ function DiscoverContent() {
               value={eraFilter}
               options={ERAS.map((e) => ({ key: e, label: e }))}
               onChange={(v) => setEraFilter(v)}
+              className="flex-1"
+              rgb={rgb}
+            />
+            <MobileDropdown
+              value={ratingFilter}
+              options={[{ key: "Any", label: "Any" }, { key: "6", label: "6+" }, { key: "7", label: "7+" }, { key: "8", label: "8+" }, { key: "9", label: "9+" }]}
+              onChange={(v) => setRatingFilter(v)}
               className="flex-1"
               rgb={rgb}
             />

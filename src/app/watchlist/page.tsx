@@ -36,7 +36,7 @@ type FlowState =
   | { stage: "category" }
   | { stage: "results"; mediaType: MediaType };
 
-const ITEMS_PER_PAGE = 16; // 4×4 info-card grid
+const ITEMS_PER_PAGE = 20; // 5×4 info-card grid
 
 export default function WatchlistPage() {
   return (
@@ -361,16 +361,15 @@ function WatchlistContent() {
           </button>
 
           {cardItems.length > 0 ? (
-            <div className="poster-grid grid grid-cols-4 gap-2 flex-1 min-h-0 px-1">
+            <div className="poster-grid grid grid-cols-5 gap-2 flex-1 min-h-0 px-1">
               {cardItems.map((item, i) => (
                 <div
                   key={item.id}
-                  className={`poster-card flex gap-2.5 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer ${
-                    isRewatch
-                      ? "border-vr-violet/20"
-                      : "border-border-glow/50"
-                  }`}
-                  style={{ animationDelay: `${Math.min(i * 20, 250)}ms` }}
+                  className="poster-card flex gap-2.5 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer"
+                  style={{
+                    animationDelay: `${Math.min(i * 20, 250)}ms`,
+                    borderColor: isRewatch ? "rgba(139,92,246,0.2)" : `rgba(${rgb},0.25)`,
+                  }}
                   onMouseEnter={() => !isRewatch && setPeekedEntry(item as WatchlistItem)}
                   onClick={() => isRewatch ? setSelectedItem(item as any) : setSelectedItem(item as WatchlistItem)}
                 >
@@ -400,7 +399,12 @@ function WatchlistContent() {
                           <button
                             onClick={(e) => { e.stopPropagation(); moveToLibrary(item as WatchlistItem); }}
                             disabled={movingToLibrary === item.id}
-                            className="px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider bg-vr-blue/15 text-vr-blue border border-vr-blue/25 hover:bg-vr-blue/25 transition-all disabled:opacity-50"
+                            className="px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all disabled:opacity-50"
+                            style={{
+                              backgroundColor: `rgba(${rgb},0.15)`,
+                              color: `rgb(${rgb})`,
+                              border: `1px solid rgba(${rgb},0.25)`,
+                            }}
                           >
                             {movingToLibrary === item.id ? "..." : "Watched — Add to Library"}
                           </button>
