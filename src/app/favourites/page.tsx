@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Star, Search, ChevronDown } from "lucide-react";
+import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
 import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/types";
@@ -493,48 +494,31 @@ function FavouritesContent() {
         {/* Mobile: filter dropdowns */}
         <div className="space-y-1.5 mb-1 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <select
-                value={genreFilter || ""}
-                onChange={(e) => setGenreFilter(e.target.value || null)}
-                className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-              >
-                <option value="">All Genres</option>
-                {MAJOR_GENRES.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-            </div>
+            <MobileDropdown
+              value={genreFilter || ""}
+              options={[{ key: "", label: "All Genres" }, ...MAJOR_GENRES.map((g) => ({ key: g, label: g }))]}
+              onChange={(v) => setGenreFilter(v || null)}
+              className="flex-1"
+              rgb={isMovie ? "251,191,36" : "209,213,219"}
+            />
             {topTags.length > 0 && (
-              <div className="relative flex-1">
-                <select
-                  value={tagFilter || ""}
-                  onChange={(e) => setTagFilter(e.target.value || null)}
-                  className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-                >
-                  <option value="">All Tags</option>
-                  {topTags.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-              </div>
+              <MobileDropdown
+                value={tagFilter || ""}
+                options={[{ key: "", label: "All Tags" }, ...topTags.map((t) => ({ key: t, label: t }))]}
+                onChange={(v) => setTagFilter(v || null)}
+                className="flex-1"
+                rgb={isMovie ? "251,191,36" : "209,213,219"}
+              />
             )}
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortKey)}
-                className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.key} value={opt.key}>{opt.label}</option>
-                ))}
-              </select>
-              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-            </div>
+            <span className="font-display text-[8px] uppercase tracking-wider text-[#5c5954] shrink-0">Sort by:</span>
+            <MobileDropdown
+              value={sortBy}
+              options={SORT_OPTIONS.map((o) => ({ key: o.key, label: o.label }))}
+              onChange={(v) => setSortBy(v as SortKey)}
+              rgb={isMovie ? "251,191,36" : "209,213,219"}
+            />
             <div className="relative flex-1">
               <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
               <input
@@ -542,7 +526,7 @@ function FavouritesContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+                className="w-full h-7 rounded-lg border border-border-glow/30 bg-[#0e0e14] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
               />
             </div>
           </div>

@@ -140,6 +140,15 @@
     background: rgba(14, 165, 233, 0.3);
     color: #e8e4dc;
   }
+
+  /* Dark theme for native select dropdowns on mobile */
+  select {
+    color-scheme: dark;
+  }
+  select option {
+    background-color: #0e0e14;
+    color: #e8e4dc;
+  }
 }
 
 /* Font utility classes */

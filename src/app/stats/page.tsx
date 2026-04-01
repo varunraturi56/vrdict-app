@@ -377,7 +377,7 @@ function StatsContent() {
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
 
       {/* ═══ MOBILE ═══ */}
-      <div className="lg:hidden flex flex-col flex-1 min-h-0 overflow-y-auto pb-20">
+      <div className="lg:hidden flex flex-col flex-1 min-h-0 overflow-y-auto pb-20 pt-3">
         <div className="flex justify-center mb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
             <button onClick={() => navigate("visualise")} className={`px-5 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${flow === "visualise" || flow === "category" ? "text-white bg-gradient-to-r from-teal-500 to-teal-600" : "text-[#5c5954]"}`}>Visualise</button>
@@ -386,16 +386,37 @@ function StatsContent() {
         </div>
         {(flow === "visualise" || flow === "category") && (
           <div className="space-y-3 px-1">
+            {/* Mobile media filter */}
+            <div className="flex justify-center gap-1.5">
+              {(["all", "movies", "tv"] as const).map((v) => (
+                <button key={v} onClick={() => setMediaFilter(v)} className={`px-3.5 py-1 rounded-full text-[10px] font-display uppercase tracking-wider transition-all ${mediaFilter === v ? "text-white bg-gradient-to-r from-teal-500 to-teal-600" : "text-[#5c5954] border border-border-glow"}`}>
+                  {v === "all" ? "All" : v === "movies" ? "Films" : "TV"}
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 gap-2">
-              <MobileStatCard label="Total Watched" value={String(entries.length)} sub={`${movies.length} films · ${tvShows.length} shows`} />
-              <MobileStatCard label="Watch Time" value={timeUnit === "hours" ? `${hrs.toLocaleString()} hrs` : `${days} days`} sub={mediaFilter} />
+              <MobileStatCard label="Total Watched" value={String(collectionEntries.length)} sub={`${movies.length} films · ${tvShows.length} shows`} />
+              <MobileStatCard label="Watch Time" value={timeUnit === "hours" ? `${hrs.toLocaleString()} hrs` : `${days} days`} sub="" />
               <MobileStatCard label="Avg. Rating" value={`${avgRating} / 10`} sub="" />
               <MobileStatCard label="Top Genre" value={topGenre?.name || "—"} sub={topGenre ? `${topGenre.value} titles` : ""} />
             </div>
             <MobileChartBox title="Genre Breakdown">
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart><Pie data={genreData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} dataKey="value" paddingAngle={2} stroke="none" cursor="pointer" onClick={(_, i) => setGenreModal(genreData[i]?.name || null)}>{genreData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Pie><Tooltip contentStyle={ttStyle} itemStyle={ttItem} /></PieChart>
-              </ResponsiveContainer>
+              <div className="flex items-center gap-3">
+                <div className="shrink-0" style={{ width: 150, height: 150 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart><Pie data={genreData} cx="50%" cy="50%" innerRadius={35} outerRadius={60} dataKey="value" paddingAngle={2} stroke="none" cursor="pointer" onClick={(_, i) => setGenreModal(genreData[i]?.name || null)}>{genreData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Pie><Tooltip contentStyle={ttStyle} itemStyle={ttItem} /></PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                  {genreData.map((g, i) => (
+                    <div key={g.name} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                      <span className="font-display text-[9px] uppercase tracking-wider text-[#e8e4dc] truncate">{g.name}</span>
+                      <span className="font-mono-stats text-[8px] text-[#5c5954] ml-auto shrink-0">{g.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </MobileChartBox>
             <MobileChartBox title="Rating Distribution">
               <ResponsiveContainer width="100%" height={180}>
@@ -499,15 +520,15 @@ function MobileTopRated({ title, items }: { title: string; items: Entry[] }) {
   return (
     <div>
       <p className="font-display text-xs uppercase tracking-wider mb-2" style={{ color: `rgb(${GOLD})` }}>{title}</p>
-      <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+      <div className="grid grid-cols-5 gap-1.5">
         {items.map((e, i) => (
-          <div key={e.id} className="flex-shrink-0 w-24 relative">
-            <div className="aspect-[2/3] rounded-lg overflow-hidden bg-bg-deep" style={{ border: `1px solid rgba(${GOLD},0.15)` }}>
-              {e.poster ? <img src={posterUrl(e.poster, "small")} alt={e.title} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-xl text-[#5c5954]">{e.media_type === "movie" ? "F" : "TV"}</div>}
+          <div key={e.id} className="relative">
+            <div className="aspect-[2/3] rounded-md overflow-hidden bg-bg-deep" style={{ border: `1px solid rgba(${GOLD},0.15)` }}>
+              {e.poster ? <img src={posterUrl(e.poster, "small")} alt={e.title} className="w-full h-full object-cover" loading="lazy" /> : <div className="w-full h-full flex items-center justify-center text-lg text-[#5c5954]">{e.media_type === "movie" ? "F" : "TV"}</div>}
             </div>
-            <span className={`absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${i < 3 ? "text-black" : "text-[#9a968e] bg-[#1e1e26]"}`} style={i < 3 ? { background: `linear-gradient(135deg, rgb(${GOLD}), #b8860b)` } : undefined}>{i + 1}</span>
-            <p className="font-display text-[9px] text-[#e8e4dc] mt-1 leading-tight line-clamp-2">{e.title}</p>
-            <p className="font-mono-stats text-[10px] font-bold mt-0.5" style={{ color: `rgb(${GOLD})` }}>{e.my_rating}/10</p>
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-bold ${i < 3 ? "text-black" : "text-[#9a968e] bg-[#1e1e26]"}`} style={i < 3 ? { background: `linear-gradient(135deg, rgb(${GOLD}), #b8860b)` } : undefined}>{i + 1}</span>
+            <p className="font-display text-[7px] text-[#e8e4dc] mt-0.5 leading-tight line-clamp-1">{e.title}</p>
+            <p className="font-mono-stats text-[8px] font-bold" style={{ color: `rgb(${GOLD})` }}>{e.my_rating}/10</p>
           </div>
         ))}
       </div>

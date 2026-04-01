@@ -48,23 +48,43 @@ function getTabColors(pathname: string) {
   return TAB_COLORS["/"];
 }
 
+// Mobile bottom nav items — separate from desktop navItems
+const mobileNavItems = [
+  { href: "/", label: "Home", icon: Home, color: "text-green-400", glow: "drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" },
+  { href: "/?view=library", label: "Library", icon: Library, color: null, glow: null },
+  { href: "/favourites", label: "Favourites", icon: Star, color: null, glow: null },
+  { href: "/watchlist", label: "Watchlist", icon: Bookmark, color: null, glow: null },
+  { href: "/discover", label: "Discover", icon: Radar, color: null, glow: null },
+  { href: "/stats", label: "Stats", icon: BarChart3, color: null, glow: null },
+];
+
 export function BottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const mediaTab = searchParams.get("tab") || "movie";
+  const view = searchParams.get("view");
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
       <div className="border-t border-border-glow bg-[#0a0a0e]">
         <div className="flex items-center justify-around px-1 py-1.5">
-          {navItems.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-            const colors = getTabColors(item.href);
-            const iconColor = isActive ? (mediaTab === "tv" ? colors.tv : colors.movie) : "";
-            const iconGlow = isActive ? (mediaTab === "tv" ? colors.tvGlow : colors.movieGlow) : "";
+          {mobileNavItems.map((item) => {
+            const isHome = item.href === "/";
+            const isLibrary = item.href === "/?view=library";
+            const isActive = isHome
+              ? pathname === "/" && !searchParams.get("tab") && !view
+              : isLibrary
+              ? pathname === "/" && (!!searchParams.get("tab") || view === "library")
+              : pathname.startsWith(item.href);
+
+            const colorPath = isHome || isLibrary ? "/" : item.href;
+            const colors = getTabColors(colorPath);
+            const iconColor = isActive
+              ? (item.color || (mediaTab === "tv" ? colors.tv : colors.movie))
+              : "";
+            const iconGlow = isActive
+              ? (item.glow || (mediaTab === "tv" ? colors.tvGlow : colors.movieGlow))
+              : "";
             return (
               <Link
                 key={item.href}

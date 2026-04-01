@@ -2,7 +2,9 @@
 
 import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Library as LibraryIcon, Search, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { Library as LibraryIcon, Search, ChevronDown, Star, Bookmark, Radar, BarChart3 } from "lucide-react";
+import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
 import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/types";
@@ -444,6 +446,53 @@ function LibraryContent() {
 
       {/* ═══ MOBILE LAYOUT ═══ */}
       <div className="lg:hidden flex flex-col flex-1 min-h-0">
+        {!hasTab && !searchParams.get("view") ? (
+          /* ── Mobile Home: navigation cards ── */
+          <div className="flex flex-col flex-1 justify-center px-3 pb-16">
+            <div className="text-center mb-8">
+              <h1 className="font-display text-3xl font-semibold tracking-wider mb-1">
+                <span className="text-vr-blue text-glow-blue">VR</span>
+                <span className="text-vr-violet">dict</span>
+              </h1>
+              <p className="font-display text-[10px] uppercase tracking-[3px] text-[#5c5954]">Your Collection</p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Link href="/?view=library" className="flex items-center gap-4 px-5 py-4 rounded-xl border border-vr-blue/20 bg-vr-blue/[0.04] active:bg-vr-blue/[0.08] transition-all">
+                <LibraryIcon size={26} className="text-vr-blue shrink-0" />
+                <div className="flex-1">
+                  <p className="font-display text-sm uppercase tracking-wider text-vr-blue">Library</p>
+                  <p className="font-mono-stats text-[10px] text-[#5c5954]">{movieCount + tvCount} titles</p>
+                </div>
+              </Link>
+              <Link href="/favourites" className="flex items-center gap-4 px-5 py-4 rounded-xl border border-amber-400/20 bg-amber-400/[0.04] active:bg-amber-400/[0.08] transition-all">
+                <Star size={26} className="text-amber-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-display text-sm uppercase tracking-wider text-amber-400">Favourites</p>
+                  <p className="font-mono-stats text-[10px] text-[#5c5954]">{favCount} titles</p>
+                </div>
+              </Link>
+              <Link href="/watchlist" className="flex items-center gap-4 px-5 py-4 rounded-xl border border-cyan-400/20 bg-cyan-400/[0.04] active:bg-cyan-400/[0.08] transition-all">
+                <Bookmark size={26} className="text-cyan-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-display text-sm uppercase tracking-wider text-cyan-400">Watchlist</p>
+                </div>
+              </Link>
+              <Link href="/discover" className="flex items-center gap-4 px-5 py-4 rounded-xl border border-pink-400/20 bg-pink-400/[0.04] active:bg-pink-400/[0.08] transition-all">
+                <Radar size={26} className="text-pink-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-display text-sm uppercase tracking-wider text-pink-400">Discover</p>
+                </div>
+              </Link>
+              <Link href="/stats?view=visualise" className="flex items-center gap-4 px-5 py-4 rounded-xl border border-teal-400/20 bg-teal-400/[0.04] active:bg-teal-400/[0.08] transition-all">
+                <BarChart3 size={26} className="text-teal-400 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-display text-sm uppercase tracking-wider text-teal-400">Stats</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        ) : (
+        <>
         {/* Hero banner */}
         {heroEntry && (
           <div
@@ -519,48 +568,31 @@ function LibraryContent() {
         {/* Mobile: filter dropdowns */}
         <div className="space-y-1.5 mb-1 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <select
-                value={genreFilter || ""}
-                onChange={(e) => setGenreFilter(e.target.value || null)}
-                className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-              >
-                <option value="">All Genres</option>
-                {MAJOR_GENRES.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-            </div>
+            <MobileDropdown
+              value={genreFilter || ""}
+              options={[{ key: "", label: "All Genres" }, ...MAJOR_GENRES.map((g) => ({ key: g, label: g }))]}
+              onChange={(v) => setGenreFilter(v || null)}
+              className="flex-1"
+              rgb={isMovie ? "14,165,233" : "139,92,246"}
+            />
             {topTags.length > 0 && (
-              <div className="relative flex-1">
-                <select
-                  value={tagFilter || ""}
-                  onChange={(e) => setTagFilter(e.target.value || null)}
-                  className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-                >
-                  <option value="">All Tags</option>
-                  {topTags.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-              </div>
+              <MobileDropdown
+                value={tagFilter || ""}
+                options={[{ key: "", label: "All Tags" }, ...topTags.map((t) => ({ key: t, label: t }))]}
+                onChange={(v) => setTagFilter(v || null)}
+                className="flex-1"
+                rgb={isMovie ? "14,165,233" : "139,92,246"}
+              />
             )}
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortKey)}
-                className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.key} value={opt.key}>{opt.label}</option>
-                ))}
-              </select>
-              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-            </div>
+            <span className="font-display text-[8px] uppercase tracking-wider text-[#5c5954] shrink-0">Sort by:</span>
+            <MobileDropdown
+              value={sortBy}
+              options={SORT_OPTIONS.map((o) => ({ key: o.key, label: o.label }))}
+              onChange={(v) => setSortBy(v as SortKey)}
+              rgb={isMovie ? "14,165,233" : "139,92,246"}
+            />
             <div className="relative flex-1">
               <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
               <input
@@ -568,7 +600,7 @@ function LibraryContent() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+                className="w-full h-7 rounded-lg border border-border-glow/30 bg-[#0e0e14] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
               />
             </div>
           </div>
@@ -576,6 +608,8 @@ function LibraryContent() {
 
         {/* Mobile grid */}
         <div className="flex-1 min-h-0 overflow-y-auto pb-20">{mobilePosterGrid}</div>
+        </>
+        )}
       </div>
 
       {/* ═══ DESKTOP LAYOUT ═══ */}

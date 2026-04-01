@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Bookmark, Search, ChevronDown, X, Plus, Star, RotateCcw, SlidersHorizontal } from "lucide-react";
+import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import { posterUrl, normalizeGenres } from "@/lib/tmdb";
 import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
@@ -699,17 +700,31 @@ function WatchlistContent() {
           </div>
         </div>
 
-        {/* Mobile: search */}
+        {/* Mobile: filters */}
         <div className="mb-1 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
+          <div className="flex items-center gap-1">
+            <span className="font-display text-[7px] uppercase tracking-wider text-[#5c5954] shrink-0">Sort:</span>
+            <MobileDropdown
+              value={sortBy}
+              options={SORT_OPTIONS.map((o) => ({ key: o.key, label: o.label }))}
+              onChange={(v) => setSortBy(v as SortKey)}
+              rgb={rgb}
+            />
+            <span className="font-display text-[7px] uppercase tracking-wider text-[#5c5954] shrink-0">Rating:</span>
+            <MobileDropdown
+              value={ratingFilter}
+              options={RATING_FILTERS.map((o) => ({ key: o.key, label: o.label }))}
+              onChange={(v) => setRatingFilter(v as RatingKey)}
+              rgb={rgb}
+            />
+            <div className="relative flex-1 min-w-0">
+              <Search size={9} className="absolute left-2 top-1/2 -translate-y-1/2 text-[#5c5954]" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search watchlist..."
-                className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+                placeholder="Search..."
+                className="w-full h-7 rounded-lg border border-border-glow/30 bg-[#0e0e14] pl-6 pr-2 font-body text-[9px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
               />
             </div>
           </div>

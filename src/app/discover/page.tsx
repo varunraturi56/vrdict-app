@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Radar, Search, Plus, Bookmark, Check, ChevronDown, X, SlidersHorizontal } from "lucide-react";
+import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import {
   posterUrl,
@@ -90,23 +91,22 @@ function DiscoverContent() {
   const [addingToWatchlist, setAddingToWatchlist] = useState<number | null>(null);
   const [selectedResult, setSelectedResult] = useState<TmdbSearchResult | null>(null);
 
-  // Mobile infinite scroll sentinel
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  // Mobile infinite scroll — callback ref so observer attaches when sentinel mounts
   const fetchRef = useRef<() => void>(() => {});
   fetchRef.current = () => {
     if (hasMoreRef.current && !loadingRef.current) {
       fetchDiscover(pageRef.current, true);
     }
   };
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+    if (observerRef.current) observerRef.current.disconnect();
+    if (!node) return;
+    observerRef.current = new IntersectionObserver(
       (entries) => { if (entries[0].isIntersecting) fetchRef.current(); },
-      { rootMargin: "300px" }
+      { rootMargin: "400px" }
     );
-    observer.observe(el);
-    return () => observer.disconnect();
+    observerRef.current.observe(node);
   }, []);
 
   // TV frame
@@ -870,54 +870,63 @@ function DiscoverContent() {
         {/* Mobile: filter dropdowns */}
         <div className="space-y-1.5 mb-1 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <select
-                value={genreFilter || ""}
-                onChange={(e) => setGenreFilter(e.target.value || null)}
-                className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-              >
-                <option value="">All Genres</option>
-                {MAJOR_GENRES.map((g) => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-            </div>
-            <div className="relative flex-1">
-              <select
-                value={eraFilter}
-                onChange={(e) => setEraFilter(e.target.value)}
-                className="appearance-none w-full h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-              >
-                {ERAS.map((era) => (
-                  <option key={era} value={era}>{era}</option>
-                ))}
-              </select>
-              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-            </div>
+            <MobileDropdown
+              value={genreFilter || ""}
+              options={[{ key: "", label: "All Genres" }, ...MAJOR_GENRES.map((g) => ({ key: g, label: g }))]}
+              onChange={(v) => setGenreFilter(v || null)}
+              className="flex-1"
+              rgb={rgb}
+            />
+            <MobileDropdown
+              value={eraFilter}
+              options={ERAS.map((e) => ({ key: e, label: e }))}
+              onChange={(v) => setEraFilter(v)}
+              className="flex-1"
+              rgb={rgb}
+            />
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortKey)}
-                className="appearance-none h-7 pl-3 pr-7 rounded-[20px] border border-border-glow bg-bg-3 font-display text-[10px] uppercase tracking-wider text-[#e8e4dc] focus:outline-none focus:border-vr-blue/30 cursor-pointer"
-              >
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.key} value={opt.key}>{opt.label}</option>
-                ))}
-              </select>
-              <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#5c5954] pointer-events-none" />
-            </div>
+            <span className="font-display text-[8px] uppercase tracking-wider text-[#5c5954] shrink-0">Sort by:</span>
+            <MobileDropdown
+              value={sortBy}
+              options={SORT_OPTIONS.map((o) => ({ key: o.key, label: o.label }))}
+              onChange={(v) => setSortBy(v as SortKey)}
+              rgb={rgb}
+            />
             <div className="relative flex-1">
-              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5c5954]" />
+              <Plus size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: `rgba(${rgb},0.5)` }} />
               <input
                 type="text"
-                value={keywords}
-                onChange={(e) => setKeywords(e.target.value)}
-                placeholder="Keywords..."
-                className="w-full h-7 rounded-[20px] border border-border-glow bg-[rgba(12,12,16,0.85)] pl-8 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none focus:border-vr-blue/30"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search & add to library..."
+                className="w-full h-7 rounded-lg pl-7 pr-3 font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+                style={{ border: `1px solid rgba(${rgb},0.2)`, backgroundColor: "#0e0e14" }}
               />
+              {searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow/30 bg-[#0e0e14] shadow-xl z-50 overflow-hidden max-h-[200px] overflow-y-auto">
+                  {searchResults.map((r) => {
+                    const inLib = isInLibrary(r);
+                    return (
+                      <div key={`${r.media_type}-${r.id}`} className="flex items-center gap-2 w-full px-3 py-2 active:bg-bg-3 transition-colors">
+                        {r.poster_path && <img src={posterUrl(r.poster_path, "small")} alt="" className="w-5 h-8 rounded-[2px] object-cover shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display text-[9px] text-[#e8e4dc] truncate">{getDisplayTitle(r)}</p>
+                          <p className="font-mono-stats text-[7px] text-[#5c5954]">{getYear(r)} · {r.media_type}</p>
+                        </div>
+                        <button
+                          onClick={() => { if (!inLib) setSelectedResult(r); }}
+                          disabled={inLib}
+                          className="shrink-0 px-2 py-0.5 rounded text-[7px] font-display uppercase tracking-wider"
+                          style={inLib ? { color: "rgba(74,222,128,0.5)" } : { color: `rgb(${rgb})`, backgroundColor: `rgba(${rgb},0.15)`, border: `1px solid rgba(${rgb},0.25)` }}
+                        >
+                          {inLib ? "Added" : "+ Add"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
