@@ -219,37 +219,31 @@ function StatsContent() {
           <p className="font-display text-[7px] uppercase tracking-[1.5px] text-teal-400/60 shrink-0">Genre Breakdown <span className="text-[#5c5954] normal-case tracking-normal">(click to explore)</span></p>
           <div className="flex-1 min-h-0 relative">
             {genreData.length > 0 ? (
-              <div className="absolute inset-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={genreData} cx="35%" cy="50%" innerRadius="30%" outerRadius="48%" dataKey="value" paddingAngle={2} stroke="none" cursor="pointer"
-                      onClick={(_, i) => setGenreModal(genreData[i]?.name || null)}
-                      onMouseEnter={(_, i) => setHoveredGenre(genreData[i]?.name || null)}
-                      onMouseLeave={() => setHoveredGenre(null)}
-                    >
-                      {genreData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip contentStyle={ttStyle} itemStyle={ttItem} />
-                    <text x="70%" y="6%" textAnchor="start" style={{ fontSize: 12 }}>
-                      {genreData.slice(0, 4).map((g, i) => (
-                        <tspan key={g.name} x="70%" dy={i === 0 ? 0 : 20}
-                          fill={hoveredGenre === g.name ? "#fff" : CHART_COLORS[i]}
-                          fontWeight={hoveredGenre === g.name ? "bold" : "normal"}
-                          style={{ fontSize: hoveredGenre === g.name ? 13 : 12, transition: "all 0.2s" }}
-                        >{g.name} <tspan fill={hoveredGenre === g.name ? "#ccc" : "#5c5954"}>({g.value})</tspan></tspan>
-                      ))}
-                    </text>
-                    <text x="70%" y="50%" textAnchor="start" style={{ fontSize: 12 }}>
-                      {genreData.slice(4, 8).map((g, i) => (
-                        <tspan key={g.name} x="70%" dy={i === 0 ? 0 : 20}
-                          fill={hoveredGenre === g.name ? "#fff" : CHART_COLORS[i + 4]}
-                          fontWeight={hoveredGenre === g.name ? "bold" : "normal"}
-                          style={{ fontSize: hoveredGenre === g.name ? 13 : 12, transition: "all 0.2s" }}
-                        >{g.name} <tspan fill={hoveredGenre === g.name ? "#ccc" : "#5c5954"}>({g.value})</tspan></tspan>
-                      ))}
-                    </text>
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="absolute inset-0 flex">
+                <div className="w-[75%] h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={genreData} cx="42%" cy="50%" innerRadius="34%" outerRadius="55%" dataKey="value" paddingAngle={2} stroke="none" cursor="pointer"
+                        onClick={(_, i) => setGenreModal(genreData[i]?.name || null)}
+                        onMouseEnter={(_, i) => setHoveredGenre(genreData[i]?.name || null)}
+                        onMouseLeave={() => setHoveredGenre(null)}
+                      >
+                        {genreData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip contentStyle={ttStyle} itemStyle={ttItem} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="w-[25%] flex flex-col justify-center gap-1">
+                  {genreData.slice(0, 8).map((g, i) => (
+                    <span key={g.name} className="text-[11px] leading-tight transition-all duration-200"
+                      style={{
+                        color: hoveredGenre === g.name ? "#fff" : CHART_COLORS[i],
+                        fontWeight: hoveredGenre === g.name ? "bold" : "normal",
+                      }}
+                    >{g.name} <span style={{ color: hoveredGenre === g.name ? "#ccc" : "#5c5954" }}>({g.value})</span></span>
+                  ))}
+                </div>
               </div>
             ) : <div className="absolute inset-0 flex items-center justify-center"><span className="text-[9px] text-[#5c5954]">No data</span></div>}
           </div>
@@ -535,7 +529,7 @@ function GenreModal({ genre, entries, onClose }: { genre: string; entries: Entry
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:px-40 lg:py-16">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-modal-backdrop" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[70vh] lg:max-h-[60vh] rounded-xl border border-border-glow bg-bg-card animate-modal-enter overflow-hidden flex flex-col">
+      <div className="relative w-full max-w-lg lg:max-w-2xl max-h-[70vh] lg:max-h-[60vh] rounded-xl border border-border-glow bg-bg-card animate-modal-enter overflow-hidden flex flex-col">
         <div className="h-px rounded-t-xl" style={{ background: "linear-gradient(90deg, transparent 5%, #2dd4bf 30%, #a78bfa 70%, transparent 95%)" }} />
         <button onClick={onClose} className="absolute top-2.5 right-2.5 z-10 p-1 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors text-xs">✕</button>
         <div className="p-3 border-b border-border-glow/20 shrink-0">

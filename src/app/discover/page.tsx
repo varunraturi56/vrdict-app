@@ -285,15 +285,48 @@ function DiscoverContent() {
 
   // Reset and fetch fresh on filter/tab change
   // On mobile there's no category stage — always fetch when existingLoaded
-  // Track the filter key to avoid re-fetching when only existingLoaded re-triggers
-  const filterKeyRef = useRef("");
+  // Track the filter key to avoid re-fetching on remount when cached results exist
+  const initialFilterKey = `${mediaTab}|${null}|${"All"}|${sortBy}|${""}`;
+  const filterKeyRef = useRef(results.length > 0 ? initialFilterKey : "");
+  const prevMediaTabRef = useRef(mediaTab);
+  const hasFetchedRef = useRef(false);
   useEffect(() => {
     if (!existingLoaded) return;
-    if (flow.stage === "category" && typeof window !== "undefined" && window.innerWidth >= 1024) return;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+    if (flow.stage === "category" && !isMobile) return;
+
+    // Reset filters when media tab changes — done here to avoid double-fetch
+    const tabChanged = mediaTab !== prevMediaTabRef.current;
+    if (tabChanged) {
+      prevMediaTabRef.current = mediaTab;
+      setGenreFilter(null);
+      setEraFilter("All");
+      setKeywords("");
+      setSearchQuery("");
+      const filterKey = `${mediaTab}|${null}|${"All"}|${sortBy}|${""}`;
+      filterKeyRef.current = filterKey;
+      setResults([]);
+      setCurrentPage(1);
+      pageRef.current = 1;
+      hasMoreRef.current = true;
+      loadingRef.current = false;
+      setInitialLoad(true);
+      fetchDiscover(1, false);
+      hasFetchedRef.current = true;
+      return;
+    }
 
     const filterKey = `${mediaTab}|${genreFilter}|${eraFilter}|${sortBy}|${resolvedKeywordIds}`;
+    // Skip fetch if filter key unchanged and we already have results (from cache or prior fetch)
     if (filterKey === filterKeyRef.current && results.length > 0) return;
     filterKeyRef.current = filterKey;
+
+    // On initial mount with cached results, don't clear them — just fetch fresh in background
+    if (!hasFetchedRef.current && results.length > 0) {
+      hasFetchedRef.current = true;
+      fetchDiscover(1, false);
+      return;
+    }
 
     setResults([]);
     setCurrentPage(1);
@@ -302,17 +335,9 @@ function DiscoverContent() {
     loadingRef.current = false;
     setInitialLoad(true);
     fetchDiscover(1, false);
+    hasFetchedRef.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingLoaded, flow.stage]);
-
-  // Reset filters when switching media tabs
-  useEffect(() => {
-    setGenreFilter(null);
-    setEraFilter("All");
-    setKeywords("");
-    setSearchQuery("");
-    setCurrentPage(1);
-  }, [mediaTab]);
 
   // Cache discover results in sessionStorage for instant restore
   useEffect(() => {

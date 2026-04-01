@@ -1041,14 +1041,14 @@ function WatchlistDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:px-40 lg:py-16">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-modal-backdrop" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-xl border border-border-glow bg-[#0e0e14] animate-modal-enter">
+      <div className="relative w-full max-w-lg lg:max-w-2xl rounded-xl border border-border-glow bg-[#0e0e14] animate-modal-enter">
         <div className="h-px rounded-t-xl" style={{ background: "linear-gradient(90deg, transparent 5%, #b026ff 30%, #0ea5e9 70%, transparent 95%)" }} />
         <button onClick={onClose} className="absolute top-2.5 right-2.5 z-10 p-1 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors text-xs">✕</button>
 
         <div className="p-3">
           {/* Top: poster + info */}
           <div className="flex gap-3 mb-2">
-            <div className="flex-shrink-0 w-16 rounded-md overflow-hidden bg-bg-deep">
+            <div className="flex-shrink-0 w-16 lg:w-20 rounded-md overflow-hidden bg-bg-deep">
               {item.poster ? (
                 <img src={posterUrl(item.poster, "medium")} alt={item.title} className="w-full aspect-[2/3] object-cover" />
               ) : (

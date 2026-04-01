@@ -649,14 +649,14 @@ function EntryDetailModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 lg:px-40 lg:py-16">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-modal-backdrop" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-xl border border-border-glow bg-bg-card animate-modal-enter">
+      <div className="relative w-full max-w-lg lg:max-w-2xl rounded-xl border border-border-glow bg-bg-card animate-modal-enter">
         <div className="h-px rounded-t-xl" style={{ background: "linear-gradient(90deg, transparent 5%, #ffb800 30%, #a78bfa 70%, transparent 95%)" }} />
         <button onClick={onClose} className="absolute top-2.5 right-2.5 z-10 p-1 rounded-lg bg-bg-deep/50 text-[#5c5954] hover:text-[#e8e4dc] transition-colors text-xs">✕</button>
 
         <div className="p-3">
           {/* Top: poster + info side by side */}
           <div className="flex gap-3 mb-2">
-            <div className="flex-shrink-0 w-16 rounded-md overflow-hidden bg-bg-deep">
+            <div className="flex-shrink-0 w-16 lg:w-20 rounded-md overflow-hidden bg-bg-deep">
               {entry.poster ? (
                 <img src={posterUrl(entry.poster, "small")} alt={entry.title} className="w-full aspect-[2/3] object-cover" />
               ) : (
@@ -685,7 +685,7 @@ function EntryDetailModal({
             </div>
           </div>
 
-          {entry.overview && <p className="text-[10px] text-[#9a968e] font-body leading-relaxed mb-2 line-clamp-2">{entry.overview}</p>}
+          {entry.overview && <p className="text-[10px] lg:text-[11px] text-[#9a968e] font-body leading-relaxed mb-2 line-clamp-2 lg:line-clamp-none">{entry.overview}</p>}
           <div className="divider-gradient mb-2" />
 
           {/* Rating + Year Watched side by side */}
