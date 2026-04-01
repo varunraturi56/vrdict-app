@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, useMemo, useCallback } from "react";
+import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { BarChart3, Trophy, ChevronLeft, Eye, ArrowLeftRight } from "lucide-react";
 import {
@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
+import { useEntries } from "@/lib/entries-context";
 import { posterUrl } from "@/lib/tmdb";
 import type { Entry } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
@@ -31,8 +32,7 @@ function StatsContent() {
   const router = useRouter();
   const view = searchParams.get("view"); // "visualise" | "top-tens" | null (category)
 
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { entries, loading, updateEntry: ctxUpdateEntry } = useEntries();
   const [tvOn, setTvOn] = useState(true);
   const [timeUnit, setTimeUnit] = useState<"hours" | "days">("hours");
   const [mediaFilter, setMediaFilter] = useState<"all" | "movies" | "tv">("all");
@@ -47,38 +47,32 @@ function StatsContent() {
     else router.push("/stats", { scroll: false });
   }
 
+  // TV show enrichment — fill missing season_episode_counts from TMDB
+  const enrichedRef = useRef(false);
   useEffect(() => {
-    async function load() {
+    if (loading || enrichedRef.current) return;
+    enrichedRef.current = true;
+    const tvNeedsFill = entries.filter(
+      (e) => e.media_type === "tv" && (!e.season_episode_counts || e.season_episode_counts.length === 0) && e.tmdb_id
+    );
+    if (tvNeedsFill.length === 0) return;
+    (async () => {
       const supabase = createClient();
-      const { data } = await supabase.from("entries").select("*").order("my_rating", { ascending: false });
-      const allEntries = (data || []) as Entry[];
-      setEntries(allEntries);
-      setLoading(false);
-
-      const tvNeedsFill = allEntries.filter(
-        (e) => e.media_type === "tv" && (!e.season_episode_counts || e.season_episode_counts.length === 0) && e.tmdb_id
-      );
-      if (tvNeedsFill.length > 0) {
-        const updated = [...allEntries];
-        for (const entry of tvNeedsFill) {
-          try {
-            const res = await fetch(`/api/tmdb?action=detail&id=${entry.tmdb_id}&media_type=tv`);
-            if (!res.ok) continue;
-            const detail = await res.json();
-            const counts = (detail.seasons || []).filter((s: { season_number: number }) => s.season_number > 0).sort((a: { season_number: number }, b: { season_number: number }) => a.season_number - b.season_number).map((s: { episode_count: number }) => s.episode_count);
-            if (counts.length > 0) {
-              const epRuntime = detail.episode_run_time?.[0] || 0;
-              await supabase.from("entries").update({ season_episode_counts: counts, ...(epRuntime && !entry.runtime ? { runtime: epRuntime } : {}) }).eq("id", entry.id);
-              const idx = updated.findIndex((e) => e.id === entry.id);
-              if (idx !== -1) updated[idx] = { ...updated[idx], season_episode_counts: counts, runtime: entry.runtime || epRuntime };
-            }
-          } catch { /* skip */ }
-        }
-        setEntries(updated);
+      for (const entry of tvNeedsFill) {
+        try {
+          const res = await fetch(`/api/tmdb?action=detail&id=${entry.tmdb_id}&media_type=tv`);
+          if (!res.ok) continue;
+          const detail = await res.json();
+          const counts = (detail.seasons || []).filter((s: { season_number: number }) => s.season_number > 0).sort((a: { season_number: number }, b: { season_number: number }) => a.season_number - b.season_number).map((s: { episode_count: number }) => s.episode_count);
+          if (counts.length > 0) {
+            const epRuntime = detail.episode_run_time?.[0] || 0;
+            await supabase.from("entries").update({ season_episode_counts: counts, ...(epRuntime && !entry.runtime ? { runtime: epRuntime } : {}) }).eq("id", entry.id);
+            ctxUpdateEntry({ ...entry, season_episode_counts: counts, runtime: entry.runtime || epRuntime });
+          }
+        } catch { /* skip */ }
       }
-    }
-    load();
-  }, []);
+    })();
+  }, [loading, entries, ctxUpdateEntry]);
 
   const movies = useMemo(() => entries.filter((e) => e.media_type === "movie"), [entries]);
   const tvShows = useMemo(() => entries.filter((e) => e.media_type === "tv"), [entries]);

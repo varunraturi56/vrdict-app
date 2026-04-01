@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Library as LibraryIcon, Search, ChevronDown, Star, Bookmark, Radar, BarChart3 } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
+import { useEntries } from "@/lib/entries-context";
 import { posterUrl } from "@/lib/tmdb";
 import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
@@ -48,8 +49,7 @@ function LibraryContent() {
   const mediaTab = (searchParams.get("tab") || "movie") as MediaType;
   const { setCounts } = useLibraryCounts();
 
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { entries, loading, updateEntry: ctxUpdateEntry, removeEntry: ctxRemoveEntry } = useEntries();
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("my_rating");
@@ -89,19 +89,7 @@ function LibraryContent() {
     setPeekedEntry(entry);
   }
 
-  // Fetch entries
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("entries")
-        .select("*")
-        .order("added_at", { ascending: false });
-      if (data) setEntries(data as Entry[]);
-      setLoading(false);
-    }
-    load();
-  }, []);
+  // Entries come from shared EntriesProvider — no fetch needed here
 
   // Publish counts
   const movieCount = entries.filter((e) => e.media_type === "movie").length;
@@ -650,11 +638,11 @@ function LibraryContent() {
           entry={selectedEntry}
           onClose={() => setSelectedEntry(null)}
           onUpdate={(updated) => {
-            setEntries((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+            ctxUpdateEntry(updated);
             setSelectedEntry(null);
           }}
           onDelete={(id) => {
-            setEntries((prev) => prev.filter((e) => e.id !== id));
+            ctxRemoveEntry(id);
             setSelectedEntry(null);
           }}
         />

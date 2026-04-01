@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Radar, Search, Plus, Bookmark, Check, ChevronDown, X, SlidersHorizontal } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
+import { useEntries } from "@/lib/entries-context";
 import {
   posterUrl,
   GENRE_IDS,
@@ -56,10 +57,19 @@ function DiscoverContent() {
   const [searchResults, setSearchResults] = useState<TmdbSearchResult[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  // Results — all fetched results kept in a flat array, paginated client-side
-  const [results, setResults] = useState<TmdbSearchResult[]>([]);
+  // Results — restore from sessionStorage if available for instant display
+  const [results, setResults] = useState<TmdbSearchResult[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const cached = sessionStorage.getItem(`discover_${mediaTab}`);
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
   const [loading, setLoading] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return !sessionStorage.getItem(`discover_${mediaTab}`);
+  });
   const [currentPage, setCurrentPage] = useState(1);
 
   // Custom dropdown state + refs
@@ -146,22 +156,23 @@ function DiscoverContent() {
     }
   }, [searchParams]);
 
-  // Load existing entries + watchlist
+  // Derive existing entry IDs from shared context + fetch watchlist IDs
+  const { entries: sharedEntries, loading: entriesLoading } = useEntries();
   const [existingLoaded, setExistingLoaded] = useState(false);
   useEffect(() => {
-    async function loadExisting() {
+    if (entriesLoading) return;
+    async function loadWatchlist() {
       const supabase = createClient();
-      const { data: entries } = await supabase.from("entries").select("tmdb_id, media_type");
       const { data: watchlist } = await supabase.from("watchlist").select("tmdb_id, media_type");
       const ids = new Set<string>();
-      entries?.forEach((e) => ids.add(`${e.media_type}_${e.tmdb_id}`));
+      sharedEntries.forEach((e) => ids.add(`${e.media_type}_${e.tmdb_id}`));
       watchlist?.forEach((w) => ids.add(`watchlist_${w.media_type}_${w.tmdb_id}`));
       setExistingTmdbIds(ids);
       existingIdsRef.current = ids;
       setExistingLoaded(true);
     }
-    loadExisting();
-  }, []);
+    loadWatchlist();
+  }, [entriesLoading, sharedEntries]);
 
   // Resolve keywords to TMDB keyword IDs (debounced)
   useEffect(() => {
@@ -294,6 +305,13 @@ function DiscoverContent() {
     setSearchQuery("");
     setCurrentPage(1);
   }, [mediaTab]);
+
+  // Cache discover results in sessionStorage for instant restore
+  useEffect(() => {
+    if (results.length > 0) {
+      try { sessionStorage.setItem(`discover_${mediaTab}`, JSON.stringify(results.slice(0, 60))); } catch { /* quota */ }
+    }
+  }, [results, mediaTab]);
 
   // Search & add to library (debounced)
   useEffect(() => {

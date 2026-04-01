@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { BottomNav, TopNav } from "./navigation";
 import { LibraryCountsProvider } from "@/lib/library-context";
+import { EntriesProvider } from "@/lib/entries-context";
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -39,8 +40,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <LibraryCountsProvider>
-      <AppShellInner>{children}</AppShellInner>
-    </LibraryCountsProvider>
+    <EntriesProvider>
+      <LibraryCountsProvider>
+        <AppShellInner>{children}</AppShellInner>
+      </LibraryCountsProvider>
+    </EntriesProvider>
   );
 }
