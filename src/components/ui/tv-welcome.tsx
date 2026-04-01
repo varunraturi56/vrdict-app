@@ -67,6 +67,12 @@ export function TvWelcome({ onNavigate }: TvWelcomeProps) {
           scale: phase >= 1 ? "1" : "0.75",
         }}
       >
+        <img
+          src="/logo.png"
+          alt=""
+          className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4 rounded-xl"
+          style={{ transition: "all 500ms ease-out", opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? "scale(1)" : "scale(0.5)" }}
+        />
         <h1
           className={`font-display text-5xl lg:text-7xl font-bold tracking-[0.18em] mb-4 inline-block ${phase >= 1 && phase < 2 ? "welcome-glitch" : ""}`}
         >

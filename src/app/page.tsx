@@ -438,6 +438,7 @@ function LibraryContent() {
           /* ── Mobile Home: navigation cards ── */
           <div className="flex flex-col flex-1 justify-center px-3 pb-16">
             <div className="text-center mb-8">
+              <img src="/logo.png" alt="" className="w-16 h-16 mx-auto mb-3 rounded-xl" />
               <h1 className="font-display text-3xl font-semibold tracking-wider mb-1">
                 <span className="text-vr-blue text-glow-blue">VR</span>
                 <span className="text-vr-violet">dict</span>

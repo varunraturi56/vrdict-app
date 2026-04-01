@@ -285,9 +285,16 @@ function DiscoverContent() {
 
   // Reset and fetch fresh on filter/tab change
   // On mobile there's no category stage — always fetch when existingLoaded
+  // Track the filter key to avoid re-fetching when only existingLoaded re-triggers
+  const filterKeyRef = useRef("");
   useEffect(() => {
     if (!existingLoaded) return;
     if (flow.stage === "category" && typeof window !== "undefined" && window.innerWidth >= 1024) return;
+
+    const filterKey = `${mediaTab}|${genreFilter}|${eraFilter}|${sortBy}|${resolvedKeywordIds}`;
+    if (filterKey === filterKeyRef.current && results.length > 0) return;
+    filterKeyRef.current = filterKey;
+
     setResults([]);
     setCurrentPage(1);
     pageRef.current = 1;

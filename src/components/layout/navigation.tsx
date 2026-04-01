@@ -132,7 +132,7 @@ export function TopNav() {
     <header className="hidden lg:flex fixed top-0 left-0 right-0 z-50 h-[52px] items-center px-6 border-b border-border-glow bg-bg-card/90 backdrop-blur-xl">
       {/* Logo + divider — far left */}
       <Link href="/" className="shrink-0 mr-auto flex items-center gap-2.5">
-        <img src="/logo.png" alt="VRdict" className="w-8 h-8 rounded-md" />
+        <img src="/logo.png" alt="VRdict" className="w-10 h-10 rounded-lg" />
         <h1 className="font-display text-xl font-semibold tracking-wider">
           <span className="text-vr-blue text-glow-blue">VR</span>
           <span className="text-vr-violet">dict</span>
