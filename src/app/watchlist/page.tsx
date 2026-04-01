@@ -36,7 +36,8 @@ type FlowState =
   | { stage: "category" }
   | { stage: "results"; mediaType: MediaType };
 
-const ITEMS_PER_PAGE = 20; // 5×4 info-card grid
+const ITEMS_3COL = 12; // 3×4 info-card grid
+const ITEMS_5COL = 20; // 5×4 info-card grid
 
 export default function WatchlistPage() {
   return (
@@ -70,6 +71,15 @@ function WatchlistContent() {
   const [rewatchLoading, setRewatchLoading] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isWideGrid, setIsWideGrid] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1280px)");
+    setIsWideGrid(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsWideGrid(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  const itemsPerPage = isWideGrid ? ITEMS_5COL : ITEMS_3COL;
 
   // Desktop flow state
   const hasTab = searchParams.get("tab");
@@ -163,14 +173,14 @@ function WatchlistContent() {
   }, [mediaItems, genreFilter, minRating, searchQuery, sortBy]);
 
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
   const pagedItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
-  // Reset page on filter change
-  useEffect(() => { setCurrentPage(1); }, [genreFilter, ratingFilter, searchQuery, sortBy]);
+  // Reset page on filter/layout change
+  useEffect(() => { setCurrentPage(1); }, [genreFilter, ratingFilter, searchQuery, sortBy, isWideGrid]);
 
   // Rewatch items filtered by current tab (desktop only — mobile shows all)
   const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
@@ -180,10 +190,10 @@ function WatchlistContent() {
     [rewatchItems, activeMediaType, isMobile]
   );
 
-  const rewatchTotalPages = Math.max(1, Math.ceil(filteredRewatchItems.length / ITEMS_PER_PAGE));
+  const rewatchTotalPages = Math.max(1, Math.ceil(filteredRewatchItems.length / itemsPerPage));
   const pagedRewatchItems = filteredRewatchItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   // Hero — mobile only
@@ -361,11 +371,11 @@ function WatchlistContent() {
           </button>
 
           {cardItems.length > 0 ? (
-            <div className="poster-grid grid grid-cols-5 gap-2 flex-1 min-h-0 px-1">
+            <div className="poster-grid grid grid-cols-3 xl:grid-cols-5 gap-1.5 xl:gap-2 flex-1 min-h-0 px-1">
               {cardItems.map((item, i) => (
                 <div
                   key={item.id}
-                  className="poster-card flex gap-2.5 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer"
+                  className="poster-card flex gap-1.5 xl:gap-2.5 p-1.5 xl:p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer"
                   style={{
                     animationDelay: `${Math.min(i * 20, 250)}ms`,
                     borderColor: isRewatch ? "rgba(139,92,246,0.2)" : `rgba(${rgb},0.25)`,
@@ -377,21 +387,21 @@ function WatchlistContent() {
                     <img
                       src={posterUrl(item.poster, "medium")}
                       alt={item.title}
-                      className="w-[45px] h-[67px] rounded-[3px] object-cover shrink-0"
+                      className="w-[36px] h-[54px] xl:w-[45px] xl:h-[67px] rounded-[3px] object-cover shrink-0"
                     />
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-display text-[11px] font-medium text-[#e8e4dc] tracking-wide leading-tight truncate">
+                    <h3 className="font-display text-[9px] xl:text-[11px] font-medium text-[#e8e4dc] tracking-wide leading-tight truncate">
                       {item.title}
                     </h3>
-                    <p className="font-mono-stats text-[9px] text-[#5c5954] mt-0.5">
+                    <p className="font-mono-stats text-[7.5px] xl:text-[9px] text-[#5c5954] mt-0.5">
                       {item.year} · {item.genres?.slice(0, 2).join(", ")}
                       {item.tmdb_rating && <> · <Star size={8} className="inline -mt-0.5" /> {item.tmdb_rating}</>}
                     </p>
-                    <div className="flex items-center gap-1.5 mt-1.5">
+                    <div className="flex items-center gap-1 xl:gap-1.5 mt-1 xl:mt-1.5">
                       {isRewatch ? (
-                        <span className="px-2 py-0.5 rounded text-[8px] font-display uppercase tracking-wider text-vr-violet border border-vr-violet/20 bg-vr-violet/10">
-                          <RotateCcw size={8} className="inline -mt-0.5 mr-1" />
+                        <span className="px-1.5 xl:px-2 py-0.5 rounded text-[7px] xl:text-[8px] font-display uppercase tracking-wider text-vr-violet border border-vr-violet/20 bg-vr-violet/10">
+                          <RotateCcw size={8} className="inline -mt-0.5 mr-0.5" />
                           Rewatch · {(item as Entry).my_rating}/10
                         </span>
                       ) : (
@@ -399,7 +409,7 @@ function WatchlistContent() {
                           <button
                             onClick={(e) => { e.stopPropagation(); moveToLibrary(item as WatchlistItem); }}
                             disabled={movingToLibrary === item.id}
-                            className="px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all disabled:opacity-50"
+                            className="px-1.5 xl:px-2 py-0.5 xl:py-1 rounded text-[7px] xl:text-[8px] font-display uppercase tracking-wider transition-all disabled:opacity-50"
                             style={{
                               backgroundColor: `rgba(${rgb},0.15)`,
                               color: `rgb(${rgb})`,
@@ -410,9 +420,9 @@ function WatchlistContent() {
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); removeFromWatchlist(item.id); }}
-                            className="p-1 rounded text-[#5c5954] hover:text-red-400 hover:bg-red-500/10 transition-all"
+                            className="p-0.5 xl:p-1 rounded text-[#5c5954] hover:text-red-400 hover:bg-red-500/10 transition-all"
                           >
-                            <X size={12} />
+                            <X size={10} className="xl:!w-3 xl:!h-3" />
                           </button>
                         </>
                       )}
@@ -867,7 +877,7 @@ function WatchlistToolbar({
   const currentRatingLabel = RATING_FILTERS.find((o) => o.key === ratingFilter)?.label || "Any";
 
   return (
-    <div className="flex items-center justify-between px-4 lg:px-5 py-2 border-b border-border-glow/15">
+    <div className="flex items-center justify-between gap-2 px-2 xl:px-5 py-1.5 xl:py-2 border-b border-border-glow/15">
       {/* Left: Breadcrumb */}
       <div className="flex items-center gap-1 min-w-0 shrink-0">
         {breadcrumbPath.map((segment, i) => (
@@ -887,16 +897,16 @@ function WatchlistToolbar({
       </div>
 
       {/* Right: all controls in one row */}
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex items-center gap-1 xl:gap-1.5 min-w-0">
         {/* Search collection */}
-        <div className="relative">
+        <div className="relative min-w-0 flex-1 max-w-[140px] xl:max-w-[160px]">
           <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={accentStyle} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search..."
-            className="h-7 w-40 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+            className="h-6 xl:h-7 w-full pl-6 pr-2 rounded-lg bg-transparent font-body text-[9px] xl:text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
             style={{ border: `1px solid ${borderVal}` }}
             onFocus={(e) => { e.currentTarget.style.borderColor = borderFocusVal; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = borderVal; }}
@@ -904,14 +914,14 @@ function WatchlistToolbar({
         </div>
 
         {/* Add to watchlist */}
-        <div className="relative">
+        <div className="relative min-w-0 flex-1 max-w-[140px] xl:max-w-[160px]">
           <Plus size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={accentStyle} />
           <input
             type="text"
             value={addQuery}
             onChange={(e) => setAddQuery(e.target.value)}
             placeholder="Add to watchlist..."
-            className="h-7 w-40 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+            className="h-6 xl:h-7 w-full pl-6 pr-2 rounded-lg bg-transparent font-body text-[9px] xl:text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
             style={{ border: `1px solid ${borderVal}` }}
             onFocus={(e) => { e.currentTarget.style.borderColor = borderFocusVal; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = borderVal; }}
@@ -951,14 +961,14 @@ function WatchlistToolbar({
         </div>
 
         {/* Sort dropdown */}
-        <div className="relative" ref={sortRef}>
+        <div className="relative shrink-0" ref={sortRef}>
           <button
             onClick={() => setSortOpen(!sortOpen)}
-            className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+            className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
             style={{ border: `1px solid ${borderVal}`, ...accentGlow }}
           >
-            <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Sort by:</span>
-            <span className="font-display text-[10px] uppercase tracking-wider">{currentSortLabel}</span>
+            <span className="font-display text-[8px] xl:text-[9px] uppercase tracking-wider text-[#5c5954] hidden xl:inline">Sort by:</span>
+            <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider">{currentSortLabel}</span>
             <ChevronDown size={10} className={`${sortOpen ? "rotate-180" : ""} transition-transform duration-200 opacity-50`} />
           </button>
           {sortOpen && (
@@ -980,14 +990,14 @@ function WatchlistToolbar({
         </div>
 
         {/* Rating dropdown */}
-        <div className="relative" ref={ratingRef}>
+        <div className="relative shrink-0" ref={ratingRef}>
           <button
             onClick={() => setRatingOpen(!ratingOpen)}
-            className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+            className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
             style={{ border: `1px solid ${borderVal}`, ...accentGlow }}
           >
-            <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">TMDB:</span>
-            <span className="font-display text-[10px] uppercase tracking-wider">{currentRatingLabel}</span>
+            <span className="font-display text-[8px] xl:text-[9px] uppercase tracking-wider text-[#5c5954] hidden xl:inline">TMDB:</span>
+            <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider">{currentRatingLabel}</span>
             <ChevronDown size={10} className={`${ratingOpen ? "rotate-180" : ""} transition-transform duration-200 opacity-50`} />
           </button>
           {ratingOpen && (
@@ -1011,14 +1021,14 @@ function WatchlistToolbar({
         {/* Filter button with icon — badge always takes space to prevent layout shift */}
         <button
           onClick={onFilterOpen}
-          className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors"
+          className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors shrink-0"
           onMouseEnter={(e) => { e.currentTarget.style.color = `rgb(${rgb})`; e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = ""; e.currentTarget.style.borderColor = ""; }}
         >
-          <SlidersHorizontal size={12} />
-          <span className="font-display text-[10px] uppercase tracking-wider">Filter</span>
+          <SlidersHorizontal size={11} />
+          <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider hidden xl:inline">Filter</span>
           <span
-            className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
+            className={`w-3.5 h-3.5 xl:w-4 xl:h-4 rounded-full flex items-center justify-center text-[7px] xl:text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
             style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
           >
             {activeFilterCount || 0}
@@ -1028,7 +1038,7 @@ function WatchlistToolbar({
         {/* Rewatch toggle */}
         <button
           onClick={() => setShowRewatch(!showRewatch)}
-          className={`flex items-center gap-1 h-7 px-2.5 rounded-lg border transition-all ${
+          className={`flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg border transition-all shrink-0 ${
             showRewatch
               ? "border-vr-violet/40 bg-vr-violet/15"
               : "text-[#5c5954] border-border-glow/20 hover:text-[#9a968e]"
@@ -1036,7 +1046,7 @@ function WatchlistToolbar({
           style={showRewatch ? { color: `rgb(${rgb})` } : undefined}
         >
           <RotateCcw size={10} />
-          <span className="font-display text-[10px] uppercase tracking-wider">Rewatch</span>
+          <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider hidden xl:inline">Rewatch</span>
         </button>
 
         {/* Count */}

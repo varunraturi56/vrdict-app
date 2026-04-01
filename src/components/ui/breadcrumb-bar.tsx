@@ -65,15 +65,15 @@ export function BreadcrumbBar({
   const borderFocusStyle = `rgba(${rgb},0.4)`;
 
   return (
-    <div className="flex items-center justify-between px-4 lg:px-6 py-2 border-b border-border-glow/15">
+    <div className="flex items-center justify-between gap-2 px-2 xl:px-6 py-1.5 xl:py-2 border-b border-border-glow/15">
       {/* Left: Breadcrumb */}
-      <div className="flex items-center gap-1 min-w-0">
+      <div className="flex items-center gap-1 min-w-0 shrink-0">
         {path.map((segment, i) => (
           <span key={i} className="flex items-center gap-1 min-w-0">
             {i > 0 && <ChevronRight size={12} className="text-[#5c5954]/40 shrink-0" />}
             <button
               onClick={() => onPathClick(i)}
-              className={`font-display text-[11px] uppercase tracking-wider transition-colors truncate ${
+              className={`font-display text-[10px] xl:text-[11px] uppercase tracking-wider transition-colors truncate ${
                 i === path.length - 1
                   ? ""
                   : "text-[#5c5954] hover:text-[#9a968e]"
@@ -87,16 +87,16 @@ export function BreadcrumbBar({
       </div>
 
       {/* Right: Search + Sort + Clear + Filter */}
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-1 xl:gap-2 min-w-0">
         {/* Search */}
-        <div className="relative">
+        <div className="relative min-w-0 flex-1 max-w-[140px] xl:max-w-[220px]">
           <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={accentStyle} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={searchPlaceholder}
-            className="h-7 w-56 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+            className="h-6 xl:h-7 w-full pl-6 pr-2 rounded-lg bg-transparent font-body text-[9px] xl:text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
             style={{ border: `1px solid ${borderStyle}` }}
             onFocus={(e) => { e.currentTarget.style.borderColor = borderFocusStyle; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = borderStyle; }}
@@ -104,14 +104,14 @@ export function BreadcrumbBar({
         </div>
 
         {/* Sort — custom dropdown popup */}
-        <div className="relative" ref={sortRef}>
+        <div className="relative shrink-0" ref={sortRef}>
           <button
             onClick={() => setSortOpen(!sortOpen)}
-            className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+            className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
             style={{ border: `1px solid ${borderStyle}`, ...accentGlow }}
           >
-            <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Sort by:</span>
-            <span className="font-display text-[10px] uppercase tracking-wider">{currentSortLabel}</span>
+            <span className="font-display text-[8px] xl:text-[9px] uppercase tracking-wider text-[#5c5954] hidden xl:inline">Sort by:</span>
+            <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider">{currentSortLabel}</span>
             <ChevronRight size={10} className={`${sortOpen ? "-rotate-90" : "rotate-90"} transition-transform duration-200 opacity-50`} />
           </button>
           {sortOpen && (
@@ -137,15 +137,15 @@ export function BreadcrumbBar({
         {/* Filter button — badge always takes space to prevent layout shift */}
         <button
           onClick={onFilterOpen}
-          className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors"
+          className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors shrink-0"
           style={{ ["--hover-color" as any]: `rgb(${rgb})` }}
           onMouseEnter={(e) => { e.currentTarget.style.color = `rgb(${rgb})`; e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = ""; e.currentTarget.style.borderColor = ""; }}
         >
-          <SlidersHorizontal size={12} />
-          <span className="font-display text-[10px] uppercase tracking-wider">Filter</span>
+          <SlidersHorizontal size={11} />
+          <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider hidden xl:inline">Filter</span>
           <span
-            className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
+            className={`w-3.5 h-3.5 xl:w-4 xl:h-4 rounded-full flex items-center justify-center text-[7px] xl:text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
             style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
           >
             {activeFilterCount || 0}
@@ -156,11 +156,11 @@ export function BreadcrumbBar({
         {onClearFilters && (
           <button
             onClick={onClearFilters}
-            className={`w-7 h-7 rounded-full flex items-center justify-center border border-border-glow/20 transition-all hover:rotate-[-180deg] duration-300 ${(activeFilterCount > 0 || searchQuery) ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            className={`w-6 h-6 xl:w-7 xl:h-7 rounded-full flex items-center justify-center border border-border-glow/20 transition-all hover:rotate-[-180deg] duration-300 shrink-0 ${(activeFilterCount > 0 || searchQuery) ? "opacity-100" : "opacity-0 pointer-events-none"}`}
             style={accentStyle}
             title="Clear all filters"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={11} />
           </button>
         )}
       </div>

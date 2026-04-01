@@ -65,11 +65,11 @@ export function TvCategorySelect({
           scale: phase >= 1 ? "1" : "0.9",
           translate: phase >= 1 ? "0 0" : "0 16px",
         }}
-        className="text-center mb-10 lg:mb-14"
+        className="text-center mb-6 md:mb-10 xl:mb-14"
       >
         <div className="flex items-center justify-center gap-3 mb-1">
-          <Icon size={36} className={accentColor} style={{ filter: accentGlow }} />
-          <h2 className={`font-display text-4xl lg:text-5xl font-bold tracking-[0.15em] ${accentColor} ${glowClass}`}>
+          <Icon className={`w-7 h-7 md:w-8 md:h-8 xl:w-9 xl:h-9 ${accentColor}`} style={{ filter: accentGlow }} />
+          <h2 className={`font-display text-2xl md:text-4xl xl:text-5xl font-bold tracking-[0.15em] ${accentColor} ${glowClass}`}>
             {area}
           </h2>
         </div>
@@ -79,18 +79,18 @@ export function TvCategorySelect({
             opacity: phase >= 2 ? 1 : 0,
             translate: phase >= 2 ? "0 0" : "0 12px",
           }}
-          className="font-body text-sm lg:text-base text-[#5c5954] mt-3 tracking-[0.2em] uppercase"
+          className="font-body text-xs md:text-sm xl:text-base text-[#5c5954] mt-2 md:mt-3 tracking-[0.2em] uppercase"
         >
           Choose what to browse
         </p>
       </div>
 
       {/* Category cards */}
-      <div className="flex gap-5 lg:gap-8">
+      <div className="poster-grid flex gap-5 lg:gap-8">
         {/* Movie card */}
         <button
           onClick={() => onSelect("movie")}
-          className="group relative flex flex-col items-center justify-center w-[160px] lg:w-[190px] h-[240px] lg:h-[280px] rounded-2xl cursor-pointer hover:w-[185px] lg:hover:w-[220px] hover:h-[260px] lg:hover:h-[300px]"
+          className="poster-card group relative flex flex-col items-center justify-center w-[120px] md:w-[160px] xl:w-[190px] aspect-[2/3] rounded-2xl cursor-pointer overflow-hidden"
           style={{
             border: `1px solid rgba(${movieRgb},0.15)`,
             background: `linear-gradient(to bottom, rgba(${movieRgb},0.25), rgba(${movieRgb},0.08) 50%, transparent)`,
@@ -99,23 +99,21 @@ export function TvCategorySelect({
             scale: phase >= 3 ? "1" : "0.5",
             rotate: phase >= 3 ? "0deg" : "-6deg",
             transition: phase >= 3
-              ? "opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, translate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, scale 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, rotate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease"
+              ? "opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, translate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, scale 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, rotate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 50ms, box-shadow 300ms ease, border-color 300ms ease, filter 250ms ease, transform 250ms cubic-bezier(0.2, 0, 0, 1.1)"
               : "opacity 200ms ease, translate 200ms ease, scale 200ms ease, rotate 200ms ease",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = `rgba(${movieRgb},0.4)`; e.currentTarget.style.boxShadow = `0 0 40px rgba(${movieRgb},0.25), 0 12px 40px rgba(0,0,0,0.5)`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = `rgba(${movieRgb},0.15)`; e.currentTarget.style.boxShadow = ""; }}
         >
-          <Film size={48} className="mb-4 transition-transform duration-300 group-hover:scale-125" style={{ color: `rgb(${movieRgb})` }} />
-          <span className="font-display text-[16px] lg:text-[18px] font-medium text-[#e8e4dc] tracking-wider uppercase">Movies</span>
+          <Film className="mb-3 w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 transition-transform duration-300 group-hover:scale-125" style={{ color: `rgb(${movieRgb})` }} />
+          <span className="font-display text-[12px] md:text-[14px] xl:text-[16px] font-medium text-[#e8e4dc] tracking-wider uppercase">Movies</span>
           {movieCount > 0 && (
-            <span className="font-mono-stats text-[12px] lg:text-[13px] text-[#5c5954] mt-2">{movieCount} titles</span>
+            <span className="font-mono-stats text-[10px] md:text-[12px] xl:text-[13px] text-[#5c5954] mt-1.5">{movieCount} titles</span>
           )}
         </button>
 
         {/* TV card */}
         <button
           onClick={() => onSelect("tv")}
-          className="group relative flex flex-col items-center justify-center w-[160px] lg:w-[190px] h-[240px] lg:h-[280px] rounded-2xl cursor-pointer hover:w-[185px] lg:hover:w-[220px] hover:h-[260px] lg:hover:h-[300px]"
+          className="poster-card group relative flex flex-col items-center justify-center w-[120px] md:w-[160px] xl:w-[190px] aspect-[2/3] rounded-2xl cursor-pointer overflow-hidden"
           style={{
             border: `1px solid rgba(${tvRgb},0.15)`,
             background: `linear-gradient(to bottom, rgba(${tvRgb},0.25), rgba(${tvRgb},0.08) 50%, transparent)`,
@@ -124,16 +122,14 @@ export function TvCategorySelect({
             scale: phase >= 3 ? "1" : "0.5",
             rotate: phase >= 3 ? "0deg" : "6deg",
             transition: phase >= 3
-              ? "opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, translate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, scale 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, rotate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease"
+              ? "opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, translate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, scale 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, rotate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) 150ms, box-shadow 300ms ease, border-color 300ms ease, filter 250ms ease, transform 250ms cubic-bezier(0.2, 0, 0, 1.1)"
               : "opacity 200ms ease, translate 200ms ease, scale 200ms ease, rotate 200ms ease",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = `rgba(${tvRgb},0.4)`; e.currentTarget.style.boxShadow = `0 0 40px rgba(${tvRgb},0.25), 0 12px 40px rgba(0,0,0,0.5)`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = `rgba(${tvRgb},0.15)`; e.currentTarget.style.boxShadow = ""; }}
         >
-          <Tv size={48} className="mb-4 transition-transform duration-300 group-hover:scale-125" style={{ color: `rgb(${tvRgb})` }} />
-          <span className="font-display text-[16px] lg:text-[18px] font-medium text-[#e8e4dc] tracking-wider uppercase">TV Shows</span>
+          <Tv className="mb-3 w-8 h-8 md:w-10 md:h-10 xl:w-12 xl:h-12 transition-transform duration-300 group-hover:scale-125" style={{ color: `rgb(${tvRgb})` }} />
+          <span className="font-display text-[12px] md:text-[14px] xl:text-[16px] font-medium text-[#e8e4dc] tracking-wider uppercase">TV Shows</span>
           {tvCount > 0 && (
-            <span className="font-mono-stats text-[12px] lg:text-[13px] text-[#5c5954] mt-2">{tvCount} titles</span>
+            <span className="font-mono-stats text-[10px] md:text-[12px] xl:text-[13px] text-[#5c5954] mt-1.5">{tvCount} titles</span>
           )}
         </button>
       </div>

@@ -67,15 +67,15 @@ export function TvWelcome({ onNavigate }: TvWelcomeProps) {
           scale: phase >= 1 ? "1" : "0.75",
         }}
       >
-        <div className="flex items-center justify-center gap-3 lg:gap-4 mb-4">
+        <div className="flex items-center justify-center gap-2 md:gap-3 xl:gap-4 mb-3 md:mb-4">
           <img
             src="/logo.png"
             alt=""
-            className="w-14 h-14 lg:w-[4.5rem] lg:h-[4.5rem]"
+            className="w-10 h-10 md:w-14 md:h-14 xl:w-[4.5rem] xl:h-[4.5rem]"
             style={{ transition: "all 500ms ease-out", opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? "scale(1)" : "scale(0.5)" }}
           />
           <h1
-            className={`font-display text-5xl lg:text-7xl font-bold tracking-[0.18em] inline-block ${phase >= 1 && phase < 2 ? "welcome-glitch" : ""}`}
+            className={`font-display text-3xl md:text-5xl xl:text-7xl font-bold tracking-[0.18em] inline-block ${phase >= 1 && phase < 2 ? "welcome-glitch" : ""}`}
           >
             <span className={`text-vr-blue transition-all duration-700 ${phase >= 2 ? "text-glow-blue" : ""}`}>VR</span>
             <span className={`text-vr-violet transition-all duration-700 delay-200 ${phase >= 2 ? "text-glow-violet" : ""}`}>dict</span>
@@ -94,7 +94,7 @@ export function TvWelcome({ onNavigate }: TvWelcomeProps) {
           </h1>
         </div>
         <p
-          className="font-body text-base lg:text-lg text-[#5c5954] tracking-[0.25em] uppercase"
+          className="font-body text-xs md:text-base xl:text-lg text-[#5c5954] tracking-[0.25em] uppercase"
           style={{
             transition: "all 800ms ease-out",
             opacity: phase >= 3 ? 1 : 0,
@@ -106,17 +106,16 @@ export function TvWelcome({ onNavigate }: TvWelcomeProps) {
       </div>
 
       {/* Area cards */}
-      <div className="flex gap-3 lg:gap-5 justify-center items-center">
+      <div className="poster-grid flex gap-[2%] justify-center items-center w-full px-[4%]">
         {areas.map((area, i) => {
           const rgb = area.rgb;
-          // Alternate rotation for that "fan out" feel
           const startRotate = i % 2 === 0 ? "-6deg" : "6deg";
 
           return (
             <button
               key={area.key}
               onClick={() => onNavigate(area.key)}
-              className="group relative flex flex-col items-center justify-center w-[140px] lg:w-[165px] h-[210px] lg:h-[250px] rounded-2xl cursor-pointer hover:w-[170px] lg:hover:w-[200px] hover:h-[230px] lg:hover:h-[270px]"
+              className="poster-card group relative flex flex-col items-center justify-center flex-1 max-w-[165px] aspect-[2/3] rounded-2xl cursor-pointer overflow-hidden"
               style={{
                 border: `1px solid rgba(${rgb},0.15)`,
                 background: `linear-gradient(to bottom, rgba(${rgb},0.25), rgba(${rgb},0.08) 50%, transparent)`,
@@ -125,21 +124,18 @@ export function TvWelcome({ onNavigate }: TvWelcomeProps) {
                 scale: phase >= 4 ? "1" : "0.5",
                 rotate: phase >= 4 ? "0deg" : startRotate,
                 transition: phase >= 4
-                  ? `opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${50 + i * 60}ms, translate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${50 + i * 60}ms, scale 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${50 + i * 60}ms, rotate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${50 + i * 60}ms, width 300ms cubic-bezier(0.34, 1.2, 0.64, 1), height 300ms cubic-bezier(0.34, 1.2, 0.64, 1), box-shadow 300ms ease, border-color 300ms ease`
+                  ? `opacity 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${50 + i * 60}ms, translate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${50 + i * 60}ms, scale 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${50 + i * 60}ms, rotate 700ms cubic-bezier(0.34, 1.56, 0.64, 1) ${50 + i * 60}ms, box-shadow 300ms ease, border-color 300ms ease, filter 250ms ease, transform 250ms cubic-bezier(0.2, 0, 0, 1.1)`
                   : "opacity 200ms ease, translate 200ms ease, scale 200ms ease, rotate 200ms ease",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; e.currentTarget.style.boxShadow = `0 0 40px rgba(${rgb},0.25), 0 12px 40px rgba(0,0,0,0.5)`; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.15)`; e.currentTarget.style.boxShadow = ""; }}
             >
               <area.icon
-                size={42}
-                className="mb-3 transition-transform duration-300 group-hover:scale-125"
+                className="mb-2 w-6 h-6 md:w-8 md:h-8 xl:w-10 xl:h-10 transition-transform duration-300 group-hover:scale-125"
                 style={{ color: `rgb(${rgb})` }}
               />
-              <span className="font-display text-[14px] lg:text-[16px] font-medium text-[#e8e4dc] tracking-wider uppercase">
+              <span className="font-display text-[10px] md:text-[12px] xl:text-[14px] font-medium text-[#e8e4dc] tracking-wider uppercase leading-tight">
                 {area.label}
               </span>
-              <span className="font-body text-[11px] lg:text-[12px] text-[#5c5954] mt-1 tracking-wide">
+              <span className="font-body text-[8px] md:text-[10px] xl:text-[11px] text-[#5c5954] mt-0.5 tracking-wide">
                 {area.sub}
               </span>
             </button>

@@ -529,15 +529,15 @@ function DiscoverContent() {
         return (
           <div className="flex flex-col h-full relative">
             {/* Single toolbar row */}
-            <div className="flex items-center justify-between px-4 lg:px-6 py-2 border-b border-border-glow/15">
+            <div className="flex items-center justify-between gap-2 px-2 xl:px-6 py-1.5 xl:py-2 border-b border-border-glow/15">
               {/* Left: Breadcrumb + active filter pills */}
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1 xl:gap-2 min-w-0 shrink-0">
                 {breadcrumbPath.map((segment, i) => (
                   <span key={i} className="flex items-center gap-1 min-w-0 shrink-0">
                     {i > 0 && <ChevronDown size={12} className="rotate-[-90deg] text-[#5c5954]/40 shrink-0" />}
                     <button
                       onClick={() => handleBreadcrumbClick(i)}
-                      className={`font-display text-[11px] uppercase tracking-wider transition-colors truncate ${
+                      className={`font-display text-[10px] xl:text-[11px] uppercase tracking-wider transition-colors truncate ${
                         i === breadcrumbPath.length - 1
                           ? ""
                           : "text-[#5c5954] hover:text-[#9a968e]"
@@ -551,23 +551,23 @@ function DiscoverContent() {
 
                 {/* Active filter pills */}
                 {genreFilter && (
-                  <button onClick={() => setGenreFilter(null)} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-display uppercase tracking-wider transition-colors shrink-0" style={{ color: `rgb(${rgb})`, backgroundColor: `rgba(${rgb},0.1)`, border: `1px solid rgba(${rgb},0.2)` }}>
+                  <button onClick={() => setGenreFilter(null)} className="flex items-center gap-1 px-1.5 xl:px-2 py-0.5 rounded-full text-[8px] xl:text-[9px] font-display uppercase tracking-wider transition-colors shrink-0" style={{ color: `rgb(${rgb})`, backgroundColor: `rgba(${rgb},0.1)`, border: `1px solid rgba(${rgb},0.2)` }}>
                     {genreFilter} <span className="ml-0.5">×</span>
                   </button>
                 )}
               </div>
 
               {/* Right: Keywords + Search & add + Era + Sort + Filter + count */}
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1 xl:gap-2 min-w-0">
                 {/* Keywords input */}
-                <div className="relative shrink-0">
+                <div className="relative min-w-0 flex-1 max-w-[100px] xl:max-w-[130px]">
                   <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={{ color: `rgb(${rgb})` }} />
                   <input
                     type="text"
                     value={keywords}
                     onChange={(e) => setKeywords(e.target.value)}
                     placeholder="Keywords..."
-                    className="h-7 w-32 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+                    className="h-6 xl:h-7 w-full pl-6 pr-2 rounded-lg bg-transparent font-body text-[9px] xl:text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
                     style={{ border: `1px solid rgba(${rgb},0.2)` }}
                     onFocus={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.2)`; }}
@@ -575,14 +575,14 @@ function DiscoverContent() {
                 </div>
 
                 {/* Search & add to library */}
-                <div className="relative" ref={searchBoxRef}>
+                <div className="relative min-w-0 flex-1 max-w-[130px] xl:max-w-[200px]" ref={searchBoxRef}>
                   <Plus size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={{ color: `rgb(${rgb})` }} />
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search & add to library..."
-                    className="h-7 w-56 pl-6 pr-2 rounded-lg bg-transparent font-body text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
+                    placeholder="Search & add..."
+                    className="h-6 xl:h-7 w-full pl-6 pr-2 rounded-lg bg-transparent font-body text-[9px] xl:text-[10px] text-[#e8e4dc] placeholder:text-[#5c5954]/50 focus:outline-none"
                     style={{ border: `1px solid rgba(${rgb},0.2)` }}
                     onFocus={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = `rgba(${rgb},0.2)`; }}
@@ -627,14 +627,14 @@ function DiscoverContent() {
                 </div>
 
                 {/* Sort dropdown */}
-                <div className="relative" ref={sortDropRef}>
+                <div className="relative shrink-0" ref={sortDropRef}>
                   <button
                     onClick={() => setSortDropOpen(!sortDropOpen)}
-                    className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+                    className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
                     style={{ border: `1px solid rgba(${rgb},0.2)`, color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.3)` }}
                   >
-                    <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Sort:</span>
-                    <span className="font-display text-[10px] uppercase tracking-wider">{SORT_OPTIONS.find((o) => o.key === sortBy)?.label || "TMDB"}</span>
+                    <span className="font-display text-[8px] xl:text-[9px] uppercase tracking-wider text-[#5c5954] hidden xl:inline">Sort:</span>
+                    <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider">{SORT_OPTIONS.find((o) => o.key === sortBy)?.label || "TMDB"}</span>
                     <ChevronDown size={10} className={`${sortDropOpen ? "rotate-180" : ""} transition-transform duration-200 opacity-50`} />
                   </button>
                   {sortDropOpen && (
@@ -658,14 +658,14 @@ function DiscoverContent() {
                 </div>
 
                 {/* Era dropdown — next to Sort */}
-                <div className="relative" ref={eraDropRef}>
+                <div className="relative shrink-0" ref={eraDropRef}>
                   <button
                     onClick={() => setEraDropOpen(!eraDropOpen)}
-                    className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+                    className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
                     style={{ border: `1px solid rgba(${rgb},0.2)`, color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.3)` }}
                   >
-                    <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Era:</span>
-                    <span className="font-display text-[10px] uppercase tracking-wider">{eraFilter === "All" ? "All" : eraFilter}</span>
+                    <span className="font-display text-[8px] xl:text-[9px] uppercase tracking-wider text-[#5c5954] hidden xl:inline">Era:</span>
+                    <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider">{eraFilter === "All" ? "All" : eraFilter}</span>
                     <ChevronDown size={10} className={`${eraDropOpen ? "rotate-180" : ""} transition-transform duration-200 opacity-50`} />
                   </button>
                   {eraDropOpen && (
@@ -689,14 +689,14 @@ function DiscoverContent() {
                 </div>
 
                 {/* Rating dropdown */}
-                <div className="relative" ref={ratingDropRef}>
+                <div className="relative shrink-0" ref={ratingDropRef}>
                   <button
                     onClick={() => setRatingDropOpen(!ratingDropOpen)}
-                    className="flex items-center gap-1 h-7 px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
+                    className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg bg-bg-deep/40 transition-all hover:bg-bg-deep/70"
                     style={{ border: `1px solid rgba(${rgb},0.2)`, color: `rgb(${rgb})`, textShadow: `0 0 6px rgba(${rgb},0.3)` }}
                   >
-                    <span className="font-display text-[9px] uppercase tracking-wider text-[#5c5954]">Rating:</span>
-                    <span className="font-display text-[10px] uppercase tracking-wider">{ratingFilter === "Any" ? "Any" : `${ratingFilter}+`}</span>
+                    <span className="font-display text-[8px] xl:text-[9px] uppercase tracking-wider text-[#5c5954] hidden xl:inline">Rating:</span>
+                    <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider">{ratingFilter === "Any" ? "Any" : `${ratingFilter}+`}</span>
                     <ChevronDown size={10} className={`${ratingDropOpen ? "rotate-180" : ""} transition-transform duration-200 opacity-50`} />
                   </button>
                   {ratingDropOpen && (
@@ -722,14 +722,14 @@ function DiscoverContent() {
                 {/* Filter button */}
                 <button
                   onClick={() => setFilterOpen(true)}
-                  className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors"
+                  className="flex items-center gap-0.5 xl:gap-1 h-6 xl:h-7 px-1.5 xl:px-2.5 rounded-lg border border-border-glow/20 text-[#5c5954] transition-colors shrink-0"
                   onMouseEnter={(e) => { e.currentTarget.style.color = `rgb(${rgb})`; e.currentTarget.style.borderColor = `rgba(${rgb},0.4)`; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = ""; e.currentTarget.style.borderColor = ""; }}
                 >
-                  <SlidersHorizontal size={12} />
-                  <span className="font-display text-[10px] uppercase tracking-wider">Filter</span>
+                  <SlidersHorizontal size={11} />
+                  <span className="font-display text-[9px] xl:text-[10px] uppercase tracking-wider hidden xl:inline">Filter</span>
                   <span
-                    className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
+                    className={`w-3.5 h-3.5 xl:w-4 xl:h-4 rounded-full flex items-center justify-center text-[7px] xl:text-[8px] font-mono-stats transition-opacity ${activeFilterCount > 0 ? "opacity-100" : "opacity-0"}`}
                     style={{ backgroundColor: `rgba(${rgb},0.2)`, color: `rgb(${rgb})` }}
                   >
                     {activeFilterCount || 0}
