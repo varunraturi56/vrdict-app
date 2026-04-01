@@ -67,30 +67,32 @@ export function TvWelcome({ onNavigate }: TvWelcomeProps) {
           scale: phase >= 1 ? "1" : "0.75",
         }}
       >
-        <img
-          src="/logo.png"
-          alt=""
-          className="w-20 h-20 lg:w-28 lg:h-28 mx-auto mb-5 rounded-2xl"
-          style={{ transition: "all 500ms ease-out", opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? "scale(1)" : "scale(0.5)" }}
-        />
-        <h1
-          className={`font-display text-5xl lg:text-7xl font-bold tracking-[0.18em] mb-4 inline-block ${phase >= 1 && phase < 2 ? "welcome-glitch" : ""}`}
-        >
-          <span className={`text-vr-blue transition-all duration-700 ${phase >= 2 ? "text-glow-blue" : ""}`}>VR</span>
-          <span className={`text-vr-violet transition-all duration-700 delay-200 ${phase >= 2 ? "text-glow-violet" : ""}`}>dict</span>
-          <div
-            className="mt-2 rounded-full"
-            style={{
-              background: "linear-gradient(90deg, #0ea5e9, #a78bfa)",
-              height: "3px",
-              maskImage: "radial-gradient(ellipse 50% 100% at center, black 0%, transparent 100%)",
-              WebkitMaskImage: "radial-gradient(ellipse 50% 100% at center, black 0%, transparent 100%)",
-              transition: "all 700ms ease-out 300ms",
-              opacity: phase >= 2 ? 1 : 0,
-              scale: phase >= 2 ? "1 1" : "0 1",
-            }}
+        <div className="flex items-center justify-center gap-3 lg:gap-4 mb-4">
+          <img
+            src="/logo.png"
+            alt=""
+            className="w-14 h-14 lg:w-[4.5rem] lg:h-[4.5rem]"
+            style={{ transition: "all 500ms ease-out", opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? "scale(1)" : "scale(0.5)" }}
           />
-        </h1>
+          <h1
+            className={`font-display text-5xl lg:text-7xl font-bold tracking-[0.18em] inline-block ${phase >= 1 && phase < 2 ? "welcome-glitch" : ""}`}
+          >
+            <span className={`text-vr-blue transition-all duration-700 ${phase >= 2 ? "text-glow-blue" : ""}`}>VR</span>
+            <span className={`text-vr-violet transition-all duration-700 delay-200 ${phase >= 2 ? "text-glow-violet" : ""}`}>dict</span>
+            <div
+              className="mt-2 rounded-full"
+              style={{
+                background: "linear-gradient(90deg, #0ea5e9, #a78bfa)",
+                height: "3px",
+                maskImage: "radial-gradient(ellipse 50% 100% at center, black 0%, transparent 100%)",
+                WebkitMaskImage: "radial-gradient(ellipse 50% 100% at center, black 0%, transparent 100%)",
+                transition: "all 700ms ease-out 300ms",
+                opacity: phase >= 2 ? 1 : 0,
+                scale: phase >= 2 ? "1 1" : "0 1",
+              }}
+            />
+          </h1>
+        </div>
         <p
           className="font-body text-base lg:text-lg text-[#5c5954] tracking-[0.25em] uppercase"
           style={{

@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/icon-192.png",
-    apple: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -57,7 +57,7 @@ export default function RootLayout({
       className={`${orbitron.variable} ${rajdhani.variable} ${spaceMono.variable} h-full antialiased`}
     >
       <head>
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-full flex flex-col">
         <AppShell>{children}</AppShell>

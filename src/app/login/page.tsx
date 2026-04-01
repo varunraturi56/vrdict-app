@@ -22,7 +22,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Branding */}
         <div className="text-center">
-          <img src="/logo.png" alt="VRdict" className="w-16 h-16 rounded-xl mx-auto mb-3" />
+          <img src="/logo.png" alt="VRdict" className="w-16 h-16 mx-auto mb-3" />
           <h1 className="font-display text-4xl font-semibold text-gradient-vr tracking-wider">
             VRdict
           </h1>
