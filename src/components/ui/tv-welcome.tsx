@@ -70,7 +70,7 @@ export function TvWelcome({ onNavigate }: TvWelcomeProps) {
         <img
           src="/logo.png"
           alt=""
-          className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4 rounded-xl"
+          className="w-20 h-20 lg:w-28 lg:h-28 mx-auto mb-5 rounded-2xl"
           style={{ transition: "all 500ms ease-out", opacity: phase >= 1 ? 1 : 0, transform: phase >= 1 ? "scale(1)" : "scale(0.5)" }}
         />
         <h1

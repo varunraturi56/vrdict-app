@@ -230,21 +230,21 @@ function StatsContent() {
                       {genreData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                     </Pie>
                     <Tooltip contentStyle={ttStyle} itemStyle={ttItem} />
-                    <text x="73%" y="8%" textAnchor="start" style={{ fontSize: 9 }}>
+                    <text x="70%" y="6%" textAnchor="start" style={{ fontSize: 12 }}>
                       {genreData.slice(0, 4).map((g, i) => (
-                        <tspan key={g.name} x="73%" dy={i === 0 ? 0 : 16}
+                        <tspan key={g.name} x="70%" dy={i === 0 ? 0 : 20}
                           fill={hoveredGenre === g.name ? "#fff" : CHART_COLORS[i]}
                           fontWeight={hoveredGenre === g.name ? "bold" : "normal"}
-                          style={{ fontSize: hoveredGenre === g.name ? 10 : 9, transition: "all 0.2s" }}
+                          style={{ fontSize: hoveredGenre === g.name ? 13 : 12, transition: "all 0.2s" }}
                         >{g.name} <tspan fill={hoveredGenre === g.name ? "#ccc" : "#5c5954"}>({g.value})</tspan></tspan>
                       ))}
                     </text>
-                    <text x="73%" y="50%" textAnchor="start" style={{ fontSize: 9 }}>
+                    <text x="70%" y="50%" textAnchor="start" style={{ fontSize: 12 }}>
                       {genreData.slice(4, 8).map((g, i) => (
-                        <tspan key={g.name} x="73%" dy={i === 0 ? 0 : 16}
+                        <tspan key={g.name} x="70%" dy={i === 0 ? 0 : 20}
                           fill={hoveredGenre === g.name ? "#fff" : CHART_COLORS[i + 4]}
                           fontWeight={hoveredGenre === g.name ? "bold" : "normal"}
-                          style={{ fontSize: hoveredGenre === g.name ? 10 : 9, transition: "all 0.2s" }}
+                          style={{ fontSize: hoveredGenre === g.name ? 13 : 12, transition: "all 0.2s" }}
                         >{g.name} <tspan fill={hoveredGenre === g.name ? "#ccc" : "#5c5954"}>({g.value})</tspan></tspan>
                       ))}
                     </text>
