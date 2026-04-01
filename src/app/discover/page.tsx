@@ -284,9 +284,10 @@ function DiscoverContent() {
   }
 
   // Reset and fetch fresh on filter/tab change
+  // On mobile there's no category stage — always fetch when existingLoaded
   useEffect(() => {
     if (!existingLoaded) return;
-    if (flow.stage !== "results") return;
+    if (flow.stage === "category" && typeof window !== "undefined" && window.innerWidth >= 1024) return;
     setResults([]);
     setCurrentPage(1);
     pageRef.current = 1;
