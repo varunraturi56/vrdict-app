@@ -7,7 +7,10 @@ export function LedBars() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const mediaTab = tabParam || "movie";
+  const viewParam = searchParams.get("view");
+  const mediaTab = pathname === "/stats"
+    ? (viewParam === "top-tens" ? "tv" : "movie")
+    : (tabParam || "movie");
   // Home screen (no ?tab) gets green glow
   const isHome = pathname === "/" && !tabParam;
   const c: [number, number, number] = isHome ? [34, 197, 94] : getPageGlow(pathname, mediaTab);

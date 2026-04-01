@@ -9,7 +9,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
   const isSearchPage = pathname === "/search";
-  const isTvLayoutPage = pathname === "/" || pathname === "/favourites" || pathname === "/watchlist" || pathname === "/discover";
+  const isTvLayoutPage = pathname === "/" || pathname === "/favourites" || pathname === "/watchlist" || pathname === "/discover" || pathname === "/stats";
 
   if (isLoginPage) {
     return <>{children}</>;

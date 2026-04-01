@@ -43,6 +43,17 @@ export const GENRE_IDS: Record<string, number> = Object.fromEntries(
   Object.entries(GENRE_MAP).map(([id, name]) => [name, Number(id)])
 );
 
+// Normalize TV-specific genres to their movie equivalents for consistent filtering
+const TV_GENRE_NORMALIZE: Record<string, string> = {
+  "Action & Adventure": "Action",
+  "Sci-Fi & Fantasy": "Science Fiction",
+  "War & Politics": "War",
+};
+
+export function normalizeGenres(genres: string[]): string[] {
+  return genres.map((g) => TV_GENRE_NORMALIZE[g] || g);
+}
+
 export interface TmdbSearchResult {
   id: number;
   title?: string;

@@ -16,7 +16,11 @@ interface TvFrameProps {
 export function TvFrame({ children, className = "", isOn, onPowerToggle, scrollRef }: TvFrameProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const mediaTab = searchParams.get("tab") || "movie";
+  // For stats page, view=top-tens maps to "tv" glow (golden), otherwise "movie" (teal)
+  const statsView = searchParams.get("view");
+  const mediaTab = pathname === "/stats"
+    ? (statsView === "top-tens" ? "tv" : "movie")
+    : (searchParams.get("tab") || "movie");
   const [animState, setAnimState] = useState<"shutting-down" | "booting-up" | null>(null);
 
   function handlePower() {

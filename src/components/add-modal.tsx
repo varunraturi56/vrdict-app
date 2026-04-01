@@ -9,6 +9,7 @@ import {
   getDisplayTitle,
   getYear,
   posterUrl,
+  normalizeGenres,
 } from "@/lib/tmdb";
 import { DEFAULT_TAGS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
@@ -91,7 +92,7 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
         media_type: result.media_type,
         title: isMovie ? movieDetail.title : tvDetail.name,
         year: (isMovie ? movieDetail.release_date : tvDetail.first_air_date)?.substring(0, 4) || null,
-        genres: (detail.genres || []).map((g) => g.name),
+        genres: normalizeGenres((detail.genres || []).map((g) => g.name)),
         poster: detail.poster_path,
         overview: detail.overview,
         tmdb_rating: Math.round((detail.vote_average || 0) * 10) / 10,

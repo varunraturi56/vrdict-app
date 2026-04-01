@@ -16,7 +16,10 @@ interface PreviewBarProps {
 export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const mediaTab = searchParams.get("tab") || "movie";
+  const viewParam = searchParams.get("view");
+  const mediaTab = pathname === "/stats"
+    ? (viewParam === "top-tens" ? "tv" : "movie")
+    : (searchParams.get("tab") || "movie");
   const isHome = pathname === "/" && !searchParams.get("tab");
   const homeGreen: RGB = [34, 197, 94];
   const glowRgb = isHome ? homeGreen : getPageGlow(pathname, mediaTab);
@@ -42,17 +45,17 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
     const currentId = entry?.id ?? null;
 
     if (currentId === null) {
-      // No entry hovered — wait 5s then show pulse
-      timerRef.current = setTimeout(() => setShowPulse(true), 5000);
+      // No entry hovered — wait 15s then show pulse
+      timerRef.current = setTimeout(() => setShowPulse(true), 15000);
     } else if (currentId === entryIdRef.current) {
-      // Same card — wait 5s then show pulse
-      timerRef.current = setTimeout(() => setShowPulse(true), 5000);
+      // Same card — wait 15s then show pulse
+      timerRef.current = setTimeout(() => setShowPulse(true), 15000);
     } else {
       // New card hovered — hide pulse immediately
       setShowPulse(false);
       entryIdRef.current = currentId;
-      // Start 5s timer for staying on same card
-      timerRef.current = setTimeout(() => setShowPulse(true), 5000);
+      // Start 15s timer for staying on same card
+      timerRef.current = setTimeout(() => setShowPulse(true), 15000);
     }
 
     return () => {

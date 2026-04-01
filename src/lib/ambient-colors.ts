@@ -19,7 +19,7 @@ export const PAGE_GLOWS: Record<string, { movie: RGB; tv: RGB }> = {
   "/favourites": { movie: [255, 184, 0],   tv: [200, 200, 210] },
   "/watchlist":  { movie: [139, 92, 246],  tv: [6, 182, 212] },
   "/discover":   { movie: [244, 114, 182], tv: [249, 115, 22] },
-  "/stats":      { movie: [45, 212, 191],  tv: [45, 212, 191] },
+  "/stats":      { movie: [45, 212, 191],  tv: [255, 184, 0] },
 };
 
 export function getPageGlow(pathname: string, mediaTab: string): RGB {

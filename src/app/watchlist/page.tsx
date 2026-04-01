@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "rea
 import { useSearchParams, useRouter } from "next/navigation";
 import { Bookmark, Search, ChevronDown, X, Plus, Star, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { posterUrl } from "@/lib/tmdb";
+import { posterUrl, normalizeGenres } from "@/lib/tmdb";
 import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
@@ -221,7 +221,7 @@ function WatchlistContent() {
       media_type: result.media_type,
       title: result.title || result.name,
       year: (result.release_date || result.first_air_date || "").slice(0, 4) || null,
-      genres: (detail.genres || []).map((g: any) => g.name),
+      genres: normalizeGenres((detail.genres || []).map((g: any) => g.name)),
       poster: result.poster_path,
       overview: result.overview,
       tmdb_rating: result.vote_average ? Math.round(result.vote_average * 10) / 10 : null,
@@ -353,14 +353,14 @@ function WatchlistContent() {
           </button>
 
           {cardItems.length > 0 ? (
-            <div className="grid grid-cols-4 gap-2 flex-1 min-h-0 px-1">
+            <div className="poster-grid grid grid-cols-4 gap-2 flex-1 min-h-0 px-1">
               {cardItems.map((item, i) => (
                 <div
                   key={item.id}
-                  className={`flex gap-2.5 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in hover:scale-[1.02] hover:shadow-lg hover:bg-[rgba(16,16,22,0.8)] cursor-pointer transition-all duration-200 ${
+                  className={`poster-card flex gap-2.5 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer ${
                     isRewatch
-                      ? "border-vr-violet/20 hover:border-vr-violet/40"
-                      : "border-border-glow/50 hover:border-border-glow"
+                      ? "border-vr-violet/20"
+                      : "border-border-glow/50"
                   }`}
                   style={{ animationDelay: `${Math.min(i * 20, 250)}ms` }}
                   onMouseEnter={() => !isRewatch && setPeekedEntry(item as WatchlistItem)}

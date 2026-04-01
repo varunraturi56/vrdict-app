@@ -90,6 +90,25 @@ function DiscoverContent() {
   const [addingToWatchlist, setAddingToWatchlist] = useState<number | null>(null);
   const [selectedResult, setSelectedResult] = useState<TmdbSearchResult | null>(null);
 
+  // Mobile infinite scroll sentinel
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const fetchRef = useRef<() => void>(() => {});
+  fetchRef.current = () => {
+    if (hasMoreRef.current && !loadingRef.current) {
+      fetchDiscover(pageRef.current, true);
+    }
+  };
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0].isIntersecting) fetchRef.current(); },
+      { rootMargin: "300px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   // TV frame
   const [tvOn, setTvOn] = useState(true);
   const [peekedResult, setPeekedResult] = useState<TmdbSearchResult | null>(null);
@@ -364,8 +383,9 @@ function DiscoverContent() {
     }
   }
 
-  // Pagination — when pressing right arrow and we need more results, fetch from TMDB
-  const totalPages = Math.max(1, Math.ceil(results.length / ITEMS_PER_PAGE));
+  // Pagination — only count pages that can show a full set of ITEMS_PER_PAGE
+  const fullPages = Math.floor(results.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, fullPages || 1);
   const pagedResults = results.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
@@ -967,6 +987,8 @@ function DiscoverContent() {
                 );
               })}
             </div>
+            {/* Infinite scroll sentinel */}
+            <div ref={sentinelRef} className="h-1" />
             {loading && (
               <div className="flex items-center justify-center py-4">
                 <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: `rgba(${rgb},0.3)`, borderTopColor: `rgb(${rgb})` }} />
