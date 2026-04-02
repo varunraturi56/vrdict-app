@@ -7,6 +7,7 @@ import type { Entry } from "@/lib/types";
 interface EntriesContextValue {
   entries: Entry[];
   loading: boolean;
+  error: string | null;
   /** Replace one entry in-place (after edit) */
   updateEntry: (updated: Entry) => void;
   /** Remove an entry (after delete) */
@@ -20,6 +21,7 @@ interface EntriesContextValue {
 const EntriesContext = createContext<EntriesContextValue>({
   entries: [],
   loading: true,
+  error: null,
   updateEntry: () => {},
   removeEntry: () => {},
   addEntry: () => {},
@@ -29,15 +31,28 @@ const EntriesContext = createContext<EntriesContextValue>({
 export function EntriesProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchEntries = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("entries")
-      .select("*")
-      .order("added_at", { ascending: false });
-    setEntries((data || []) as Entry[]);
-    setLoading(false);
+    try {
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from("entries")
+        .select("*")
+        .order("added_at", { ascending: false });
+
+      if (fetchError) {
+        setError(fetchError.message);
+        return;
+      }
+
+      setEntries((data ?? []) as Entry[]);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load entries");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -57,7 +72,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <EntriesContext.Provider value={{ entries, loading, updateEntry, removeEntry, addEntry, refresh: fetchEntries }}>
+    <EntriesContext.Provider value={{ entries, loading, error, updateEntry, removeEntry, addEntry, refresh: fetchEntries }}>
       {children}
     </EntriesContext.Provider>
   );

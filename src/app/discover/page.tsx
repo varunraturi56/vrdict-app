@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Radar, Search, Plus, Bookmark, Check, ChevronDown, X, SlidersHorizontal } from "lucide-react";
@@ -21,6 +21,7 @@ import { PreviewBar } from "@/components/ui/preview-bar";
 import { TvCategorySelect } from "@/components/ui/tv-category-select";
 import { AddModal } from "@/components/add-modal";
 import { PAGE_GLOWS } from "@/lib/ambient-colors";
+import { useHeroRotation } from "@/hooks/use-hero-rotation";
 
 const SORT_OPTIONS = [
   { key: "vote_average.desc", label: "TMDB" },
@@ -130,17 +131,8 @@ function DiscoverContent() {
   const [expandedDropdownId, setExpandedDropdownId] = useState<string | null>(null);
 
   // Hero banner (mobile) — auto-rotate every 5s
-  const [heroResult, setHeroResult] = useState<TmdbSearchResult | null>(null);
-  const pickHero = useCallback(() => {
-    if (results.length === 0) return;
-    setHeroResult(results[Math.floor(Math.random() * Math.min(results.length, 20))]);
-  }, [results]);
-
-  useEffect(() => {
-    pickHero();
-    const interval = setInterval(pickHero, 5000);
-    return () => clearInterval(interval);
-  }, [pickHero]);
+  const heroFilter = useMemo(() => (r: TmdbSearchResult) => !!r.poster_path, []);
+  const heroResult = useHeroRotation(results.slice(0, 20), heroFilter);
 
   // Keyword resolution
   const [resolvedKeywordIds, setResolvedKeywordIds] = useState<string>("");

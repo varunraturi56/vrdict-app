@@ -1,12 +1,13 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Bookmark, Search, ChevronDown, X, Plus, Star, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import { useWatchlist } from "@/lib/watchlist-context";
-import { posterUrl, normalizeGenres, genreMatchesFilter } from "@/lib/tmdb";
+import { posterUrl, normalizeGenres, genreMatchesFilter, type TmdbSearchResult } from "@/lib/tmdb";
+import { buildWatchlistItem } from "@/lib/watchlist-helpers";
 import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
@@ -14,6 +15,8 @@ import { PreviewBar } from "@/components/ui/preview-bar";
 import { TvCategorySelect } from "@/components/ui/tv-category-select";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { PAGE_GLOWS } from "@/lib/ambient-colors";
+import { useHeroRotation } from "@/hooks/use-hero-rotation";
+import { usePagination } from "@/hooks/use-pagination";
 
 const SORT_OPTIONS = [
   { key: "tmdb_rating", label: "TMDB" },
@@ -59,10 +62,9 @@ function WatchlistContent() {
   const [ratingFilter, setRatingFilter] = useState<RatingKey>("any");
   const [searchQuery, setSearchQuery] = useState("");
   const [addQuery, setAddQuery] = useState("");
-  const [selectedItem, setSelectedItem] = useState<WatchlistItem | null>(null);
-  const [addResults, setAddResults] = useState<any[]>([]);
+  const [selectedItem, setSelectedItem] = useState<WatchlistItem | Entry | null>(null);
+  const [addResults, setAddResults] = useState<TmdbSearchResult[]>([]);
   const [addLoading, setAddLoading] = useState(false);
-  const [heroEntry, setHeroEntry] = useState<WatchlistItem | null>(null);
   const [tvOn, setTvOn] = useState(true);
   const [peekedEntry, setPeekedEntry] = useState<WatchlistItem | null>(null);
   const [movingToLibrary, setMovingToLibrary] = useState<string | null>(null);
@@ -70,7 +72,6 @@ function WatchlistContent() {
   const [rewatchItems, setRewatchItems] = useState<Entry[]>([]);
   const [rewatchLoading, setRewatchLoading] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [isWideGrid, setIsWideGrid] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1280px)");
@@ -159,14 +160,8 @@ function WatchlistContent() {
   }, [mediaItems, genreFilter, minRating, searchQuery, sortBy]);
 
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
-  const pagedItems = filteredItems.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  // Reset page on filter/layout change
-  useEffect(() => { setCurrentPage(1); }, [genreFilter, ratingFilter, searchQuery, sortBy, isWideGrid]);
+  const { currentPage, setCurrentPage, totalPages, pagedItems } =
+    usePagination(filteredItems, itemsPerPage, [genreFilter, ratingFilter, searchQuery, sortBy, isWideGrid]);
 
   // Rewatch items filtered by current tab (desktop only — mobile shows all)
   const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
@@ -176,25 +171,12 @@ function WatchlistContent() {
     [rewatchItems, activeMediaType, isMobile]
   );
 
-  const rewatchTotalPages = Math.max(1, Math.ceil(filteredRewatchItems.length / itemsPerPage));
-  const pagedRewatchItems = filteredRewatchItems.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const rewatchPagination = usePagination(filteredRewatchItems, itemsPerPage, [activeMediaType]);
+  const rewatchTotalPages = rewatchPagination.totalPages;
+  const pagedRewatchItems = rewatchPagination.pagedItems;
 
   // Hero — mobile only
-  const pickHero = useCallback(() => {
-    const candidates = mediaItems.filter((e) => e.poster);
-    if (candidates.length > 0) {
-      setHeroEntry(candidates[Math.floor(Math.random() * candidates.length)]);
-    }
-  }, [mediaItems]);
-
-  useEffect(() => {
-    pickHero();
-    const interval = setInterval(pickHero, 5000);
-    return () => clearInterval(interval);
-  }, [pickHero]);
+  const heroEntry = useHeroRotation(mediaItems);
 
   // TMDB search for adding to watchlist
   useEffect(() => {
@@ -204,7 +186,7 @@ function WatchlistContent() {
       const res = await fetch(`/api/tmdb?action=search&query=${encodeURIComponent(addQuery)}`);
       const data = await res.json();
       const results = (data.results || [])
-        .filter((r: any) => r.media_type === "movie" || r.media_type === "tv")
+        .filter((r: TmdbSearchResult) => r.media_type === "movie" || r.media_type === "tv")
         .slice(0, 6);
       setAddResults(results);
       setAddLoading(false);
@@ -212,28 +194,15 @@ function WatchlistContent() {
     return () => clearTimeout(timeout);
   }, [addQuery]);
 
-  async function addToWatchlist(result: any) {
-    const supabase = createClient();
+  async function addToWatchlist(result: TmdbSearchResult) {
     const existing = items.find((i) => i.tmdb_id === result.id);
     if (existing) return;
 
     const detailRes = await fetch(`/api/tmdb?action=detail&id=${result.id}&media_type=${result.media_type}`);
     const detail = await detailRes.json();
 
-    const item: Partial<WatchlistItem> = {
-      tmdb_id: result.id,
-      media_type: result.media_type,
-      title: result.title || result.name,
-      year: (result.release_date || result.first_air_date || "").slice(0, 4) || null,
-      genres: normalizeGenres((detail.genres || []).map((g: any) => g.name)),
-      poster: result.poster_path,
-      overview: result.overview,
-      tmdb_rating: result.vote_average ? Math.round(result.vote_average * 10) / 10 : null,
-      runtime: detail.runtime || null,
-      seasons: detail.number_of_seasons || 0,
-      episodes: detail.number_of_episodes || 0,
-      imdb_id: detail.imdb_id || null,
-    };
+    const supabase = createClient();
+    const item = buildWatchlistItem(result, detail);
 
     const { data } = await supabase.from("watchlist").insert(item).select().single();
     if (data) {
@@ -367,7 +336,7 @@ function WatchlistContent() {
                     borderColor: isRewatch ? "rgba(139,92,246,0.2)" : `rgba(${rgb},0.25)`,
                   }}
                   onMouseEnter={() => !isRewatch && setPeekedEntry(item as WatchlistItem)}
-                  onClick={() => isRewatch ? setSelectedItem(item as any) : setSelectedItem(item as WatchlistItem)}
+                  onClick={() => isRewatch ? setSelectedItem(item as WatchlistItem) : setSelectedItem(item as WatchlistItem)}
                 >
                   {item.poster && (
                     <img
@@ -585,7 +554,7 @@ function WatchlistContent() {
             animationDelay: `${Math.min(i * 20, 250)}ms`,
             borderColor: showRewatch ? "rgba(139,92,246,0.2)" : `rgba(${mobileRgb},0.25)`,
           }}
-          onClick={() => setSelectedItem(item as any)}
+          onClick={() => setSelectedItem(item as WatchlistItem)}
         >
           {item.poster && (
             <img
@@ -830,9 +799,9 @@ function WatchlistToolbar({
   setSearchQuery: (q: string) => void;
   addQuery: string;
   setAddQuery: (q: string) => void;
-  addResults: any[];
+  addResults: TmdbSearchResult[];
   items: WatchlistItem[];
-  onAddToWatchlist: (r: any) => void;
+  onAddToWatchlist: (r: TmdbSearchResult) => void;
   showRewatch: boolean;
   setShowRewatch: (v: boolean) => void;
   onFilterOpen: () => void;

@@ -8,10 +8,10 @@ import {
   getDisplayTitle,
   getYear,
   getGenreNames,
-  normalizeGenres,
   posterUrl,
 } from "@/lib/tmdb";
 import { createClient } from "@/lib/supabase/client";
+import { buildWatchlistItem } from "@/lib/watchlist-helpers";
 import { AddModal } from "@/components/add-modal";
 
 export default function SearchPage() {
@@ -90,7 +90,6 @@ export default function SearchPage() {
   async function addToWatchlist(result: TmdbSearchResult) {
     setAddingToWatchlist(result.id);
     try {
-      // Fetch full detail first
       const res = await fetch(
         `/api/tmdb?action=detail&id=${result.id}&media_type=${result.media_type}`
       );
@@ -102,23 +101,8 @@ export default function SearchPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const isMovie = result.media_type === "movie";
-
-      await supabase.from("watchlist").insert({
-        user_id: user.id,
-        tmdb_id: result.id,
-        media_type: result.media_type,
-        title: isMovie ? detail.title : detail.name,
-        year: (isMovie ? detail.release_date : detail.first_air_date)?.substring(0, 4) || null,
-        genres: normalizeGenres((detail.genres || []).map((g: { name: string }) => g.name)),
-        poster: detail.poster_path,
-        overview: detail.overview,
-        tmdb_rating: Math.round((detail.vote_average || 0) * 10) / 10,
-        runtime: isMovie ? detail.runtime : (detail.episode_run_time?.[0] || 0),
-        seasons: isMovie ? 0 : (detail.number_of_seasons || 0),
-        episodes: isMovie ? 0 : (detail.number_of_episodes || 0),
-        imdb_id: detail.imdb_id || detail.external_ids?.imdb_id || null,
-      });
+      const item = buildWatchlistItem(result, detail);
+      await supabase.from("watchlist").insert({ user_id: user.id, ...item });
 
       setExistingTmdbIds((prev) => {
         const next = new Set(prev);

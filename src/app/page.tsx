@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Library as LibraryIcon, Search, ChevronDown, Star, Bookmark, Radar, BarChart3 } from "lucide-react";
@@ -17,6 +17,8 @@ import { TvCategorySelect } from "@/components/ui/tv-category-select";
 import { BreadcrumbBar } from "@/components/ui/breadcrumb-bar";
 import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { useLibraryCounts } from "@/lib/library-context";
+import { useHeroRotation } from "@/hooks/use-hero-rotation";
+import { usePagination } from "@/hooks/use-pagination";
 
 const SORT_OPTIONS = [
   { key: "my_rating", label: "Rating" },
@@ -54,11 +56,9 @@ function LibraryContent() {
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("my_rating");
   const [searchQuery, setSearchQuery] = useState("");
-  const [heroEntry, setHeroEntry] = useState<Entry | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [tvOn, setTvOn] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
 
   // Desktop flow state — progressive disclosure
   // If URL has ?tab=, jump straight to results (e.g. from Library nav click)
@@ -172,28 +172,12 @@ function LibraryContent() {
   }, [mediaEntries, genreFilter, tagFilter, searchQuery, sortBy, recentlyAddedIds]);
 
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredEntries.length / ITEMS_PER_PAGE));
-  const pagedEntries = filteredEntries.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  // Reset page when filters change
-  useEffect(() => { setCurrentPage(1); }, [genreFilter, tagFilter, searchQuery, sortBy]);
+  const { currentPage, setCurrentPage, totalPages, pagedItems: pagedEntries } =
+    usePagination(filteredEntries, ITEMS_PER_PAGE, [genreFilter, tagFilter, searchQuery, sortBy]);
 
   // Hero — auto-rotate (mobile only)
-  const pickHero = useCallback(() => {
-    const candidates = mediaEntries.filter((e) => e.my_rating >= 7 && e.poster);
-    if (candidates.length > 0) {
-      setHeroEntry(candidates[Math.floor(Math.random() * candidates.length)]);
-    }
-  }, [mediaEntries]);
-
-  useEffect(() => {
-    pickHero();
-    const interval = setInterval(pickHero, 5000);
-    return () => clearInterval(interval);
-  }, [pickHero]);
+  const heroFilter = useMemo(() => (e: Entry) => e.my_rating >= 7 && !!e.poster, []);
+  const heroEntry = useHeroRotation(mediaEntries, heroFilter);
 
   // Flow navigation handlers
   function handleWelcomeNavigate(area: "library" | "favourites" | "watchlist" | "discover" | "stats") {

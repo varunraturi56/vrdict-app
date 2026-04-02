@@ -7,6 +7,7 @@ import type { WatchlistItem } from "@/lib/types";
 interface WatchlistContextValue {
   items: WatchlistItem[];
   loading: boolean;
+  error: string | null;
   addItem: (item: WatchlistItem) => void;
   removeItem: (id: string) => void;
   refresh: () => Promise<void>;
@@ -15,6 +16,7 @@ interface WatchlistContextValue {
 const WatchlistContext = createContext<WatchlistContextValue>({
   items: [],
   loading: true,
+  error: null,
   addItem: () => {},
   removeItem: () => {},
   refresh: async () => {},
@@ -23,15 +25,28 @@ const WatchlistContext = createContext<WatchlistContextValue>({
 export function WatchlistProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchItems = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("watchlist")
-      .select("*")
-      .order("added_at", { ascending: false });
-    setItems((data || []) as WatchlistItem[]);
-    setLoading(false);
+    try {
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from("watchlist")
+        .select("*")
+        .order("added_at", { ascending: false });
+
+      if (fetchError) {
+        setError(fetchError.message);
+        return;
+      }
+
+      setItems((data ?? []) as WatchlistItem[]);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load watchlist");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -47,7 +62,7 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <WatchlistContext.Provider value={{ items, loading, addItem, removeItem, refresh: fetchItems }}>
+    <WatchlistContext.Provider value={{ items, loading, error, addItem, removeItem, refresh: fetchItems }}>
       {children}
     </WatchlistContext.Provider>
   );
