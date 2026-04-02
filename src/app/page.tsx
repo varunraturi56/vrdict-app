@@ -304,11 +304,11 @@ function LibraryContent() {
                     </button>
 
                     {pagedEntries.length > 0 ? (
-                      <div className="poster-grid grid grid-cols-7 grid-rows-2 gap-1.5 flex-1 min-h-0 h-full">
+                      <div className="poster-grid grid grid-cols-7 grid-rows-2 gap-1.5 flex-1 min-h-0 h-full items-center">
                         {pagedEntries.map((entry, i) => (
                           <div
                             key={entry.id}
-                            className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md"
+                            className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md aspect-[2/3] max-h-full"
                             style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
                             onClick={() => setSelectedEntry(entry)}
                             onMouseEnter={() => handleMouseEnter(entry)}

@@ -764,14 +764,14 @@ function DiscoverContent() {
                     />
                   </button>
 
-                  <div className="poster-grid grid grid-cols-7 grid-rows-2 gap-1.5 flex-1 min-h-0 h-full">
+                  <div className="poster-grid grid grid-cols-7 grid-rows-2 gap-1.5 flex-1 min-h-0 h-full items-center">
                     {pagedResults.map((r, i) => {
                       const inLibrary = isInLibrary(r);
                       const inWatchlist = isInWatchlist(r);
                       return (
                         <div
                           key={`${r.media_type}-${r.id}`}
-                          className={`poster-card group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md ${
+                          className={`poster-card group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md aspect-[2/3] max-h-full ${
                             inLibrary ? "opacity-40" : ""
                           }`}
                           style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
