@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Radar, Search, Plus, Bookmark, Check, ChevronDown, X, SlidersHorizontal } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
@@ -957,24 +958,26 @@ function DiscoverContent() {
         {/* Mobile: Movies/TV tabs */}
         <div className="flex justify-center mb-2 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <a
+            <Link
               href="/discover?tab=movie"
+              scroll={false}
               className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
                 isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
               style={isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.movie.join(",")}), rgba(${pageGlows.movie.join(",")},0.7))` } : undefined}
             >
               Movies
-            </a>
-            <a
+            </Link>
+            <Link
               href="/discover?tab=tv"
+              scroll={false}
               className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
                 !isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
               style={!isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.tv.join(",")}), rgba(${pageGlows.tv.join(",")},0.7))` } : undefined}
             >
               TV Shows
-            </a>
+            </Link>
           </div>
         </div>
 

@@ -549,8 +549,9 @@ function LibraryContent() {
         {/* Mobile: Movies/TV tabs */}
         <div className="flex justify-center mb-2 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <a
+            <Link
               href="/?tab=movie"
+              scroll={false}
               className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
                 isMovie
                   ? "bg-gradient-to-br from-vr-blue to-vr-blue-dark text-white"
@@ -558,9 +559,10 @@ function LibraryContent() {
               }`}
             >
               🎬 Movies <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{movieCount}</span>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/?tab=tv"
+              scroll={false}
               className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
                 !isMovie
                   ? "bg-gradient-to-br from-vr-violet to-vr-violet-dark text-white"
@@ -568,7 +570,7 @@ function LibraryContent() {
               }`}
             >
               📺 TV Shows <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{tvCount}</span>
-            </a>
+            </Link>
           </div>
         </div>
 

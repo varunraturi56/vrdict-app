@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { Star, Search, ChevronDown } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
@@ -453,8 +454,9 @@ function FavouritesContent() {
         {/* Mobile: Movies/TV tabs */}
         <div className="flex justify-center mb-2 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <a
+            <Link
               href="/favourites?tab=movie"
+              scroll={false}
               className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
                 isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
@@ -464,9 +466,10 @@ function FavouritesContent() {
               <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
                 {movieCount}
               </span>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/favourites?tab=tv"
+              scroll={false}
               className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
                 !isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
@@ -476,7 +479,7 @@ function FavouritesContent() {
               <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">
                 {tvCount}
               </span>
-            </a>
+            </Link>
           </div>
         </div>
 
