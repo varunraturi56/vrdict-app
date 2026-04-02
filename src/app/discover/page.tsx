@@ -993,14 +993,14 @@ function DiscoverContent() {
             />
             <MobileDropdown
               value={eraFilter}
-              options={ERAS.map((e) => ({ key: e, label: e }))}
+              options={ERAS.map((e) => ({ key: e, label: e === "All" ? "All Eras" : e }))}
               onChange={(v) => setEraFilter(v)}
               className="flex-1"
               rgb={rgb}
             />
             <MobileDropdown
               value={ratingFilter}
-              options={[{ key: "Any", label: "Any" }, { key: "6", label: "6+" }, { key: "7", label: "7+" }, { key: "8", label: "8+" }, { key: "9", label: "9+" }]}
+              options={[{ key: "Any", label: "Any Rating" }, { key: "6", label: "6+" }, { key: "7", label: "7+" }, { key: "8", label: "8+" }, { key: "9", label: "9+" }]}
               onChange={(v) => setRatingFilter(v)}
               className="flex-1"
               rgb={rgb}

@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
-import { usePathname } from "next/navigation";
+import { Suspense, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { BottomNav, TopNav } from "./navigation";
 import { LibraryCountsProvider } from "@/lib/library-context";
 import { EntriesProvider } from "@/lib/entries-context";
@@ -9,8 +9,20 @@ import { WatchlistProvider } from "@/lib/watchlist-context";
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isLoginPage = pathname === "/login";
   const isSearchPage = pathname === "/search";
+
+  // Refresh router state when app resumes from background (fixes stale navigation on mobile PWA)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [router]);
   const isTvLayoutPage = pathname === "/" || pathname === "/favourites" || pathname === "/watchlist" || pathname === "/discover" || pathname === "/stats";
 
   if (isLoginPage) {

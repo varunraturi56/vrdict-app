@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import {
   Home,
   Library,
@@ -61,6 +61,7 @@ const mobileNavItems = [
 export function BottomNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const mediaTab = searchParams.get("tab") || "movie";
   const view = searchParams.get("view");
 
@@ -89,6 +90,12 @@ export function BottomNav() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={(e) => {
+                  if (isHome) {
+                    e.preventDefault();
+                    router.push("/", { scroll: false });
+                  }
+                }}
                 className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-all duration-200 ${
                   isActive
                     ? iconColor
