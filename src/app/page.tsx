@@ -287,7 +287,7 @@ function LibraryContent() {
               const tabColor = isMovie ? "text-vr-blue" : "text-vr-violet";
               return (
                 <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-1 py-2">
-                  <div className="flex items-center w-full flex-1 min-h-0">
+                  <div className="flex items-center w-full flex-1 min-h-0" style={{ containerType: 'size' }}>
                     {/* Left arrow — big & glowy */}
                     <button
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -304,12 +304,12 @@ function LibraryContent() {
                     </button>
 
                     {pagedEntries.length > 0 ? (
-                      <div className="poster-grid grid grid-cols-7 grid-rows-2 gap-1.5 flex-1 min-h-0 h-full content-center">
+                      <div className="poster-grid grid grid-cols-7 gap-1.5 flex-1 h-full content-center mx-auto" style={{ maxWidth: 'calc(700cqh / 3 + 22px)' }}>
                         {pagedEntries.map((entry, i) => (
                           <div
                             key={entry.id}
-                            className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md aspect-[2/3] max-h-full"
-                            style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
+                            className="poster-card relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md aspect-[2/3]"
+                            style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)", maxHeight: 'calc(50cqh - 3px)' }}
                             onClick={() => setSelectedEntry(entry)}
                             onMouseEnter={() => handleMouseEnter(entry)}
                           >

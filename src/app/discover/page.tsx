@@ -747,7 +747,7 @@ function DiscoverContent() {
               </div>
             ) : pagedResults.length > 0 ? (
               <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-1 py-2">
-                <div className="flex items-center w-full flex-1 min-h-0">
+                <div className="flex items-center w-full flex-1 min-h-0" style={{ containerType: 'size' }}>
                   {/* Left arrow */}
                   <button
                     onClick={handlePrevPage}
@@ -764,17 +764,17 @@ function DiscoverContent() {
                     />
                   </button>
 
-                  <div className="poster-grid grid grid-cols-7 grid-rows-2 gap-1.5 flex-1 min-h-0 h-full content-center">
+                  <div className="poster-grid grid grid-cols-7 gap-1.5 flex-1 h-full content-center mx-auto" style={{ maxWidth: 'calc(700cqh / 3 + 22px)' }}>
                     {pagedResults.map((r, i) => {
                       const inLibrary = isInLibrary(r);
                       const inWatchlist = isInWatchlist(r);
                       return (
                         <div
                           key={`${r.media_type}-${r.id}`}
-                          className={`poster-card group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md aspect-[2/3] max-h-full ${
+                          className={`poster-card group relative overflow-hidden bg-bg-deep cursor-pointer animate-slide-in rounded-md aspect-[2/3] ${
                             inLibrary ? "opacity-40" : ""
                           }`}
-                          style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
+                          style={{ animationDelay: `${Math.min(i * 20, 250)}ms`, border: "1px solid rgba(255,255,255,0.05)", maxHeight: 'calc(50cqh - 3px)' }}
                           onMouseEnter={() => setPeekedResult(r)}
                           onClick={() => { if (!inLibrary) setSelectedResult(r); }}
                         >
