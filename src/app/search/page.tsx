@@ -8,6 +8,7 @@ import {
   getDisplayTitle,
   getYear,
   getGenreNames,
+  normalizeGenres,
   posterUrl,
 } from "@/lib/tmdb";
 import { createClient } from "@/lib/supabase/client";
@@ -109,7 +110,7 @@ export default function SearchPage() {
         media_type: result.media_type,
         title: isMovie ? detail.title : detail.name,
         year: (isMovie ? detail.release_date : detail.first_air_date)?.substring(0, 4) || null,
-        genres: (detail.genres || []).map((g: { name: string }) => g.name),
+        genres: normalizeGenres((detail.genres || []).map((g: { name: string }) => g.name)),
         poster: detail.poster_path,
         overview: detail.overview,
         tmdb_rating: Math.round((detail.vote_average || 0) * 10) / 10,

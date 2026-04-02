@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { useEntries } from "@/lib/entries-context";
-import { posterUrl } from "@/lib/tmdb";
+import { posterUrl, normalizeGenres, genreMatchesFilter } from "@/lib/tmdb";
 import type { Entry } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
@@ -108,7 +108,7 @@ function StatsContent() {
 
   // Genre data uses collection filter so doughnut, top genre, etc. all respect Films/TV filter
   const genreCounts: Record<string, number> = {};
-  collectionEntries.forEach((e) => (e.genres || []).forEach((g) => { genreCounts[g] = (genreCounts[g] || 0) + 1; }));
+  collectionEntries.forEach((e) => normalizeGenres(e.genres || []).forEach((g) => { genreCounts[g] = (genreCounts[g] || 0) + 1; }));
   const genreData = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, value]) => ({ name, value }));
   const topGenre = genreData[0];
 
@@ -128,7 +128,7 @@ function StatsContent() {
 
   const genreEntries = useMemo(() => {
     if (!genreModal) return [];
-    return entries.filter((e) => e.genres?.includes(genreModal)).sort((a, b) => b.my_rating - a.my_rating);
+    return entries.filter((e) => genreMatchesFilter(e.genres, genreModal)).sort((a, b) => b.my_rating - a.my_rating);
   }, [genreModal, entries]);
 
   const displayEntry = peekedEntry || topMovies[0] || entries[0] || null;

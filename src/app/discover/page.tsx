@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useEntries } from "@/lib/entries-context";
 import {
   posterUrl,
-  GENRE_IDS,
+  getGenreIdForMediaType,
   type TmdbSearchResult,
   getDisplayTitle,
   getYear,
@@ -208,8 +208,7 @@ function DiscoverContent() {
     try {
       let genreIds = "";
       if (genreFilter) {
-        const id = GENRE_IDS[genreFilter];
-        if (id) genreIds = String(id);
+        genreIds = getGenreIdForMediaType(genreFilter, mediaTab);
       }
 
       let yearGte = "";

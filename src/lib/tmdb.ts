@@ -44,14 +44,52 @@ export const GENRE_IDS: Record<string, number> = Object.fromEntries(
 );
 
 // Normalize TV-specific genres to their movie equivalents for consistent filtering
-const TV_GENRE_NORMALIZE: Record<string, string> = {
-  "Action & Adventure": "Action",
-  "Sci-Fi & Fantasy": "Science Fiction",
-  "War & Politics": "War",
+// Combined TV genres expand into both component genres to preserve filtering accuracy
+const TV_GENRE_NORMALIZE: Record<string, string[]> = {
+  "Action & Adventure": ["Action", "Adventure"],
+  "Sci-Fi & Fantasy": ["Science Fiction", "Fantasy"],
+  "War & Politics": ["War"],
+  "Kids": ["Family"],
 };
 
 export function normalizeGenres(genres: string[]): string[] {
-  return genres.map((g) => TV_GENRE_NORMALIZE[g] || g);
+  const result: string[] = [];
+  for (const g of genres) {
+    const mapped = TV_GENRE_NORMALIZE[g];
+    if (mapped) {
+      for (const m of mapped) {
+        if (!result.includes(m)) result.push(m);
+      }
+    } else {
+      if (!result.includes(g)) result.push(g);
+    }
+  }
+  return result;
+}
+
+/** Check if an entry's genres match a filter, normalizing TV labels on the fly */
+export function genreMatchesFilter(genres: string[] | undefined, filter: string): boolean {
+  if (!genres) return false;
+  return normalizeGenres(genres).includes(filter);
+}
+
+// Map movie-side genre IDs to their TV-side equivalents for TMDB discover API
+const MOVIE_TO_TV_GENRE_ID: Record<number, number> = {
+  28: 10759,    // Action → Action & Adventure
+  12: 10759,    // Adventure → Action & Adventure
+  878: 10765,   // Science Fiction → Sci-Fi & Fantasy
+  14: 10765,    // Fantasy → Sci-Fi & Fantasy
+  10752: 10768, // War → War & Politics
+  10751: 10762, // Family → Kids
+};
+
+export function getGenreIdForMediaType(genreName: string, mediaType: string): string {
+  const movieId = GENRE_IDS[genreName];
+  if (!movieId) return "";
+  if (mediaType === "tv" && MOVIE_TO_TV_GENRE_ID[movieId]) {
+    return String(MOVIE_TO_TV_GENRE_ID[movieId]);
+  }
+  return String(movieId);
 }
 
 export interface TmdbSearchResult {
@@ -105,7 +143,8 @@ export function getYear(result: TmdbSearchResult): string {
 }
 
 export function getGenreNames(genreIds: number[]): string[] {
-  return genreIds.map((id) => GENRE_MAP[id]).filter(Boolean);
+  const raw = genreIds.map((id) => GENRE_MAP[id]).filter(Boolean);
+  return normalizeGenres(raw);
 }
 
 export function posterUrl(

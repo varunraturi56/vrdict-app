@@ -6,7 +6,7 @@ import { Bookmark, Search, ChevronDown, X, Plus, Star, RotateCcw, SlidersHorizon
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import { useWatchlist } from "@/lib/watchlist-context";
-import { posterUrl, normalizeGenres } from "@/lib/tmdb";
+import { posterUrl, normalizeGenres, genreMatchesFilter } from "@/lib/tmdb";
 import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
@@ -142,7 +142,7 @@ function WatchlistContent() {
 
   const filteredItems = useMemo(() => {
     let result = mediaItems;
-    if (genreFilter) result = result.filter((e) => e.genres?.includes(genreFilter));
+    if (genreFilter) result = result.filter((e) => genreMatchesFilter(e.genres, genreFilter));
     if (minRating > 0) result = result.filter((e) => (e.tmdb_rating || 0) >= minRating);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();

@@ -7,7 +7,7 @@ import { Library as LibraryIcon, Search, ChevronDown, Star, Bookmark, Radar, Bar
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import { useEntries } from "@/lib/entries-context";
-import { posterUrl } from "@/lib/tmdb";
+import { posterUrl, genreMatchesFilter } from "@/lib/tmdb";
 import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
@@ -140,7 +140,7 @@ function LibraryContent() {
 
   const filteredEntries = useMemo(() => {
     let result = mediaEntries;
-    if (genreFilter) result = result.filter((e) => e.genres?.includes(genreFilter));
+    if (genreFilter) result = result.filter((e) => genreMatchesFilter(e.genres, genreFilter));
     if (tagFilter) {
       if (tagFilter === RECENTLY_ADDED_TAG) {
         result = result.filter((e) => recentlyAddedIds.has(e.id));

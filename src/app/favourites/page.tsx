@@ -7,7 +7,7 @@ import { Star, Search, ChevronDown } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import { useEntries } from "@/lib/entries-context";
-import { posterUrl } from "@/lib/tmdb";
+import { posterUrl, genreMatchesFilter } from "@/lib/tmdb";
 import { MAJOR_GENRES, DEFAULT_TAGS, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
@@ -114,7 +114,7 @@ function FavouritesContent() {
 
   const filteredEntries = useMemo(() => {
     let result = mediaEntries;
-    if (genreFilter) result = result.filter((e) => e.genres?.includes(genreFilter));
+    if (genreFilter) result = result.filter((e) => genreMatchesFilter(e.genres, genreFilter));
     if (tagFilter) result = result.filter((e) => e.tags?.includes(tagFilter));
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
