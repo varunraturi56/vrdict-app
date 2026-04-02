@@ -250,7 +250,7 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
                   onClick={() => { onAddToWatchlist(result); onClose(); }}
                   className="px-2.5 h-7 rounded-md border border-vr-violet/20 text-vr-violet/60 font-display text-[9px] uppercase tracking-wider hover:bg-vr-violet/10 hover:text-vr-violet transition-colors"
                 >
-                  Watchlist
+                  Add to Watchlist
                 </button>
               )}
               <button
@@ -259,7 +259,7 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
                 className="px-4 h-7 rounded-md font-display text-[9px] uppercase tracking-wider text-white disabled:opacity-50 hover:shadow-[0_0_12px_rgba(14,165,233,0.3)] transition-all"
                 style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}
               >
-                {saving ? "..." : "Add"}
+                {saving ? "..." : "Add to Library"}
               </button>
             </div>
           </div>
