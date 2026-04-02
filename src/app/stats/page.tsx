@@ -148,7 +148,7 @@ function StatsContent() {
 
   // ─── Visualise ───
   const visualiseContent = (
-    <div className="h-full flex flex-col p-2.5">
+    <div className="flex-1 min-h-0 flex flex-col p-2.5">
       <button onClick={() => navigate(null)} className="flex items-center gap-1 text-[#5c5954] hover:text-[#e8e4dc] transition-colors mb-1.5 shrink-0">
         <ChevronLeft size={14} /><span className="font-display text-[9px] uppercase tracking-wider">Back</span>
       </button>
@@ -316,7 +316,7 @@ function StatsContent() {
   // ─── Top Tens (golden theme, centered vertically) ───
   const ROW_H = 185;
   const topTensContent = (
-    <div className="h-full flex flex-col justify-center p-3">
+    <div className="flex-1 min-h-0 flex flex-col justify-center p-3">
       <button onClick={() => navigate(null)} className="flex items-center gap-1 text-[#5c5954] hover:text-[#e8e4dc] transition-colors mb-2 shrink-0 absolute top-3 left-3">
         <ChevronLeft size={14} /><span className="font-display text-[9px] uppercase tracking-wider">Back</span>
       </button>

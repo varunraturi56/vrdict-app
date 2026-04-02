@@ -527,7 +527,7 @@ function DiscoverContent() {
 
       case "results":
         return (
-          <div className="flex flex-col h-full relative">
+          <div className="flex flex-col flex-1 min-h-0 relative">
             {/* Single toolbar row */}
             <div className="flex items-center justify-between gap-2 px-2 xl:px-6 py-1.5 xl:py-2 border-b border-border-glow/15">
               {/* Left: Breadcrumb + active filter pills */}
@@ -764,7 +764,7 @@ function DiscoverContent() {
                     />
                   </button>
 
-                  <div className="poster-grid grid grid-cols-7 gap-1.5 flex-1 min-h-0">
+                  <div className="poster-grid grid grid-cols-7 grid-rows-2 gap-1.5 flex-1 min-h-0 h-full">
                     {pagedResults.map((r, i) => {
                       const inLibrary = isInLibrary(r);
                       const inWatchlist = isInWatchlist(r);
@@ -778,7 +778,7 @@ function DiscoverContent() {
                           onMouseEnter={() => setPeekedResult(r)}
                           onClick={() => { if (!inLibrary) setSelectedResult(r); }}
                         >
-                          <div className="aspect-[2/3]">
+                          <div className="h-full">
                             <img
                               src={posterUrl(r.poster_path, "medium")}
                               alt={getDisplayTitle(r)}

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Bookmark, Search, ChevronDown, X, Plus, Star, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
+import { useWatchlist } from "@/lib/watchlist-context";
 import { posterUrl, normalizeGenres } from "@/lib/tmdb";
 import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
@@ -52,8 +53,7 @@ function WatchlistContent() {
   const router = useRouter();
   const mediaTab = (searchParams.get("tab") || "movie") as MediaType;
 
-  const [items, setItems] = useState<WatchlistItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items, loading, addItem: ctxAddItem, removeItem: ctxRemoveItem } = useWatchlist();
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("tmdb_rating");
   const [ratingFilter, setRatingFilter] = useState<RatingKey>("any");
@@ -117,20 +117,6 @@ function WatchlistContent() {
     }
     loadRewatch();
   }, [showRewatch]);
-
-  // Fetch watchlist
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("watchlist")
-        .select("*")
-        .order("added_at", { ascending: false });
-      if (data) setItems(data as WatchlistItem[]);
-      setLoading(false);
-    }
-    load();
-  }, []);
 
   // Reset filters on tab switch (skip initial mount)
   const prevTabRef = useRef(mediaTab);
@@ -251,7 +237,7 @@ function WatchlistContent() {
 
     const { data } = await supabase.from("watchlist").insert(item).select().single();
     if (data) {
-      setItems((prev) => [data as WatchlistItem, ...prev]);
+      ctxAddItem(data as WatchlistItem);
       setAddQuery("");
       setAddResults([]);
     }
@@ -260,7 +246,7 @@ function WatchlistContent() {
   async function removeFromWatchlist(id: string) {
     const supabase = createClient();
     await supabase.from("watchlist").delete().eq("id", id);
-    setItems((prev) => prev.filter((i) => i.id !== id));
+    ctxRemoveItem(id);
   }
 
   async function moveToLibrary(item: WatchlistItem) {
@@ -289,7 +275,7 @@ function WatchlistContent() {
     const { error } = await supabase.from("entries").insert(entry);
     if (!error) {
       await supabase.from("watchlist").delete().eq("id", item.id);
-      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      ctxRemoveItem(item.id);
     }
     setMovingToLibrary(null);
   }
@@ -525,7 +511,7 @@ function WatchlistContent() {
 
       case "results":
         return (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col flex-1 min-h-0">
             {/* Top bar: breadcrumb + controls */}
             <WatchlistToolbar
               breadcrumbPath={breadcrumbPath}

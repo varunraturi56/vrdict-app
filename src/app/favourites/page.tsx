@@ -218,7 +218,7 @@ function FavouritesContent() {
 
       case "results":
         return (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col flex-1 min-h-0">
             <BreadcrumbBar
               path={breadcrumbPath}
               onPathClick={handleBreadcrumbClick}
@@ -276,7 +276,7 @@ function FavouritesContent() {
                     </button>
 
                     {pagedEntries.length > 0 ? (
-                      <div className="poster-grid grid grid-cols-7 gap-1.5 flex-1 min-h-0">
+                      <div className="poster-grid grid grid-cols-7 grid-rows-2 gap-1.5 flex-1 min-h-0 h-full">
                         {pagedEntries.map((entry, i) => (
                           <div
                             key={entry.id}
@@ -285,7 +285,7 @@ function FavouritesContent() {
                             onClick={() => setSelectedEntry(entry)}
                             onMouseEnter={() => handleMouseEnter(entry)}
                           >
-                            <div className="aspect-[2/3]">
+                            <div className="h-full">
                               {entry.poster ? (
                                 <img
                                   src={posterUrl(entry.poster, "medium")}

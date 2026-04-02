@@ -345,8 +345,10 @@
 /* Scrollable content inside TV */
 .tv-scroll {
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
 .tv-scroll::-webkit-scrollbar {
