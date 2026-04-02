@@ -116,26 +116,44 @@ function LibraryContent() {
     [entries, activeMediaType]
   );
 
+  const RECENTLY_ADDED_TAG = "Recently Added";
+
+  // IDs of the most recently added entries (20 movies, 10 TV)
+  const recentlyAddedIds = useMemo(() => {
+    const allSorted = [...entries].sort((a, b) => (b.added_at || "").localeCompare(a.added_at || ""));
+    const recentMovies = allSorted.filter((e) => e.media_type === "movie").slice(0, 20);
+    const recentTv = allSorted.filter((e) => e.media_type === "tv").slice(0, 10);
+    return new Set([...recentMovies, ...recentTv].map((e) => e.id));
+  }, [entries]);
+
   const topTags = useMemo(() => {
     const tagCount: Record<string, number> = {};
     mediaEntries.forEach((e) =>
       e.tags?.forEach((t) => { tagCount[t] = (tagCount[t] || 0) + 1; })
     );
-    return Object.entries(tagCount)
+    const tags = Object.entries(tagCount)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8)
       .map(([tag]) => tag);
+    return [RECENTLY_ADDED_TAG, ...tags.filter((t) => t !== RECENTLY_ADDED_TAG)];
   }, [mediaEntries]);
 
   const filteredEntries = useMemo(() => {
     let result = mediaEntries;
     if (genreFilter) result = result.filter((e) => e.genres?.includes(genreFilter));
-    if (tagFilter) result = result.filter((e) => e.tags?.includes(tagFilter));
+    if (tagFilter) {
+      if (tagFilter === RECENTLY_ADDED_TAG) {
+        result = result.filter((e) => recentlyAddedIds.has(e.id));
+      } else {
+        result = result.filter((e) => e.tags?.includes(tagFilter));
+      }
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter((e) => e.title.toLowerCase().includes(q));
     }
     return [...result].sort((a, b) => {
+      if (tagFilter === RECENTLY_ADDED_TAG) return (b.added_at || "").localeCompare(a.added_at || "");
       switch (sortBy) {
         case "my_rating": return (b.my_rating || 0) - (a.my_rating || 0);
         case "title": return a.title.localeCompare(b.title);
@@ -144,7 +162,7 @@ function LibraryContent() {
         default: return 0;
       }
     });
-  }, [mediaEntries, genreFilter, tagFilter, searchQuery, sortBy]);
+  }, [mediaEntries, genreFilter, tagFilter, searchQuery, sortBy, recentlyAddedIds]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredEntries.length / ITEMS_PER_PAGE));

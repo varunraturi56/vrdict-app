@@ -576,11 +576,11 @@ function WatchlistContent() {
   // ─── Mobile card list (scrollable, grid like desktop) ───
   const mobileRgb = showRewatch ? "139,92,246" : (activeMediaType === "movie" ? pageGlows.movie.join(",") : pageGlows.tv.join(","));
   const mobileCardList = (
-    <div className="grid grid-cols-2 gap-1.5">
+    <div className="flex flex-col items-center gap-1.5 w-full">
       {(showRewatch ? filteredRewatchItems : filteredItems).map((item, i) => (
         <div
           key={item.id}
-          className="flex gap-1.5 p-1.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer"
+          className="flex gap-2 p-2 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer w-full max-w-[300px]"
           style={{
             animationDelay: `${Math.min(i * 20, 250)}ms`,
             borderColor: showRewatch ? "rgba(139,92,246,0.2)" : `rgba(${mobileRgb},0.25)`,
