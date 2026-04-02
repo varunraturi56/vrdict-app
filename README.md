@@ -67,10 +67,24 @@
 
 ### Modals & Overlays
 
-| Add to Library | Filter Drawer | Preview Search |
-|----------------|---------------|----------------|
-| ![Add Modal](docs/screenshots/add-modal.jpg) | ![Filter Drawer](docs/screenshots/filter.jpg) | ![Preview Search](docs/screenshots/search.jpg) |
-| Rate, tag, and log a movie | Genre and tag filters with glass morphism | Discover with search overlay open |
+<p align="center">
+  <img src="docs/screenshots/add-modal.jpg" alt="Add Modal — Rate, tag, and log" width="100%" />
+</p>
+<p align="center"><em>Add Modal — Rate, tag, and log a movie with TMDB metadata pre-filled</em></p>
+
+<br />
+
+<p align="center">
+  <img src="docs/screenshots/filter.jpg" alt="Filter Drawer — Genre and tag filters" width="100%" />
+</p>
+<p align="center"><em>Filter Drawer — Genre and tag filters with glass morphism overlay</em></p>
+
+<br />
+
+<p align="center">
+  <img src="docs/screenshots/search.jpg" alt="Search Overlay — Discover with search open" width="100%" />
+</p>
+<p align="center"><em>Search Overlay — Discover page with inline search results</em></p>
 
 <br />
 
