@@ -333,7 +333,7 @@ export function PreviewBar({ entry, onEdit, isOn = true }: PreviewBarProps) {
 
                 {/* Right block: Overview fills remaining space */}
                 {entry.overview && (
-                  <p className="flex-1 min-w-0 text-[10px] text-[#9a968e]/50 font-body leading-relaxed line-clamp-4">
+                  <p className="flex-1 min-w-0 text-[12px] text-[#9a968e]/60 font-body leading-relaxed line-clamp-4">
                     {entry.overview}
                   </p>
                 )}
