@@ -686,34 +686,34 @@ function WatchlistContent() {
         )}
 
         {/* Mobile: Movies/TV/Rewatch tabs */}
-        <div className="flex justify-center mb-2 flex-shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex justify-center mb-2 flex-shrink-0 px-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => { setShowRewatch(false); if (mediaTab !== "movie") router.push("/watchlist?tab=movie"); }}
-              className={`px-4 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-[20px] text-[10px] font-display uppercase tracking-wider transition-all whitespace-nowrap ${
                 isMovie && !showRewatch ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
               style={isMovie && !showRewatch ? { background: `linear-gradient(135deg, rgb(${pageGlows.movie.join(",")}), rgba(${pageGlows.movie.join(",")},0.7))` } : undefined}
             >
-              🎬 Movies <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{movieCount}</span>
+              🎬 Movies <span className="font-mono-stats text-[9px] ml-0.5 px-1 py-0.5 rounded-full bg-white/10">{movieCount}</span>
             </button>
             <button
               onClick={() => { setShowRewatch(false); if (mediaTab !== "tv") router.push("/watchlist?tab=tv"); }}
-              className={`px-4 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-[20px] text-[10px] font-display uppercase tracking-wider transition-all whitespace-nowrap ${
                 !isMovie && !showRewatch ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
               style={!isMovie && !showRewatch ? { background: `linear-gradient(135deg, rgb(${pageGlows.tv.join(",")}), rgba(${pageGlows.tv.join(",")},0.7))` } : undefined}
             >
-              📺 TV <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{tvCount}</span>
+              📺 TV <span className="font-mono-stats text-[9px] ml-0.5 px-1 py-0.5 rounded-full bg-white/10">{tvCount}</span>
             </button>
             <button
               onClick={() => setShowRewatch(!showRewatch)}
-              className={`px-4 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-[20px] text-[10px] font-display uppercase tracking-wider transition-all whitespace-nowrap ${
                 showRewatch ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
               style={showRewatch ? { background: `linear-gradient(135deg, rgb(139,92,246), rgba(139,92,246,0.7))` } : undefined}
             >
-              🔄 Rewatch <span className="font-mono-stats text-[10px] ml-1 px-1.5 py-0.5 rounded-full bg-white/10">{rewatchItems.length}</span>
+              🔄 Rewatch <span className="font-mono-stats text-[9px] ml-0.5 px-1 py-0.5 rounded-full bg-white/10">{rewatchItems.length}</span>
             </button>
           </div>
         </div>
