@@ -117,7 +117,16 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+
+    // Cache TMDB responses: detail/similar data for 1 hour, discover/search for 5 minutes
+    const isStable = action === "detail" || action === "similar" || action === "recommendations";
+    const maxAge = isStable ? 3600 : 300;
+
+    return NextResponse.json(data, {
+      headers: {
+        "Cache-Control": `public, s-maxage=${maxAge}, stale-while-revalidate=${maxAge * 2}`,
+      },
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch from TMDB" },

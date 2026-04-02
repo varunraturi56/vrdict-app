@@ -8,18 +8,21 @@ const orbitron = Orbitron({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-orbitron",
+  display: "swap",
 });
 
 const rajdhani = Rajdhani({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-rajdhani",
+  display: "swap",
 });
 
 const spaceMono = Space_Mono({
   subsets: ["latin"],
   weight: ["400"],
   variable: "--font-space-mono",
+  display: "swap",
 });
 
 export const viewport: Viewport = {

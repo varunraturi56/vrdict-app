@@ -396,11 +396,12 @@ function FavouritesContent() {
             <div
               className="absolute inset-0 -mx-4"
               style={{
-                backgroundImage: `url(${posterUrl(heroEntry.poster, "large")})`,
+                backgroundImage: `url(${posterUrl(heroEntry.poster, "small")})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center 20%",
                 filter: "brightness(0.15) saturate(1.4) blur(40px)",
                 transform: "scale(1.1)",
+                willChange: "transform",
                 maskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
                 WebkitMaskImage: "linear-gradient(to bottom, black 30%, transparent 100%)",
               }}
