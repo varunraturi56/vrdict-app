@@ -961,7 +961,7 @@ function DiscoverContent() {
             <Link
               href="/discover?tab=movie"
               scroll={false}
-              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+              className={`px-4 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all whitespace-nowrap ${
                 isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
               style={isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.movie.join(",")}), rgba(${pageGlows.movie.join(",")},0.7))` } : undefined}
@@ -971,7 +971,7 @@ function DiscoverContent() {
             <Link
               href="/discover?tab=tv"
               scroll={false}
-              className={`px-6 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all ${
+              className={`px-4 py-1.5 rounded-[20px] text-xs font-display uppercase tracking-wider transition-all whitespace-nowrap ${
                 !isMovie ? "text-white" : "text-[#5c5954] hover:text-[#9a968e]"
               }`}
               style={!isMovie ? { background: `linear-gradient(135deg, rgb(${pageGlows.tv.join(",")}), rgba(${pageGlows.tv.join(",")},0.7))` } : undefined}
