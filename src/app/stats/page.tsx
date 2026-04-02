@@ -3,20 +3,12 @@
 import { Suspense, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { BarChart3, Trophy, ChevronLeft, Eye, ArrowLeftRight } from "lucide-react";
-import dynamic from "next/dynamic";
-
-const PieChart = dynamic(() => import("recharts").then((m) => m.PieChart), { ssr: false });
-const Pie = dynamic(() => import("recharts").then((m) => m.Pie), { ssr: false });
-const Cell = dynamic(() => import("recharts").then((m) => m.Cell), { ssr: false });
-const BarChart = dynamic(() => import("recharts").then((m) => m.BarChart), { ssr: false });
-const Bar = dynamic(() => import("recharts").then((m) => m.Bar), { ssr: false });
-const XAxis = dynamic(() => import("recharts").then((m) => m.XAxis), { ssr: false });
-const YAxis = dynamic(() => import("recharts").then((m) => m.YAxis), { ssr: false });
-const CartesianGrid = dynamic(() => import("recharts").then((m) => m.CartesianGrid), { ssr: false });
-const Tooltip = dynamic(() => import("recharts").then((m) => m.Tooltip), { ssr: false });
-const ScatterChart = dynamic(() => import("recharts").then((m) => m.ScatterChart), { ssr: false });
-const Scatter = dynamic(() => import("recharts").then((m) => m.Scatter), { ssr: false });
-const ResponsiveContainer = dynamic(() => import("recharts").then((m) => m.ResponsiveContainer), { ssr: false });
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ScatterChart, Scatter,
+  ResponsiveContainer,
+} from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { useEntries } from "@/lib/entries-context";
 import { posterUrl, normalizeGenres, genreMatchesFilter } from "@/lib/tmdb";
