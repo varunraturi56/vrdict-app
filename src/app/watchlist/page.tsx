@@ -841,6 +841,7 @@ function WatchlistToolbar({
 }) {
   const [sortOpen, setSortOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
+  const [expandedDropdownId, setExpandedDropdownId] = useState<string | null>(null);
   const sortRef = useRef<HTMLDivElement>(null);
   const ratingRef = useRef<HTMLDivElement>(null);
 
@@ -883,9 +884,9 @@ function WatchlistToolbar({
       </div>
 
       {/* Right: all controls in one row */}
-      <div className="flex items-center gap-1 xl:gap-1.5 min-w-0">
+      <div className="flex items-center gap-1 xl:gap-1.5 min-w-0 flex-1 justify-end">
         {/* Search collection */}
-        <div className="relative min-w-0 flex-1 max-w-[140px] xl:max-w-[160px]">
+        <div className="relative min-w-0 flex-1 max-w-[280px]">
           <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={accentStyle} />
           <input
             type="text"
@@ -900,7 +901,7 @@ function WatchlistToolbar({
         </div>
 
         {/* Add to watchlist */}
-        <div className="relative min-w-0 flex-1 max-w-[140px] xl:max-w-[160px]">
+        <div className="relative min-w-0 flex-1 max-w-[280px]">
           <Plus size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={accentStyle} />
           <input
             type="text"
@@ -914,31 +915,53 @@ function WatchlistToolbar({
           />
           {/* Dropdown results */}
           {addResults.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-[#0e0e14] shadow-xl z-50 overflow-hidden min-w-[260px]">
+            <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-[#0e0e14] shadow-xl z-50 overflow-hidden max-h-[320px] overflow-y-auto">
               {addResults.map((r) => {
                 const alreadyAdded = items.some((i) => i.tmdb_id === r.id);
+                const dropKey = `${r.media_type}-${r.id}`;
+                const isExpanded = expandedDropdownId === dropKey;
                 return (
-                  <div
-                    key={`${r.media_type}-${r.id}`}
-                    className="flex items-center gap-2 w-full px-3 py-2 hover:bg-bg-3 transition-colors"
-                  >
-                    {r.poster_path && (
-                      <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-display text-[10px] text-[#e8e4dc] truncate">{r.title || r.name}</p>
-                      <p className="font-mono-stats text-[8px] text-[#5c5954]">
-                        {(r.release_date || r.first_air_date || "").slice(0, 4)} · {r.media_type}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => onAddToWatchlist(r)}
-                      disabled={alreadyAdded}
-                      className="shrink-0 px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all"
-                      style={alreadyAdded ? { color: "#5c5954", border: "1px solid rgba(255,255,255,0.08)" } : { color: `rgb(${rgb})`, backgroundColor: `rgba(${rgb},0.15)`, border: `1px solid rgba(${rgb},0.25)` }}
+                  <div key={dropKey} className="border-b border-border-glow/10 last:border-b-0">
+                    <div
+                      className="flex items-center gap-2 w-full px-3 py-2 hover:bg-bg-3 transition-colors cursor-pointer"
+                      onClick={() => setExpandedDropdownId(isExpanded ? null : dropKey)}
                     >
-                      {alreadyAdded ? "Added" : "+ Add"}
-                    </button>
+                      {r.poster_path && (
+                        <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-[10px] text-[#e8e4dc] truncate">{r.title || r.name}</p>
+                        <p className="font-mono-stats text-[8px] text-[#5c5954]">
+                          {(r.release_date || r.first_air_date || "").slice(0, 4)} · {r.media_type}{r.vote_average > 0 && <> · TMDB {r.vote_average.toFixed(1)}</>}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onAddToWatchlist(r); }}
+                        disabled={alreadyAdded}
+                        className="shrink-0 px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all"
+                        style={alreadyAdded ? { color: "#5c5954", border: "1px solid rgba(255,255,255,0.08)" } : { color: `rgb(${rgb})`, backgroundColor: `rgba(${rgb},0.15)`, border: `1px solid rgba(${rgb},0.25)` }}
+                      >
+                        {alreadyAdded ? "Added" : "+ Add"}
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-3 pb-2.5 pt-0.5 bg-bg-deep/30">
+                        <div className="flex gap-2.5">
+                          {r.poster_path && (
+                            <img src={posterUrl(r.poster_path, "medium")} alt="" className="w-16 h-24 rounded object-cover shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-display text-[11px] text-[#e8e4dc] font-medium">{r.title || r.name}</p>
+                            <p className="font-mono-stats text-[9px] text-[#5c5954] mt-0.5">
+                              {(r.release_date || r.first_air_date || "").slice(0, 4)} · {r.media_type}{r.vote_average > 0 && <> · TMDB {r.vote_average.toFixed(1)}</>}
+                            </p>
+                            {r.overview && (
+                              <p className="font-body text-[9px] text-[#9a968e] mt-1 leading-relaxed line-clamp-3">{r.overview}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}

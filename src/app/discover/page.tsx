@@ -126,6 +126,7 @@ function DiscoverContent() {
   // TV frame
   const [tvOn, setTvOn] = useState(true);
   const [peekedResult, setPeekedResult] = useState<TmdbSearchResult | null>(null);
+  const [expandedDropdownId, setExpandedDropdownId] = useState<string | null>(null);
 
   // Hero banner (mobile) — auto-rotate every 5s
   const [heroResult, setHeroResult] = useState<TmdbSearchResult | null>(null);
@@ -558,9 +559,9 @@ function DiscoverContent() {
               </div>
 
               {/* Right: Keywords + Search & add + Era + Sort + Filter + count */}
-              <div className="flex items-center gap-1 xl:gap-2 min-w-0">
+              <div className="flex items-center gap-1 xl:gap-2 min-w-0 flex-1 justify-end">
                 {/* Keywords input */}
-                <div className="relative min-w-0 flex-1 max-w-[100px] xl:max-w-[130px]">
+                <div className="relative min-w-0 flex-1 max-w-[280px]">
                   <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={{ color: `rgb(${rgb})` }} />
                   <input
                     type="text"
@@ -575,7 +576,7 @@ function DiscoverContent() {
                 </div>
 
                 {/* Search & add to library */}
-                <div className="relative min-w-0 flex-1 max-w-[130px] xl:max-w-[200px]" ref={searchBoxRef}>
+                <div className="relative min-w-0 flex-1 max-w-[280px]" ref={searchBoxRef}>
                   <Plus size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={{ color: `rgb(${rgb})` }} />
                   <input
                     type="text"
@@ -590,35 +591,57 @@ function DiscoverContent() {
 
                   {/* Search results dropdown — anchored to search input */}
                   {searchResults.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-bg-card shadow-xl z-50 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-bg-card shadow-xl z-50 overflow-hidden max-h-[320px] overflow-y-auto">
                       {searchResults.map((r) => {
                         const inLibrary = isInLibrary(r);
+                        const dropKey = `${r.media_type}-${r.id}`;
+                        const isExpanded = expandedDropdownId === dropKey;
                         return (
-                          <div
-                            key={`${r.media_type}-${r.id}`}
-                            className="flex items-center gap-2 w-full px-3 py-2 hover:bg-bg-3 transition-colors"
-                          >
-                            {r.poster_path && (
-                              <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-display text-[10px] text-[#e8e4dc] truncate">{getDisplayTitle(r)}</p>
-                              <p className="font-mono-stats text-[8px] text-[#5c5954]">
-                                {getYear(r)} · {r.media_type}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => { if (!inLibrary) setSelectedResult(r); }}
-                              disabled={inLibrary}
-                              className={`shrink-0 px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all ${
-                                inLibrary
-                                  ? "text-green-400/50 border border-green-400/20 cursor-default"
-                                  : "text-white border border-transparent hover:bg-white/10"
-                              }`}
-                              style={!inLibrary ? { backgroundColor: `rgba(${rgb},0.15)`, color: `rgb(${rgb})`, borderColor: `rgba(${rgb},0.25)` } : undefined}
+                          <div key={dropKey} className="border-b border-border-glow/10 last:border-b-0">
+                            <div
+                              className="flex items-center gap-2 w-full px-3 py-2 hover:bg-bg-3 transition-colors cursor-pointer"
+                              onClick={() => setExpandedDropdownId(isExpanded ? null : dropKey)}
                             >
-                              {inLibrary ? "Added" : "+ Add"}
-                            </button>
+                              {r.poster_path && (
+                                <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-display text-[10px] text-[#e8e4dc] truncate">{getDisplayTitle(r)}</p>
+                                <p className="font-mono-stats text-[8px] text-[#5c5954]">
+                                  {getYear(r)} · {r.media_type}{r.vote_average > 0 && <> · TMDB {r.vote_average.toFixed(1)}</>}
+                                </p>
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); if (!inLibrary) setSelectedResult(r); }}
+                                disabled={inLibrary}
+                                className={`shrink-0 px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider transition-all ${
+                                  inLibrary
+                                    ? "text-green-400/50 border border-green-400/20 cursor-default"
+                                    : "text-white border border-transparent hover:bg-white/10"
+                                }`}
+                                style={!inLibrary ? { backgroundColor: `rgba(${rgb},0.15)`, color: `rgb(${rgb})`, borderColor: `rgba(${rgb},0.25)` } : undefined}
+                              >
+                                {inLibrary ? "Added" : "+ Add"}
+                              </button>
+                            </div>
+                            {isExpanded && (
+                              <div className="px-3 pb-2.5 pt-0.5 bg-bg-deep/30">
+                                <div className="flex gap-2.5">
+                                  {r.poster_path && (
+                                    <img src={posterUrl(r.poster_path, "medium")} alt="" className="w-16 h-24 rounded object-cover shrink-0" />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-display text-[11px] text-[#e8e4dc] font-medium">{getDisplayTitle(r)}</p>
+                                    <p className="font-mono-stats text-[9px] text-[#5c5954] mt-0.5">
+                                      {getYear(r)} · {r.media_type}{r.vote_average > 0 && <> · TMDB {r.vote_average.toFixed(1)}</>}
+                                    </p>
+                                    {r.overview && (
+                                      <p className="font-body text-[9px] text-[#9a968e] mt-1 leading-relaxed line-clamp-3">{r.overview}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

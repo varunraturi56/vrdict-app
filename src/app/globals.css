@@ -236,14 +236,17 @@
 
 .tv-glow-cyan {
   animation: glow-cyan 4s ease-in-out infinite;
+  transition: box-shadow 1.2s ease;
 }
 
 .tv-glow-violet {
   animation: glow-violet 4s ease-in-out infinite;
+  transition: box-shadow 1.2s ease;
 }
 
 .tv-glow-teal {
   animation: glow-teal 4s ease-in-out infinite;
+  transition: box-shadow 1.2s ease;
 }
 
 /* ── Modern Flatscreen TV ── */

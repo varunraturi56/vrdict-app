@@ -197,7 +197,7 @@ export function TopNav() {
                 {/* Active tab downward glow — matches tab color */}
                 {isActive && (
                   <div
-                    className="absolute -bottom-[13px] left-1/2 -translate-x-1/2 w-12 h-[2px] rounded-full"
+                    className="absolute -bottom-[13px] left-1/2 -translate-x-1/2 w-12 h-[2px] rounded-full transition-all duration-700 ease-in-out"
                     style={{
                       background: isHomeItem ? "rgba(34,197,94,0.6)" : isLibraryCategory ? "rgba(14,165,233,0.6)" : (mediaTab === "tv" ? colors.tvBarColor : colors.movieBarColor),
                       boxShadow: `0 4px 15px 2px ${isHomeItem ? "rgba(34,197,94,0.10)" : isLibraryCategory ? "rgba(14,165,233,0.10)" : (mediaTab === "tv" ? colors.tvBarGlow : colors.movieBarGlow)}`,

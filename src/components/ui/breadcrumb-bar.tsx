@@ -87,9 +87,9 @@ export function BreadcrumbBar({
       </div>
 
       {/* Right: Search + Sort + Clear + Filter */}
-      <div className="flex items-center gap-1 xl:gap-2 min-w-0">
+      <div className="flex items-center gap-1 xl:gap-2 min-w-0 flex-1 justify-end">
         {/* Search */}
-        <div className="relative min-w-0 flex-1 max-w-[140px] xl:max-w-[220px]">
+        <div className="relative min-w-0 flex-1 max-w-[320px]">
           <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 opacity-50" style={accentStyle} />
           <input
             type="text"
