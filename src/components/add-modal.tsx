@@ -228,16 +228,16 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
               </div>
             </div>
 
-            {/* Checkboxes + Actions in one row */}
-            <div className="flex items-center gap-3 pt-2 border-t border-border-glow/30">
-              <label className="flex items-center gap-1.5 cursor-pointer">
+            {/* Checkboxes + Actions — single row, no wrapping */}
+            <div className="flex items-center gap-2 lg:gap-3 pt-2 border-t border-border-glow/30">
+              <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
                 <input type="checkbox" checked={recommended} onChange={(e) => setRecommended(e.target.checked)} className="sr-only" />
                 <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center text-[8px] ${recommended ? "bg-vr-violet/20 border-vr-violet/40" : "border-border-glow bg-bg-deep/50"}`}>
                   {recommended && "⭐"}
                 </div>
                 <span className="font-display text-[9px] uppercase tracking-wider text-[#9a968e]">Fav</span>
               </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
+              <label className="flex items-center gap-1.5 cursor-pointer shrink-0">
                 <input type="checkbox" checked={rewatch} onChange={(e) => setRewatch(e.target.checked)} className="sr-only" />
                 <div className={`w-4 h-4 rounded border transition-colors flex items-center justify-center text-[8px] ${rewatch ? "bg-vr-blue/20 border-vr-blue/40" : "border-border-glow bg-bg-deep/50"}`}>
                   {rewatch && "🔁"}
@@ -248,18 +248,18 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
               {onAddToWatchlist && !isInWatchlist && (
                 <button
                   onClick={() => { onAddToWatchlist(result); onClose(); }}
-                  className="px-2.5 h-7 rounded-md border border-vr-violet/20 text-vr-violet/60 font-display text-[9px] uppercase tracking-wider hover:bg-vr-violet/10 hover:text-vr-violet transition-colors"
+                  className="shrink-0 px-2 h-7 rounded-md border border-vr-violet/20 text-vr-violet/60 font-display text-[8px] uppercase tracking-wider hover:bg-vr-violet/10 hover:text-vr-violet transition-colors whitespace-nowrap"
                 >
-                  Add to Watchlist
+                  + Watchlist
                 </button>
               )}
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-4 h-7 rounded-md font-display text-[9px] uppercase tracking-wider text-white disabled:opacity-50 hover:shadow-[0_0_12px_rgba(14,165,233,0.3)] transition-all"
+                className="shrink-0 px-2 lg:px-4 h-7 rounded-md font-display text-[8px] uppercase tracking-wider text-white disabled:opacity-50 hover:shadow-[0_0_12px_rgba(14,165,233,0.3)] transition-all whitespace-nowrap"
                 style={{ background: "linear-gradient(135deg, #0ea5e9, #0284c7)" }}
               >
-                {saving ? "..." : "Add to Library"}
+                {saving ? "..." : "+ Library"}
               </button>
             </div>
           </div>

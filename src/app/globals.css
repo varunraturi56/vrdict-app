@@ -118,7 +118,17 @@
     font-size: 16px;
   }
 
-  /* Custom scrollbar */
+  /* Hide scrollbars on mobile */
+  @media (max-width: 1023px) {
+    * {
+      scrollbar-width: none;
+    }
+    *::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* Custom scrollbar (desktop only) */
   ::-webkit-scrollbar {
     width: 6px;
   }

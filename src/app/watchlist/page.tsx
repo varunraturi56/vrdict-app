@@ -573,65 +573,67 @@ function WatchlistContent() {
     }
   })();
 
-  // ─── Mobile card list (scrollable, not paginated) ───
+  // ─── Mobile card list (scrollable, grid like desktop) ───
+  const mobileRgb = showRewatch ? "139,92,246" : (activeMediaType === "movie" ? pageGlows.movie.join(",") : pageGlows.tv.join(","));
   const mobileCardList = (
-    <div className="space-y-1.5">
-      {(showRewatch ? filteredRewatchItems : filteredItems).map((item, i) => {
-        const isRewatch = showRewatch;
-        return (
-          <div
-            key={item.id}
-            className={`flex gap-3 p-2.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer transition-all duration-200 ${
-              isRewatch
-                ? "border-vr-violet/20 hover:border-vr-violet/40"
-                : "border-border-glow/50 hover:border-border-glow"
-            }`}
-            style={{ animationDelay: `${Math.min(i * 30, 400)}ms` }}
-            onClick={() => setSelectedItem(item as any)}
-          >
-            {item.poster && (
-              <img
-                src={posterUrl(item.poster, "medium")}
-                alt={item.title}
-                className="w-[45px] h-[67px] rounded-[3px] object-cover shrink-0"
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-display text-[11px] font-medium text-[#e8e4dc] tracking-wide leading-tight truncate">
-                {item.title}
-              </h3>
-              <p className="font-mono-stats text-[9px] text-[#5c5954] mt-0.5">
-                {item.year} · {item.genres?.slice(0, 2).join(", ")}
-                {item.tmdb_rating && <> · <Star size={8} className="inline -mt-0.5" /> {item.tmdb_rating}</>}
-              </p>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                {isRewatch ? (
-                  <span className="px-2 py-0.5 rounded text-[8px] font-display uppercase tracking-wider text-vr-violet border border-vr-violet/20 bg-vr-violet/10">
-                    <RotateCcw size={8} className="inline -mt-0.5 mr-1" />
-                    Rewatch · {(item as Entry).my_rating}/10
-                  </span>
-                ) : (
-                  <>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); moveToLibrary(item as WatchlistItem); }}
-                      disabled={movingToLibrary === item.id}
-                      className="px-2 py-1 rounded text-[8px] font-display uppercase tracking-wider bg-vr-blue/15 text-vr-blue border border-vr-blue/25 hover:bg-vr-blue/25 transition-all disabled:opacity-50"
-                    >
-                      {movingToLibrary === item.id ? "..." : "Watched — Add to Library"}
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeFromWatchlist(item.id); }}
-                      className="p-1 rounded text-[#5c5954] hover:text-red-400 hover:bg-red-500/10 transition-all"
-                    >
-                      <X size={12} />
-                    </button>
-                  </>
-                )}
-              </div>
+    <div className="grid grid-cols-2 gap-1.5">
+      {(showRewatch ? filteredRewatchItems : filteredItems).map((item, i) => (
+        <div
+          key={item.id}
+          className="flex gap-1.5 p-1.5 rounded-lg bg-[rgba(12,12,16,0.6)] border animate-slide-in cursor-pointer"
+          style={{
+            animationDelay: `${Math.min(i * 20, 250)}ms`,
+            borderColor: showRewatch ? "rgba(139,92,246,0.2)" : `rgba(${mobileRgb},0.25)`,
+          }}
+          onClick={() => setSelectedItem(item as any)}
+        >
+          {item.poster && (
+            <img
+              src={posterUrl(item.poster, "small")}
+              alt={item.title}
+              className="w-[36px] h-[54px] rounded-[3px] object-cover shrink-0"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-[9px] font-medium text-[#e8e4dc] tracking-wide leading-tight truncate">
+              {item.title}
+            </h3>
+            <p className="font-mono-stats text-[7.5px] text-[#5c5954] mt-0.5">
+              {item.year} · {item.genres?.slice(0, 1).join("")}
+              {item.tmdb_rating && <> · ☆ {item.tmdb_rating}</>}
+            </p>
+            <div className="flex items-center gap-1 mt-1">
+              {showRewatch ? (
+                <span className="px-1.5 py-0.5 rounded text-[7px] font-display uppercase tracking-wider text-vr-violet border border-vr-violet/20 bg-vr-violet/10">
+                  <RotateCcw size={7} className="inline -mt-0.5 mr-0.5" />
+                  {(item as Entry).my_rating}/10
+                </span>
+              ) : (
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); moveToLibrary(item as WatchlistItem); }}
+                    disabled={movingToLibrary === item.id}
+                    className="px-1.5 py-0.5 rounded text-[7px] font-display uppercase tracking-wider transition-all disabled:opacity-50"
+                    style={{
+                      backgroundColor: `rgba(${mobileRgb},0.15)`,
+                      color: `rgb(${mobileRgb})`,
+                      border: `1px solid rgba(${mobileRgb},0.25)`,
+                    }}
+                  >
+                    {movingToLibrary === item.id ? "..." : "Watched — Add to Library"}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeFromWatchlist(item.id); }}
+                    className="p-0.5 rounded text-[#5c5954] hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  >
+                    <X size={10} />
+                  </button>
+                </>
+              )}
             </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 
