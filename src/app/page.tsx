@@ -82,6 +82,13 @@ function LibraryContent() {
     }
   }, [searchParams]);
 
+  // Explicit Home button reset — handles edge case where URL is already "/" but flow drifted
+  useEffect(() => {
+    function handleGoHome() { setFlow({ stage: "welcome" }); }
+    window.addEventListener("vrdict:go-home", handleGoHome);
+    return () => window.removeEventListener("vrdict:go-home", handleGoHome);
+  }, []);
+
   // Preview bar (desktop only)
   const [peekedEntry, setPeekedEntry] = useState<Entry | null>(null);
 

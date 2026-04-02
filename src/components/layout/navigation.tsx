@@ -93,6 +93,7 @@ export function BottomNav() {
                 onClick={(e) => {
                   if (isHome) {
                     e.preventDefault();
+                    window.dispatchEvent(new Event("vrdict:go-home"));
                     router.push("/", { scroll: false });
                   }
                 }}
@@ -125,6 +126,7 @@ export function BottomNav() {
 export function TopNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const mediaTab = searchParams.get("tab") || "movie";
   const { counts } = useLibraryCounts();
   const isLibrary = pathname === "/";
@@ -177,8 +179,13 @@ export function TopNav() {
             <div key={item.href} className="flex items-center gap-0 transition-all duration-300">
               <Link
                 href={item.href}
-                onClick={() => {
+                onClick={(e) => {
                   setMediaTabsCollapsed(false);
+                  if (isHomeItem) {
+                    e.preventDefault();
+                    window.dispatchEvent(new Event("vrdict:go-home"));
+                    router.push("/", { scroll: false });
+                  }
                 }}
                 className={`relative flex flex-col items-center gap-0.5 transition-all duration-200 group ${
                   isActive
