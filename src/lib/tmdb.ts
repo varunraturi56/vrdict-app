@@ -83,6 +83,21 @@ const MOVIE_TO_TV_GENRE_ID: Record<number, number> = {
   10751: 10762, // Family → Kids
 };
 
+/** Genres with no TMDB TV equivalent — hidden on the TV tab in Discover. */
+export const MOVIE_ONLY_GENRES: ReadonlySet<string> = new Set([
+  "Horror",
+  "Romance",
+  "Thriller",
+]);
+
+/** Translate a TMDB sort param to the media type's date field where needed. */
+export function tmdbSortParam(sortKey: string, mediaType: string): string {
+  if (sortKey === "primary_release_date.desc" && mediaType === "tv") {
+    return "first_air_date.desc";
+  }
+  return sortKey;
+}
+
 export function getGenreIdForMediaType(genreName: string, mediaType: string): string {
   const movieId = GENRE_IDS[genreName];
   if (!movieId) return "";
@@ -103,6 +118,7 @@ export interface TmdbSearchResult {
   genre_ids: number[];
   vote_average: number;
   overview: string;
+  popularity?: number;
 }
 
 export interface TmdbMovieDetail {

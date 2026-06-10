@@ -10,10 +10,14 @@ import { useEntries } from "@/lib/entries-context";
 import {
   posterUrl,
   getGenreIdForMediaType,
+  tmdbSortParam,
+  normalizeGenres,
+  MOVIE_ONLY_GENRES,
   type TmdbSearchResult,
   getDisplayTitle,
   getYear,
 } from "@/lib/tmdb";
+import { toast } from "@/components/ui/toast";
 import { MAJOR_GENRES, ERAS, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
@@ -36,6 +40,25 @@ const ITEMS_PER_PAGE = 14;
 type FlowState =
   | { stage: "category" }
   | { stage: "results"; mediaType: MediaType };
+
+interface DiscoverCache {
+  results: TmdbSearchResult[];
+  page: number;
+}
+
+function readDiscoverCache(tab: string): DiscoverCache | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cached = sessionStorage.getItem(`discover_${tab}`);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    // legacy format: bare array of results (pre page-tracking)
+    if (Array.isArray(parsed)) return { results: parsed, page: 1 };
+    return { results: parsed.results ?? [], page: parsed.page ?? 1 };
+  } catch {
+    return null;
+  }
+}
 
 export default function DiscoverPage() {
   return (
@@ -63,18 +86,10 @@ function DiscoverContent() {
   const ratingDropRef = useRef<HTMLDivElement>(null);
 
   // Results — restore from sessionStorage if available for instant display
-  const [results, setResults] = useState<TmdbSearchResult[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const cached = sessionStorage.getItem(`discover_${mediaTab}`);
-      return cached ? JSON.parse(cached) : [];
-    } catch { return []; }
-  });
+  const [initialCache] = useState(() => readDiscoverCache(mediaTab));
+  const [results, setResults] = useState<TmdbSearchResult[]>(initialCache?.results ?? []);
   const [loading, setLoading] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return !sessionStorage.getItem(`discover_${mediaTab}`);
-  });
+  const [initialLoad, setInitialLoad] = useState(!initialCache);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Custom dropdown state + refs
@@ -83,6 +98,7 @@ function DiscoverContent() {
   const eraDropRef = useRef<HTMLDivElement>(null);
   const sortDropRef = useRef<HTMLDivElement>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
+  const mobileSearchBoxRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -90,6 +106,9 @@ function DiscoverContent() {
       if (eraDropRef.current && !eraDropRef.current.contains(e.target as Node)) setEraDropOpen(false);
       if (sortDropRef.current && !sortDropRef.current.contains(e.target as Node)) setSortDropOpen(false);
       if (ratingDropRef.current && !ratingDropRef.current.contains(e.target as Node)) setRatingDropOpen(false);
+      const insideDesktopSearch = searchBoxRef.current?.contains(e.target as Node);
+      const insideMobileSearch = mobileSearchBoxRef.current?.contains(e.target as Node);
+      if (!insideDesktopSearch && !insideMobileSearch) setSearchResults([]);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -98,7 +117,14 @@ function DiscoverContent() {
   // Guards via refs
   const loadingRef = useRef(false);
   const hasMoreRef = useRef(true);
-  const pageRef = useRef(1);
+  const pageRef = useRef(initialCache?.page ?? 1);
+  // Synchronous mirror of `results` so async code can read the latest list
+  const resultsRef = useRef<TmdbSearchResult[]>(initialCache?.results ?? []);
+  // Which tab the current `results` belong to — guards the cache write during
+  // tab switches, where state still holds the previous tab's results
+  const resultsTabRef = useRef(mediaTab);
+  // Monotonic id per fetch; stale responses (smaller id) are discarded
+  const requestSeqRef = useRef(0);
 
   // Existing IDs
   const [existingTmdbIds, setExistingTmdbIds] = useState<Set<string>>(new Set());
@@ -130,9 +156,12 @@ function DiscoverContent() {
   const [peekedResult, setPeekedResult] = useState<TmdbSearchResult | null>(null);
   const [expandedDropdownId, setExpandedDropdownId] = useState<string | null>(null);
 
-  // Hero banner (mobile) — auto-rotate every 5s
+  // Hero banner (mobile) — auto-rotate every 5s. Candidates must be memoized:
+  // an inline .slice() gives the hook a new array identity every render, which
+  // re-arms its effect and re-picks the hero on every state change.
   const heroFilter = useMemo(() => (r: TmdbSearchResult) => !!r.poster_path, []);
-  const heroResult = useHeroRotation(results.slice(0, 20), heroFilter);
+  const heroCandidates = useMemo(() => results.slice(0, 20), [results]);
+  const heroResult = useHeroRotation(heroCandidates, heroFilter);
 
   // Keyword resolution
   const [resolvedKeywordIds, setResolvedKeywordIds] = useState<string>("");
@@ -172,8 +201,10 @@ function DiscoverContent() {
     loadWatchlist();
   }, [entriesLoading, sharedEntries]);
 
-  // Resolve keywords to TMDB keyword IDs (debounced)
+  // Resolve keywords to TMDB keyword IDs (debounced, stale responses dropped)
+  const keywordSeqRef = useRef(0);
   useEffect(() => {
+    const seq = ++keywordSeqRef.current;
     if (!keywords.trim()) {
       setResolvedKeywordIds("");
       return;
@@ -182,20 +213,23 @@ function DiscoverContent() {
       try {
         const res = await fetch(`/api/tmdb?action=keyword_search&query=${encodeURIComponent(keywords.trim())}`);
         const data = await res.json();
+        if (seq !== keywordSeqRef.current) return;
         const ids = (data.results || []).slice(0, 5).map((k: { id: number }) => k.id).join("|");
         setResolvedKeywordIds(ids);
       } catch {
-        setResolvedKeywordIds("");
+        if (seq === keywordSeqRef.current) setResolvedKeywordIds("");
       }
     }, 500);
     return () => clearTimeout(timeout);
   }, [keywords]);
 
-  // Core fetch function
-  async function fetchDiscover(startPage: number, append: boolean) {
-    if (loadingRef.current) return;
+  // Core fetch function — returns how many new items were added (0 on
+  // stale/failed requests) so callers can decide whether to advance the page
+  async function fetchDiscover(startPage: number, append: boolean): Promise<number> {
+    if (loadingRef.current) return 0;
     loadingRef.current = true;
     setLoading(true);
+    const seq = ++requestSeqRef.current;
 
     try {
       let genreIds = "";
@@ -211,7 +245,8 @@ function DiscoverContent() {
         yearLte = String(decade + 9);
       }
 
-      const sortOrders = ["popularity.desc", "vote_average.desc", "vote_count.desc"];
+      const primarySort = tmdbSortParam(sortBy, mediaTab);
+      const sortOrders = [primarySort, "popularity.desc", "vote_count.desc"];
       const minVotes = [50, 20, 20];
       const ratingMin = ratingFilter !== "Any" ? parseInt(ratingFilter) : 0;
       const minRatings = ratingMin > 0 ? [ratingMin, ratingMin, ratingMin] : [6, 5, 5];
@@ -244,40 +279,61 @@ function DiscoverContent() {
       }
 
       const pages = await Promise.all(fetches);
+      // A newer request (filter/tab change) superseded this one — discard
+      if (seq !== requestSeqRef.current) return 0;
+
       const allResults: TmdbSearchResult[] = [];
       pages.forEach((p) => {
         if (p.results) allResults.push(...p.results);
       });
 
-      setResults((prev) => {
-        const seen = new Set<number>();
-        if (append) prev.forEach((r) => seen.add(r.id));
+      const prev = append ? resultsRef.current : [];
+      const seen = new Set<number>(prev.map((r) => r.id));
 
-        const newItems = allResults
-          .filter((r) => {
-            if (seen.has(r.id)) return false;
-            if (!r.poster_path) return false;
-            if (existingIdsRef.current.has(`${mediaTab}_${r.id}`)) return false;
-            if (existingIdsRef.current.has(`watchlist_${mediaTab}_${r.id}`)) return false;
-            seen.add(r.id);
-            return true;
-          })
-          .map((r) => ({ ...r, media_type: mediaTab }))
-          .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
-
-        if (newItems.length === 0 && append) {
-          hasMoreRef.current = false;
+      const sortItems = (a: TmdbSearchResult, b: TmdbSearchResult) => {
+        if (sortBy === "primary_release_date.desc") {
+          return (b.release_date || b.first_air_date || "").localeCompare(a.release_date || a.first_air_date || "");
         }
+        if (sortBy === "popularity.desc") {
+          return (b.popularity || 0) - (a.popularity || 0);
+        }
+        return (b.vote_average || 0) - (a.vote_average || 0);
+      };
 
-        pageRef.current = startPage + 3;
-        return append ? [...prev, ...newItems] : newItems;
-      });
+      const newItems = allResults
+        .filter((r) => {
+          if (seen.has(r.id)) return false;
+          if (!r.poster_path) return false;
+          // trending results have no server-side rating constraint —
+          // enforce the rating filter client-side for all batches
+          if (ratingMin > 0 && (r.vote_average || 0) < ratingMin) return false;
+          if (existingIdsRef.current.has(`${mediaTab}_${r.id}`)) return false;
+          if (existingIdsRef.current.has(`watchlist_${mediaTab}_${r.id}`)) return false;
+          seen.add(r.id);
+          return true;
+        })
+        .map((r) => ({ ...r, media_type: mediaTab }))
+        .sort(sortItems);
+
+      if (newItems.length === 0 && append) {
+        hasMoreRef.current = false;
+      }
+
+      pageRef.current = startPage + 3;
+      const next = append ? [...prev, ...newItems] : newItems;
+      resultsRef.current = next;
+      resultsTabRef.current = mediaTab;
+      setResults(next);
+      return newItems.length;
     } catch {
-      // silently fail
+      return 0;
     } finally {
-      setLoading(false);
-      setInitialLoad(false);
-      loadingRef.current = false;
+      // Only clear loading state if this is still the latest request
+      if (seq === requestSeqRef.current) {
+        setLoading(false);
+        setInitialLoad(false);
+        loadingRef.current = false;
+      }
     }
   }
 
@@ -305,6 +361,8 @@ function DiscoverContent() {
       const filterKey = `${mediaTab}|${null}|${"All"}|${sortBy}|${""}|${"Any"}`;
       filterKeyRef.current = filterKey;
       setResults([]);
+      resultsRef.current = [];
+      resultsTabRef.current = mediaTab;
       setCurrentPage(1);
       pageRef.current = 1;
       hasMoreRef.current = true;
@@ -323,11 +381,13 @@ function DiscoverContent() {
     // On initial mount with cached results, don't clear them — just fetch fresh in background
     if (!hasFetchedRef.current && results.length > 0) {
       hasFetchedRef.current = true;
+      setCurrentPage(1);
       fetchDiscover(1, false);
       return;
     }
 
     setResults([]);
+    resultsRef.current = [];
     setCurrentPage(1);
     pageRef.current = 1;
     hasMoreRef.current = true;
@@ -338,26 +398,38 @@ function DiscoverContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaTab, genreFilter, eraFilter, sortBy, resolvedKeywordIds, existingLoaded, flow.stage, ratingFilter]);
 
-  // Cache discover results in sessionStorage for instant restore
+  // Cache discover results in sessionStorage for instant restore.
+  // Skip while `results` still holds the previous tab's data (tab switch
+  // commits before the new fetch lands) — otherwise movies get cached as TV.
   useEffect(() => {
-    if (results.length > 0) {
-      try { sessionStorage.setItem(`discover_${mediaTab}`, JSON.stringify(results.slice(0, 60))); } catch { /* quota */ }
+    if (results.length > 0 && resultsTabRef.current === mediaTab) {
+      try {
+        sessionStorage.setItem(
+          `discover_${mediaTab}`,
+          JSON.stringify({ results: results.slice(0, 60), page: pageRef.current })
+        );
+      } catch { /* quota */ }
     }
   }, [results, mediaTab]);
 
-  // Search & add to library (debounced)
+  // Search & add to library (debounced, stale responses dropped)
+  const searchSeqRef = useRef(0);
   useEffect(() => {
+    const seq = ++searchSeqRef.current;
     if (!searchQuery.trim()) { setSearchResults([]); return; }
     const timeout = setTimeout(async () => {
       try {
         const res = await fetch(`/api/tmdb?action=search&query=${encodeURIComponent(searchQuery)}`);
         const data = await res.json();
+        if (seq !== searchSeqRef.current) return;
         setSearchResults(
           (data.results || [])
             .filter((r: TmdbSearchResult) => r.media_type === "movie" || r.media_type === "tv")
             .slice(0, 6)
         );
-      } catch { setSearchResults([]); }
+      } catch {
+        if (seq === searchSeqRef.current) setSearchResults([]);
+      }
     }, 400);
     return () => clearTimeout(timeout);
   }, [searchQuery]);
@@ -376,18 +448,22 @@ function DiscoverContent() {
     setAddingToWatchlist(result.id);
     try {
       const res = await fetch(`/api/tmdb?action=detail&id=${result.id}&media_type=${result.media_type}`);
+      if (!res.ok) {
+        toast("Could not fetch details from TMDB.");
+        return;
+      }
       const detail = await res.json();
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const isMovieType = result.media_type === "movie";
-      await supabase.from("watchlist").insert({
+      const { error } = await supabase.from("watchlist").insert({
         user_id: user.id,
         tmdb_id: result.id,
         media_type: result.media_type,
         title: isMovieType ? detail.title : detail.name,
         year: (isMovieType ? detail.release_date : detail.first_air_date)?.substring(0, 4) || null,
-        genres: (detail.genres || []).map((g: { name: string }) => g.name),
+        genres: normalizeGenres((detail.genres || []).map((g: { name: string }) => g.name)),
         poster: detail.poster_path,
         overview: detail.overview,
         tmdb_rating: Math.round((detail.vote_average || 0) * 10) / 10,
@@ -396,12 +472,18 @@ function DiscoverContent() {
         episodes: isMovieType ? 0 : (detail.number_of_episodes || 0),
         imdb_id: detail.imdb_id || detail.external_ids?.imdb_id || null,
       });
+      if (error) {
+        toast("Could not add to watchlist.");
+        return;
+      }
       setExistingTmdbIds((prev) => {
         const next = new Set(prev);
         next.add(`watchlist_${result.media_type}_${result.id}`);
         return next;
       });
-    } catch { /* silently fail */ }
+    } catch {
+      toast("Could not add to watchlist.");
+    }
     finally { setAddingToWatchlist(null); }
   }
 
@@ -428,28 +510,34 @@ function DiscoverContent() {
     if (index <= 1) {
       setGenreFilter(null);
       setEraFilter("All");
+      setRatingFilter("Any");
       setKeywords("");
       setSearchQuery("");
     }
   }
 
-  // Pagination — only count pages that can show a full set of ITEMS_PER_PAGE
-  const fullPages = Math.floor(results.length / ITEMS_PER_PAGE);
-  const totalPages = Math.max(1, fullPages || 1);
+  // Pagination — ceil so the trailing partial page is reachable
+  const totalPages = Math.max(1, Math.ceil(results.length / ITEMS_PER_PAGE));
   const pagedResults = results.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
-  function handleNextPage() {
+  // Safety net: if a smaller result set leaves the page index past the end,
+  // clamp back so the grid never strands on an empty page
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  async function handleNextPage() {
     if (currentPage < totalPages) {
       setCurrentPage((p) => p + 1);
-    } else if (hasMoreRef.current && !loadingRef.current) {
-      // At the last page of current results — fetch more from TMDB
-      fetchDiscover(pageRef.current, true);
-      // After fetch completes, results grow and totalPages increases, so advance
-      setCurrentPage((p) => p + 1);
+      return;
     }
+    if (!hasMoreRef.current || loadingRef.current) return;
+    // At the last known page — fetch more and only advance if new items landed
+    const added = await fetchDiscover(pageRef.current, true);
+    if (added > 0) setCurrentPage((p) => p + 1);
   }
 
   function handlePrevPage() {
@@ -489,6 +577,12 @@ function DiscoverContent() {
   const pageGlows = PAGE_GLOWS["/discover"];
   const themeRgb = isMovie ? pageGlows.movie : pageGlows.tv;
   const rgb = themeRgb.join(",");
+
+  // TMDB has no TV genre for Horror/Romance/Thriller — hide them on the TV tab
+  const availableGenres = useMemo(
+    () => MAJOR_GENRES.filter((g) => mediaTab !== "tv" || !MOVIE_ONLY_GENRES.has(g)),
+    [mediaTab]
+  );
 
   const activeFilterCount = (genreFilter ? 1 : 0) + (ratingFilter !== "Any" ? 1 : 0);
 
@@ -978,7 +1072,7 @@ function DiscoverContent() {
           <div className="flex items-center gap-2">
             <MobileDropdown
               value={genreFilter || ""}
-              options={[{ key: "", label: "All Genres" }, ...MAJOR_GENRES.map((g) => ({ key: g, label: g }))]}
+              options={[{ key: "", label: "All Genres" }, ...availableGenres.map((g) => ({ key: g, label: g }))]}
               onChange={(v) => setGenreFilter(v || null)}
               className="flex-1"
               rgb={rgb}
@@ -1006,7 +1100,7 @@ function DiscoverContent() {
               onChange={(v) => setSortBy(v as SortKey)}
               rgb={rgb}
             />
-            <div className="relative flex-1">
+            <div className="relative flex-1" ref={mobileSearchBoxRef}>
               <Plus size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: `rgba(${rgb},0.5)` }} />
               <input
                 type="text"
@@ -1154,6 +1248,7 @@ function DiscoverContent() {
       <DiscoverFilterDrawer
         open={filterOpen}
         onClose={() => setFilterOpen(false)}
+        genres={availableGenres}
         genreFilter={genreFilter}
         setGenreFilter={setGenreFilter}
         accentRgb={rgb}
@@ -1178,12 +1273,14 @@ function DiscoverContent() {
 function DiscoverFilterDrawer({
   open,
   onClose,
+  genres,
   genreFilter,
   setGenreFilter,
   accentRgb,
 }: {
   open: boolean;
   onClose: () => void;
+  genres: readonly string[];
   genreFilter: string | null;
   setGenreFilter: (g: string | null) => void;
   accentRgb: string;
@@ -1230,7 +1327,7 @@ function DiscoverFilterDrawer({
             >
               All
             </button>
-            {MAJOR_GENRES.map((g) => (
+            {genres.map((g) => (
               <button
                 key={g}
                 onClick={() => setGenreFilter(genreFilter === g ? null : g)}

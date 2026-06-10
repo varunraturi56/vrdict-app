@@ -264,3 +264,22 @@ describe("genre maps consistency", () => {
     }
   });
 });
+
+import { tmdbSortParam, MOVIE_ONLY_GENRES } from "@/lib/tmdb";
+
+describe("tmdbSortParam", () => {
+  it("translates year sort to the TV date field for TV", () => {
+    expect(tmdbSortParam("primary_release_date.desc", "tv")).toBe("first_air_date.desc");
+  });
+  it("keeps year sort for movies and passes other sorts through", () => {
+    expect(tmdbSortParam("primary_release_date.desc", "movie")).toBe("primary_release_date.desc");
+    expect(tmdbSortParam("popularity.desc", "tv")).toBe("popularity.desc");
+    expect(tmdbSortParam("vote_average.desc", "movie")).toBe("vote_average.desc");
+  });
+});
+
+describe("MOVIE_ONLY_GENRES", () => {
+  it("contains exactly the genres with no TMDB TV equivalent", () => {
+    expect([...MOVIE_ONLY_GENRES].sort()).toEqual(["Horror", "Romance", "Thriller"]);
+  });
+});
