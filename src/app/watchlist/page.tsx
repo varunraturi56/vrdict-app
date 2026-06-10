@@ -19,6 +19,8 @@ import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { PAGE_GLOWS } from "@/lib/ambient-colors";
 import { useHeroRotation } from "@/hooks/use-hero-rotation";
 import { usePagination } from "@/hooks/use-pagination";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { EntryDetailModal } from "@/components/entry-detail-modal";
 
 const SORT_OPTIONS = [
   { key: "tmdb_rating", label: "TMDB" },
@@ -59,7 +61,7 @@ function WatchlistContent() {
   const mediaTab = (searchParams.get("tab") || "movie") as MediaType;
 
   const { items, loading, addItem: ctxAddItem, removeItem: ctxRemoveItem } = useWatchlist();
-  const { addEntry: ctxAddEntry } = useEntries();
+  const { entries, addEntry: ctxAddEntry, updateEntry: ctxUpdateEntry, removeEntry: ctxRemoveEntry } = useEntries();
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("tmdb_rating");
   const [ratingFilter, setRatingFilter] = useState<RatingKey>("any");
@@ -72,17 +74,9 @@ function WatchlistContent() {
   const [peekedEntry, setPeekedEntry] = useState<WatchlistItem | null>(null);
   const [movingToLibrary, setMovingToLibrary] = useState<string | null>(null);
   const [showRewatch, setShowRewatch] = useState(false);
-  const [rewatchItems, setRewatchItems] = useState<Entry[]>([]);
-  const [rewatchLoading, setRewatchLoading] = useState(false);
+  const [selectedRewatchEntry, setSelectedRewatchEntry] = useState<Entry | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [isWideGrid, setIsWideGrid] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1280px)");
-    setIsWideGrid(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsWideGrid(e.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+  const isWideGrid = useMediaQuery("(min-width: 1280px)") ?? false;
   const itemsPerPage = isWideGrid ? ITEMS_5COL : ITEMS_3COL;
 
   // Desktop flow state
@@ -103,24 +97,12 @@ function WatchlistContent() {
     }
   }, [searchParams]);
 
-  // Fetch rewatch entries from library (on mount + when toggled on)
-  const rewatchFetchedRef = useRef(false);
-  useEffect(() => {
-    if (rewatchFetchedRef.current && !showRewatch) return;
-    async function loadRewatch() {
-      setRewatchLoading(true);
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("entries")
-        .select("*")
-        .eq("rewatch", true)
-        .order("my_rating", { ascending: false });
-      if (data) setRewatchItems(data as Entry[]);
-      setRewatchLoading(false);
-      rewatchFetchedRef.current = true;
-    }
-    loadRewatch();
-  }, [showRewatch]);
+  // Rewatch entries come from the shared entries context — always live,
+  // no separate fetch needed
+  const rewatchItems = useMemo(
+    () => entries.filter((e) => e.rewatch).sort((a, b) => b.my_rating - a.my_rating),
+    [entries]
+  );
 
   // Reset filters on tab switch (skip initial mount)
   const prevTabRef = useRef(mediaTab);
@@ -167,15 +149,13 @@ function WatchlistContent() {
     usePagination(filteredItems, itemsPerPage, [genreFilter, ratingFilter, searchQuery, sortBy, isWideGrid]);
 
   // Rewatch items filtered by current tab (desktop only — mobile shows all)
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 1024;
+  const isMobile = useMediaQuery("(max-width: 1023px)") ?? false;
   const filteredRewatchItems = useMemo(
     () => isMobile ? rewatchItems : rewatchItems.filter((e) => e.media_type === activeMediaType),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [rewatchItems, activeMediaType, isMobile]
   );
 
   const rewatchPagination = usePagination(filteredRewatchItems, itemsPerPage, [activeMediaType]);
-  const rewatchTotalPages = rewatchPagination.totalPages;
   const pagedRewatchItems = rewatchPagination.pagedItems;
 
   // Hero — mobile only
@@ -322,8 +302,13 @@ function WatchlistContent() {
   function renderCardGrid(
     cardItems: (WatchlistItem | Entry)[],
     isRewatch: boolean,
-    pages: number,
+    pager: {
+      currentPage: number;
+      setCurrentPage: (value: number | ((p: number) => number)) => void;
+      totalPages: number;
+    },
   ) {
+    const { currentPage, setCurrentPage, totalPages: pages } = pager;
     return (
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-1 py-1">
         <div className="flex items-center w-full flex-1 min-h-0">
@@ -354,7 +339,7 @@ function WatchlistContent() {
                     borderColor: isRewatch ? "rgba(139,92,246,0.2)" : `rgba(${rgb},0.25)`,
                   }}
                   onMouseEnter={() => !isRewatch && setPeekedEntry(item as WatchlistItem)}
-                  onClick={() => isRewatch ? setSelectedItem(item as WatchlistItem) : setSelectedItem(item as WatchlistItem)}
+                  onClick={() => isRewatch ? setSelectedRewatchEntry(item as Entry) : setSelectedItem(item as WatchlistItem)}
                 >
                   {item.poster && (
                     <img
@@ -546,14 +531,8 @@ function WatchlistContent() {
 
             {/* Card grid */}
             {showRewatch
-              ? (rewatchLoading
-                ? (
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="w-6 h-6 border-2 border-vr-violet/30 border-t-vr-violet rounded-full animate-spin" />
-                  </div>
-                )
-                : renderCardGrid(pagedRewatchItems, true, rewatchTotalPages))
-              : renderCardGrid(pagedItems, false, totalPages)
+              ? renderCardGrid(pagedRewatchItems, true, rewatchPagination)
+              : renderCardGrid(pagedItems, false, { currentPage, setCurrentPage, totalPages })
             }
           </div>
         );
@@ -572,7 +551,7 @@ function WatchlistContent() {
             animationDelay: `${Math.min(i * 20, 250)}ms`,
             borderColor: showRewatch ? "rgba(139,92,246,0.2)" : `rgba(${mobileRgb},0.25)`,
           }}
-          onClick={() => setSelectedItem(item as WatchlistItem)}
+          onClick={() => showRewatch ? setSelectedRewatchEntry(item as Entry) : setSelectedItem(item as WatchlistItem)}
         >
           {item.poster && (
             <img
@@ -790,6 +769,16 @@ function WatchlistContent() {
           onClose={() => setSelectedItem(null)}
           onMoveToLibrary={(item) => { moveToLibrary(item); setSelectedItem(null); }}
           onRemove={(id) => { removeFromWatchlist(id); setSelectedItem(null); }}
+        />
+      )}
+
+      {/* Rewatch items are library entries — edit them with the library modal */}
+      {selectedRewatchEntry && (
+        <EntryDetailModal
+          entry={selectedRewatchEntry}
+          onClose={() => setSelectedRewatchEntry(null)}
+          onUpdate={(updated) => { ctxUpdateEntry(updated); setSelectedRewatchEntry(null); }}
+          onDelete={(id) => { ctxRemoveEntry(id); setSelectedRewatchEntry(null); }}
         />
       )}
     </div>
