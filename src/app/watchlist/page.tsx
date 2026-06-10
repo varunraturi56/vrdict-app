@@ -104,16 +104,6 @@ function WatchlistContent() {
     [entries]
   );
 
-  // Reset filters on tab switch (skip initial mount)
-  const prevTabRef = useRef(mediaTab);
-  useEffect(() => {
-    if (mediaTab === prevTabRef.current) return;
-    prevTabRef.current = mediaTab;
-    setGenreFilter(null);
-    setSearchQuery("");
-    setCurrentPage(1);
-  }, [mediaTab]);
-
   const activeMediaType = flow.stage === "results" ? flow.mediaType : mediaTab;
 
   const mediaItems = useMemo(
@@ -147,6 +137,16 @@ function WatchlistContent() {
   // Pagination
   const { currentPage, setCurrentPage, totalPages, pagedItems } =
     usePagination(filteredItems, itemsPerPage, [genreFilter, ratingFilter, searchQuery, sortBy, isWideGrid]);
+
+  // Reset filters on tab switch (skip initial mount)
+  const prevTabRef = useRef(mediaTab);
+  useEffect(() => {
+    if (mediaTab === prevTabRef.current) return;
+    prevTabRef.current = mediaTab;
+    setGenreFilter(null);
+    setSearchQuery("");
+    setCurrentPage(1);
+  }, [mediaTab, setCurrentPage]);
 
   // Rewatch items filtered by current tab (desktop only — mobile shows all)
   const isMobile = useMediaQuery("(max-width: 1023px)") ?? false;
