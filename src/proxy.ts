@@ -25,9 +25,11 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifies the JWT locally against cached signing keys where the
+  // project uses asymmetric keys — no per-navigation auth-server round trip
+  // (it transparently falls back to a server check on HS256 projects)
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   const isLoginPage = request.nextUrl.pathname === "/login";
 
