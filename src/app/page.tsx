@@ -24,7 +24,7 @@ export default function LibraryPage() {
 }
 
 function LibraryContent() {
-  const { entries, loading, updateEntry: ctxUpdateEntry, removeEntry: ctxRemoveEntry } = useEntries();
+  const { entries, loading, error, refresh, updateEntry: ctxUpdateEntry, removeEntry: ctxRemoveEntry } = useEntries();
   const { setCounts } = useLibraryCounts();
 
   // Flow state (welcome / category / results)
@@ -66,6 +66,20 @@ function LibraryContent() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-vr-blue/30 border-t-vr-blue rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <p className="font-body text-sm text-[#9a968e]">Could not load your library.</p>
+        <button
+          onClick={() => refresh()}
+          className="px-4 py-1.5 rounded-lg border border-vr-blue/30 text-vr-blue font-display text-xs uppercase tracking-wider hover:bg-vr-blue/10 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     );
   }

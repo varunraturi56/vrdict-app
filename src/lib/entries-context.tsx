@@ -35,6 +35,7 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
 
   const fetchEntries = useCallback(async () => {
     try {
+      setLoading(true);
       const supabase = createClient();
       const { data, error: fetchError } = await supabase
         .from("entries")
