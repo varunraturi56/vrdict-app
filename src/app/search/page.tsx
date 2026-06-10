@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search as SearchIcon, Plus, Bookmark, Check } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -13,6 +13,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { buildWatchlistItem } from "@/lib/watchlist-helpers";
 import { AddModal } from "@/components/add-modal";
+import { toast } from "@/components/ui/toast";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -47,10 +48,13 @@ export default function SearchPage() {
     loadExisting();
   }, []);
 
-  // Search TMDB
+  // Search TMDB — stale responses dropped so fast typing can't show old results
+  const searchSeqRef = useRef(0);
   useEffect(() => {
+    const seq = ++searchSeqRef.current;
     if (!debouncedQuery || debouncedQuery.length < 2) {
       setResults([]);
+      setLoading(false);
       return;
     }
 
@@ -61,15 +65,16 @@ export default function SearchPage() {
           `/api/tmdb?action=search&query=${encodeURIComponent(debouncedQuery)}`
         );
         const data = await res.json();
+        if (seq !== searchSeqRef.current) return;
         const filtered = (data.results || []).filter(
           (r: TmdbSearchResult) =>
             r.media_type === "movie" || r.media_type === "tv"
         );
         setResults(filtered.slice(0, 12));
       } catch {
-        setResults([]);
+        if (seq === searchSeqRef.current) setResults([]);
       } finally {
-        setLoading(false);
+        if (seq === searchSeqRef.current) setLoading(false);
       }
     }
     search();
@@ -93,6 +98,10 @@ export default function SearchPage() {
       const res = await fetch(
         `/api/tmdb?action=detail&id=${result.id}&media_type=${result.media_type}`
       );
+      if (!res.ok) {
+        toast("Could not fetch details from TMDB.");
+        return;
+      }
       const detail = await res.json();
 
       const supabase = createClient();
@@ -102,7 +111,13 @@ export default function SearchPage() {
       if (!user) return;
 
       const item = buildWatchlistItem(result, detail);
-      await supabase.from("watchlist").insert({ user_id: user.id, ...item });
+      const { error } = await supabase
+        .from("watchlist")
+        .insert({ user_id: user.id, ...item });
+      if (error) {
+        toast("Could not add to watchlist.");
+        return;
+      }
 
       setExistingTmdbIds((prev) => {
         const next = new Set(prev);
@@ -110,7 +125,7 @@ export default function SearchPage() {
         return next;
       });
     } catch {
-      // silently fail
+      toast("Could not add to watchlist.");
     } finally {
       setAddingToWatchlist(null);
     }
