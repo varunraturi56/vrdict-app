@@ -7,6 +7,7 @@ import { ToastViewport } from "@/components/ui/toast";
 import { LibraryCountsProvider } from "@/lib/library-context";
 import { EntriesProvider } from "@/lib/entries-context";
 import { WatchlistProvider } from "@/lib/watchlist-context";
+import type { InitialData } from "@/lib/supabase/initial-data";
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -53,10 +54,16 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  initialData,
+}: {
+  children: React.ReactNode;
+  initialData?: InitialData;
+}) {
   return (
-    <EntriesProvider>
-      <WatchlistProvider>
+    <EntriesProvider initialEntries={initialData?.entries ?? null}>
+      <WatchlistProvider initialItems={initialData?.watchlist ?? null}>
         <LibraryCountsProvider>
           <AppShellInner>{children}</AppShellInner>
         </LibraryCountsProvider>

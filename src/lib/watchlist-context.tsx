@@ -22,9 +22,15 @@ const WatchlistContext = createContext<WatchlistContextValue>({
   refresh: async () => {},
 });
 
-export function WatchlistProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<WatchlistItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export function WatchlistProvider({
+  children,
+  initialItems = null,
+}: {
+  children: ReactNode;
+  initialItems?: WatchlistItem[] | null;
+}) {
+  const [items, setItems] = useState<WatchlistItem[]>(initialItems ?? []);
+  const [loading, setLoading] = useState(initialItems === null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchItems = useCallback(async () => {
@@ -50,8 +56,10 @@ export function WatchlistProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // server already provided data — skip the client fetch on mount
+    if (initialItems !== null) return;
     fetchItems();
-  }, [fetchItems]);
+  }, [fetchItems, initialItems]);
 
   const addItem = useCallback((item: WatchlistItem) => {
     setItems((prev) => [item, ...prev]);

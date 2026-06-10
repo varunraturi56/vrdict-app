@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Orbitron, Rajdhani, Space_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/app-shell";
+import { getInitialData } from "@/lib/supabase/initial-data";
 import "./globals.css";
 
 const orbitron = Orbitron({
@@ -47,11 +48,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialData = await getInitialData();
   return (
     <html
       lang="en"
@@ -61,7 +63,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-full flex flex-col">
-        <AppShell>{children}</AppShell>
+        <AppShell initialData={initialData}>{children}</AppShell>
         <Script id="sw-register" strategy="afterInteractive">
           {`if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }`}
         </Script>

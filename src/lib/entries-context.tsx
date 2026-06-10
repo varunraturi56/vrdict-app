@@ -28,9 +28,15 @@ const EntriesContext = createContext<EntriesContextValue>({
   refresh: async () => {},
 });
 
-export function EntriesProvider({ children }: { children: ReactNode }) {
-  const [entries, setEntries] = useState<Entry[]>([]);
-  const [loading, setLoading] = useState(true);
+export function EntriesProvider({
+  children,
+  initialEntries = null,
+}: {
+  children: ReactNode;
+  initialEntries?: Entry[] | null;
+}) {
+  const [entries, setEntries] = useState<Entry[]>(initialEntries ?? []);
+  const [loading, setLoading] = useState(initialEntries === null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchEntries = useCallback(async () => {
@@ -57,8 +63,10 @@ export function EntriesProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // server already provided data — skip the client fetch on mount
+    if (initialEntries !== null) return;
     fetchEntries();
-  }, [fetchEntries]);
+  }, [fetchEntries, initialEntries]);
 
   const updateEntry = useCallback((updated: Entry) => {
     setEntries((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
