@@ -11,14 +11,15 @@ import {
   posterUrl,
   normalizeGenres,
 } from "@/lib/tmdb";
-import { DEFAULT_TAGS } from "@/lib/types";
+import { DEFAULT_TAGS, type Entry } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "@/components/ui/toast";
 
 interface AddModalProps {
   result: TmdbSearchResult;
   onClose: () => void;
-  onAdded: (tmdbId: number, mediaType: string) => void;
+  /** Receives the saved library entry so callers can sync the entries context */
+  onAdded: (entry: Entry) => void;
   onAddToWatchlist?: (result: TmdbSearchResult) => void;
   isInWatchlist?: boolean;
 }
@@ -120,12 +121,12 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
         year_watched: yearWatched,
       };
 
-      const { error } = await supabase.from("entries").insert(entry);
-      if (error) {
+      const { data, error } = await supabase.from("entries").insert(entry).select().single();
+      if (error || !data) {
         toast("Could not add to library.");
         return;
       }
-      onAdded(result.id, result.media_type);
+      onAdded(data as Entry);
     } catch {
       toast("Could not add to library.");
     } finally {

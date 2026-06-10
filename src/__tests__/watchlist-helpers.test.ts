@@ -86,3 +86,40 @@ describe("buildWatchlistItem", () => {
     expect(item.imdb_id).toBe("tt9999999");
   });
 });
+
+import { watchlistItemToSearchResult } from "@/lib/watchlist-helpers";
+import type { WatchlistItem } from "@/lib/types";
+
+describe("watchlistItemToSearchResult", () => {
+  const base = {
+    id: "row-1", user_id: "u1", added_at: "", genres: [], overview: "A heist.",
+    poster: "/p.jpg", tmdb_rating: 8.2, runtime: 120, seasons: 0, episodes: 0, imdb_id: null,
+  };
+
+  it("maps a movie item to a search result the AddModal can consume", () => {
+    const item = { ...base, tmdb_id: 27205, media_type: "movie", title: "Inception", year: "2010" } as WatchlistItem;
+    const r = watchlistItemToSearchResult(item);
+    expect(r.id).toBe(27205);
+    expect(r.media_type).toBe("movie");
+    expect(r.title).toBe("Inception");
+    expect(r.release_date).toBe("2010-01-01");
+    expect(r.first_air_date).toBeUndefined();
+    expect(r.poster_path).toBe("/p.jpg");
+    expect(r.vote_average).toBe(8.2);
+  });
+
+  it("maps a TV item using name and first_air_date", () => {
+    const item = { ...base, tmdb_id: 1396, media_type: "tv", title: "Breaking Bad", year: "2008" } as WatchlistItem;
+    const r = watchlistItemToSearchResult(item);
+    expect(r.name).toBe("Breaking Bad");
+    expect(r.title).toBeUndefined();
+    expect(r.first_air_date).toBe("2008-01-01");
+  });
+
+  it("handles missing year and poster", () => {
+    const item = { ...base, tmdb_id: 1, media_type: "movie", title: "X", year: null, poster: null } as WatchlistItem;
+    const r = watchlistItemToSearchResult(item);
+    expect(r.release_date).toBeUndefined();
+    expect(r.poster_path).toBeNull();
+  });
+});

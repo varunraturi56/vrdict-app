@@ -1,5 +1,27 @@
-import { normalizeGenres } from "@/lib/tmdb";
+import { normalizeGenres, type TmdbSearchResult } from "@/lib/tmdb";
 import type { WatchlistItem } from "@/lib/types";
+
+/**
+ * Convert a stored watchlist item back into the search-result shape the
+ * AddModal consumes ("Watched — Add to Library" flow). The modal re-fetches
+ * full detail from TMDB by id, so only the identity fields need to be exact.
+ */
+export function watchlistItemToSearchResult(item: WatchlistItem): TmdbSearchResult {
+  const isMovie = item.media_type === "movie";
+  const date = item.year ? `${item.year}-01-01` : undefined;
+  return {
+    id: item.tmdb_id,
+    media_type: item.media_type,
+    title: isMovie ? item.title : undefined,
+    name: isMovie ? undefined : item.title,
+    release_date: isMovie ? date : undefined,
+    first_air_date: isMovie ? undefined : date,
+    poster_path: item.poster,
+    genre_ids: [],
+    vote_average: item.tmdb_rating || 0,
+    overview: item.overview || "",
+  };
+}
 
 /**
  * Build a watchlist item payload from a TMDB search result + detail response.

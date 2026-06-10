@@ -11,12 +11,15 @@ import {
   posterUrl,
 } from "@/lib/tmdb";
 import { createClient } from "@/lib/supabase/client";
+import { useEntries } from "@/lib/entries-context";
 import { buildWatchlistItem } from "@/lib/watchlist-helpers";
 import { AddModal } from "@/components/add-modal";
 import { toast } from "@/components/ui/toast";
+import type { Entry } from "@/lib/types";
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
+  const { addEntry: ctxAddEntry } = useEntries();
   const [results, setResults] = useState<TmdbSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [existingTmdbIds, setExistingTmdbIds] = useState<Set<string>>(
@@ -131,10 +134,11 @@ export default function SearchPage() {
     }
   }
 
-  function handleAdded(tmdbId: number, mediaType: string) {
+  function handleAdded(entry: Entry) {
+    ctxAddEntry(entry); // library shows the new title immediately
     setExistingTmdbIds((prev) => {
       const next = new Set(prev);
-      next.add(`${mediaType}_${tmdbId}`);
+      next.add(`${entry.media_type}_${entry.tmdb_id}`);
       return next;
     });
     setSelectedResult(null);

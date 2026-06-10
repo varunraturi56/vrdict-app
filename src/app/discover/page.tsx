@@ -19,7 +19,7 @@ import {
   getYear,
 } from "@/lib/tmdb";
 import { toast } from "@/components/ui/toast";
-import { MAJOR_GENRES, ERAS, type MediaType } from "@/lib/types";
+import { MAJOR_GENRES, ERAS, type MediaType, type Entry } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
 import { PreviewBar } from "@/components/ui/preview-bar";
@@ -190,7 +190,7 @@ function DiscoverContent() {
   }, [searchParams]);
 
   // Derive existing entry IDs from shared context + fetch watchlist IDs
-  const { entries: sharedEntries, loading: entriesLoading } = useEntries();
+  const { entries: sharedEntries, loading: entriesLoading, addEntry: ctxAddEntry } = useEntries();
   const [existingLoaded, setExistingLoaded] = useState(false);
   useEffect(() => {
     if (entriesLoading) return;
@@ -493,10 +493,11 @@ function DiscoverContent() {
     finally { setAddingToWatchlist(null); }
   }
 
-  function handleAdded(tmdbId: number, mt: string) {
+  function handleAdded(entry: Entry) {
+    ctxAddEntry(entry); // library shows the new title immediately
     setExistingTmdbIds((prev) => {
       const next = new Set(prev);
-      next.add(`${mt}_${tmdbId}`);
+      next.add(`${entry.media_type}_${entry.tmdb_id}`);
       return next;
     });
     setSelectedResult(null);

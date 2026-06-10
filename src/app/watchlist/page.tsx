@@ -9,7 +9,8 @@ import { useWatchlist } from "@/lib/watchlist-context";
 import { useEntries } from "@/lib/entries-context";
 import { toast } from "@/components/ui/toast";
 import { posterUrl, normalizeGenres, genreMatchesFilter, type TmdbSearchResult } from "@/lib/tmdb";
-import { buildWatchlistItem } from "@/lib/watchlist-helpers";
+import { buildWatchlistItem, watchlistItemToSearchResult } from "@/lib/watchlist-helpers";
+import { AddModal } from "@/components/add-modal";
 import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
@@ -72,7 +73,7 @@ function WatchlistContent() {
   const [addLoading, setAddLoading] = useState(false);
   const [tvOn, setTvOn] = useState(true);
   const [peekedEntry, setPeekedEntry] = useState<WatchlistItem | null>(null);
-  const [movingToLibrary, setMovingToLibrary] = useState<string | null>(null);
+  const [moveItem, setMoveItem] = useState<WatchlistItem | null>(null);
   const [showRewatch, setShowRewatch] = useState(false);
   const [selectedRewatchEntry, setSelectedRewatchEntry] = useState<Entry | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -214,40 +215,17 @@ function WatchlistContent() {
     ctxRemoveItem(id);
   }
 
-  async function moveToLibrary(item: WatchlistItem) {
-    setMovingToLibrary(item.id);
-    const supabase = createClient();
-
-    const entry = {
-      tmdb_id: item.tmdb_id,
-      media_type: item.media_type,
-      title: item.title,
-      year: item.year,
-      genres: item.genres,
-      poster: item.poster,
-      overview: item.overview,
-      tmdb_rating: item.tmdb_rating,
-      runtime: item.runtime,
-      seasons: item.seasons,
-      episodes: item.episodes,
-      imdb_id: item.imdb_id,
-      my_rating: 7,
-      tags: [],
-      recommended: false,
-      rewatch: false,
-    };
-
-    const { data, error } = await supabase.from("entries").insert(entry).select().single();
-    if (error || !data) {
-      toast("Could not move to library.");
-      setMovingToLibrary(null);
-      return;
+  // "Watched — Add to Library" opens the shared AddModal (rate, tag, year
+  // watched). After it saves the entry, remove the item from the watchlist.
+  async function handleMovedToLibrary(entry: Entry) {
+    ctxAddEntry(entry);
+    if (moveItem) {
+      const supabase = createClient();
+      const { error } = await supabase.from("watchlist").delete().eq("id", moveItem.id);
+      if (!error) ctxRemoveItem(moveItem.id);
+      else toast("Added to library, but could not remove from watchlist.");
     }
-    ctxAddEntry(data as Entry);
-    const { error: delError } = await supabase.from("watchlist").delete().eq("id", item.id);
-    if (!delError) ctxRemoveItem(item.id);
-    else toast("Added to library, but could not remove from watchlist.");
-    setMovingToLibrary(null);
+    setMoveItem(null);
   }
 
   // Flow navigation
@@ -371,16 +349,15 @@ function WatchlistContent() {
                       ) : (
                         <>
                           <button
-                            onClick={(e) => { e.stopPropagation(); moveToLibrary(item as WatchlistItem); }}
-                            disabled={movingToLibrary === item.id}
-                            className="px-1.5 xl:px-2 py-0.5 xl:py-1 rounded text-[7px] xl:text-[8px] font-display uppercase tracking-wider transition-all disabled:opacity-50"
+                            onClick={(e) => { e.stopPropagation(); setMoveItem(item as WatchlistItem); }}
+                            className="px-1.5 xl:px-2 py-0.5 xl:py-1 rounded text-[7px] xl:text-[8px] font-display uppercase tracking-wider transition-all"
                             style={{
                               backgroundColor: `rgba(${rgb},0.15)`,
                               color: `rgb(${rgb})`,
                               border: `1px solid rgba(${rgb},0.25)`,
                             }}
                           >
-                            {movingToLibrary === item.id ? "..." : "Watched — Add to Library"}
+                            Watched — Add to Library
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); removeFromWatchlist(item.id); }}
@@ -586,16 +563,15 @@ function WatchlistContent() {
               ) : (
                 <>
                   <button
-                    onClick={(e) => { e.stopPropagation(); moveToLibrary(item as WatchlistItem); }}
-                    disabled={movingToLibrary === item.id}
-                    className="px-1.5 py-0.5 rounded text-[7px] font-display uppercase tracking-wider transition-all disabled:opacity-50"
+                    onClick={(e) => { e.stopPropagation(); setMoveItem(item as WatchlistItem); }}
+                    className="px-1.5 py-0.5 rounded text-[7px] font-display uppercase tracking-wider transition-all"
                     style={{
                       backgroundColor: `rgba(${mobileRgb},0.15)`,
                       color: `rgb(${mobileRgb})`,
                       border: `1px solid rgba(${mobileRgb},0.25)`,
                     }}
                   >
-                    {movingToLibrary === item.id ? "..." : "Watched — Add to Library"}
+                    Watched — Add to Library
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); removeFromWatchlist(item.id); }}
@@ -780,8 +756,19 @@ function WatchlistContent() {
         <WatchlistDetailModal
           item={selectedItem}
           onClose={() => setSelectedItem(null)}
-          onMoveToLibrary={(item) => { moveToLibrary(item); setSelectedItem(null); }}
+          onMoveToLibrary={(item) => { setSelectedItem(null); setMoveItem(item); }}
           onRemove={(id) => { removeFromWatchlist(id); setSelectedItem(null); }}
+        />
+      )}
+
+      {/* "Watched" flow — same add card as Discover/Search; removes the
+          watchlist row once the entry is saved */}
+      {moveItem && (
+        <AddModal
+          result={watchlistItemToSearchResult(moveItem)}
+          onClose={() => setMoveItem(null)}
+          onAdded={handleMovedToLibrary}
+          isInWatchlist={true}
         />
       )}
 
