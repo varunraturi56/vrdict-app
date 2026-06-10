@@ -3,6 +3,7 @@
 import { Suspense, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BottomNav, TopNav } from "./navigation";
+import { ToastViewport } from "@/components/ui/toast";
 import { LibraryCountsProvider } from "@/lib/library-context";
 import { EntriesProvider } from "@/lib/entries-context";
 import { WatchlistProvider } from "@/lib/watchlist-context";
@@ -26,7 +27,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const isTvLayoutPage = pathname === "/" || pathname === "/favourites" || pathname === "/watchlist" || pathname === "/discover" || pathname === "/stats";
 
   if (isLoginPage) {
-    return <>{children}</>;
+    return <>{children}<ToastViewport /></>;
   }
 
   return (
@@ -42,6 +43,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <Suspense><BottomNav /></Suspense>
+      <ToastViewport />
 
       {/* Wall zone — darkened bottom edge so ambient glow reads against it */}
       <div className="wall-zone hidden lg:block" />
