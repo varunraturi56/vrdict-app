@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { createClient } from "@/lib/supabase/client";
 import { useEntries } from "@/lib/entries-context";
+import { meanRating } from "@/lib/stats-helpers";
 import { posterUrl, normalizeGenres, genreMatchesFilter } from "@/lib/tmdb";
 import type { Entry } from "@/lib/types";
 import { TvFrame } from "@/components/ui/tv-frame";
@@ -96,15 +97,7 @@ function StatsContent() {
     if (mediaFilter === "tv") return tvShows;
     return entries;
   }, [mediaFilter, movies, tvShows, entries]);
-  const avgRating = useMemo(() => {
-    if (mediaFilter !== "all") {
-      return collectionEntries.length > 0 ? (collectionEntries.reduce((s, e) => s + e.my_rating, 0) / collectionEntries.length).toFixed(1) : "0";
-    }
-    const movieAvg = movies.length > 0 ? movies.reduce((s, e) => s + e.my_rating, 0) / movies.length : 0;
-    const tvAvg = tvShows.length > 0 ? tvShows.reduce((s, e) => s + e.my_rating, 0) / tvShows.length : 0;
-    const count = (movies.length > 0 ? 1 : 0) + (tvShows.length > 0 ? 1 : 0);
-    return count > 0 ? ((movieAvg + tvAvg) / count).toFixed(1) : "0";
-  }, [mediaFilter, collectionEntries, movies, tvShows]);
+  const avgRating = useMemo(() => meanRating(collectionEntries), [collectionEntries]);
 
   // Genre data uses collection filter so doughnut, top genre, etc. all respect Films/TV filter
   const genreCounts: Record<string, number> = {};
@@ -114,13 +107,13 @@ function StatsContent() {
 
   const ratingDist: Record<number, number> = {};
   for (let i = 1; i <= 10; i++) ratingDist[i] = 0;
-  entries.forEach((e) => { const r = Math.round(e.my_rating); if (r >= 1 && r <= 10) ratingDist[r]++; });
+  collectionEntries.forEach((e) => { const r = Math.round(e.my_rating); if (r >= 1 && r <= 10) ratingDist[r]++; });
   const ratingData = Object.entries(ratingDist).map(([rating, count]) => ({ rating, count }));
 
-  const scatterData = entries.filter((e) => e.tmdb_rating && e.tmdb_rating > 0).map((e) => ({ x: e.tmdb_rating!, y: e.my_rating, title: e.title }));
+  const scatterData = collectionEntries.filter((e) => e.tmdb_rating && e.tmdb_rating > 0).map((e) => ({ x: e.tmdb_rating!, y: e.my_rating, title: e.title }));
 
   const decadeCounts: Record<string, number> = {};
-  entries.forEach((e) => { if (e.year) { const d = Math.floor(parseInt(e.year) / 10) * 10 + "s"; decadeCounts[d] = (decadeCounts[d] || 0) + 1; } });
+  collectionEntries.forEach((e) => { if (e.year) { const d = Math.floor(parseInt(e.year) / 10) * 10 + "s"; decadeCounts[d] = (decadeCounts[d] || 0) + 1; } });
   const decadeData = Object.entries(decadeCounts).sort((a, b) => a[0].localeCompare(b[0])).map(([decade, count]) => ({ decade, count }));
 
   const topMovies = useMemo(() => [...movies].sort((a, b) => b.my_rating - a.my_rating).slice(0, 10), [movies]);
