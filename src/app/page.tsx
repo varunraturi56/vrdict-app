@@ -6,6 +6,7 @@ import type { Entry } from "@/lib/types";
 import { useLibraryCounts } from "@/lib/library-context";
 import { useHeroRotation } from "@/hooks/use-hero-rotation";
 import { usePagination } from "@/hooks/use-pagination";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useLibraryFlow } from "@/hooks/use-library-flow";
 import { useLibraryFilters } from "@/hooks/use-library-filters";
 import { LibraryDesktopView } from "@/components/library/desktop-view";
@@ -47,6 +48,10 @@ function LibraryContent() {
   // UI state
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // null on first render (both trees mount, CSS hides the wrong one — keeps
+  // hydration consistent); afterwards only the active tree stays mounted
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   // Publish counts to global context
   const movieCount = entries.filter((e) => e.media_type === "movie").length;
@@ -90,6 +95,7 @@ function LibraryContent() {
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
 
       {/* ═══ MOBILE ═══ */}
+      {isDesktop !== true && (
       <div className="lg:hidden flex flex-col flex-1 min-h-0">
         <LibraryMobileView
           isHome={isMobileHome}
@@ -112,8 +118,10 @@ function LibraryContent() {
           onSelectEntry={setSelectedEntry}
         />
       </div>
+      )}
 
       {/* ═══ DESKTOP ═══ */}
+      {isDesktop !== false && (
       <LibraryDesktopView
         flow={flow}
         entries={entries}
@@ -143,6 +151,7 @@ function LibraryContent() {
         onBackToWelcome={handleBackToWelcome}
         onSelectEntry={setSelectedEntry}
       />
+      )}
 
       {/* Filter drawer */}
       <FilterDrawer

@@ -18,6 +18,7 @@ import { TvFrame } from "@/components/ui/tv-frame";
 import { LedBars } from "@/components/ui/led-bar";
 import { PreviewBar } from "@/components/ui/preview-bar";
 import { PAGE_GLOWS } from "@/lib/ambient-colors";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const CHART_COLORS = [
   "#0ea5e9", "#38bdf8", "#0284c7", "#a78bfa", "#c4b5fd",
@@ -40,6 +41,10 @@ function StatsContent() {
   const [genreModal, setGenreModal] = useState<string | null>(null);
   const [peekedEntry, setPeekedEntry] = useState<Entry | null>(null);
   const [hoveredGenre, setHoveredGenre] = useState<string | null>(null);
+
+  // null on first render (both trees mount, CSS hides the wrong one — keeps
+  // hydration consistent); afterwards only the active tree stays mounted
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   const flow = view === "visualise" ? "visualise" : view === "top-tens" ? "top-tens" : "category";
 
@@ -358,6 +363,7 @@ function StatsContent() {
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
 
       {/* ═══ MOBILE ═══ */}
+      {isDesktop !== true && (
       <div className="lg:hidden flex flex-col flex-1 min-h-0 overflow-y-auto pb-20 pt-3">
         <div className="flex justify-center mb-3 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -423,8 +429,10 @@ function StatsContent() {
           </div>
         )}
       </div>
+      )}
 
       {/* ═══ DESKTOP ═══ */}
+      {isDesktop !== false && (
       <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
         <LedBars />
         <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>
@@ -433,6 +441,7 @@ function StatsContent() {
         <div className="hidden lg:block px-32"><div className="tv-stand"><div className="tv-stand-neck" /><div className="tv-stand-base" /></div></div>
         <PreviewBar entry={flow !== "category" ? displayEntry : null} onEdit={() => {}} isOn={tvOn} />
       </div>
+      )}
 
       {genreModal && <GenreModal genre={genreModal} entries={genreEntries} onClose={() => setGenreModal(null)} />}
     </div>

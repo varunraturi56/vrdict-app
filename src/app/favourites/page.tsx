@@ -18,6 +18,7 @@ import { FilterDrawer } from "@/components/ui/filter-drawer";
 import { PAGE_GLOWS } from "@/lib/ambient-colors";
 import { useHeroRotation } from "@/hooks/use-hero-rotation";
 import { usePagination } from "@/hooks/use-pagination";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const SORT_OPTIONS = [
   { key: "my_rating", label: "Rating" },
@@ -58,6 +59,10 @@ function FavouritesContent() {
   const [tvOn, setTvOn] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [peekedEntry, setPeekedEntry] = useState<Entry | null>(null);
+
+  // null on first render (both trees mount, CSS hides the wrong one — keeps
+  // hydration consistent); afterwards only the active tree stays mounted
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   // Desktop flow state
   const hasTab = searchParams.get("tab");
@@ -386,6 +391,7 @@ function FavouritesContent() {
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
 
       {/* ═══ MOBILE LAYOUT ═══ */}
+      {isDesktop !== true && (
       <div className="lg:hidden flex flex-col flex-1 min-h-0">
         {/* Hero banner */}
         {heroEntry && (
@@ -522,8 +528,10 @@ function FavouritesContent() {
           </div>
         )}
       </div>
+      )}
 
       {/* ═══ DESKTOP LAYOUT ═══ */}
+      {isDesktop !== false && (
       <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
         <LedBars />
         <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>
@@ -541,6 +549,7 @@ function FavouritesContent() {
           isOn={tvOn}
         />
       </div>
+      )}
 
       {/* Filter drawer */}
       <FilterDrawer

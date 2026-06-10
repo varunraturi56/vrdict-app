@@ -148,8 +148,11 @@ function WatchlistContent() {
     setCurrentPage(1);
   }, [mediaTab, setCurrentPage]);
 
-  // Rewatch items filtered by current tab (desktop only — mobile shows all)
-  const isMobile = useMediaQuery("(max-width: 1023px)") ?? false;
+  // Rewatch items filtered by current tab (desktop only — mobile shows all).
+  // Raw value is null on first render — both trees mount then, CSS hides the
+  // wrong one, so hydration matches; afterwards only the active tree stays.
+  const isMobileRaw = useMediaQuery("(max-width: 1023px)");
+  const isMobile = isMobileRaw ?? false;
   const filteredRewatchItems = useMemo(
     () => isMobile ? rewatchItems : rewatchItems.filter((e) => e.media_type === activeMediaType),
     [rewatchItems, activeMediaType, isMobile]
@@ -613,6 +616,7 @@ function WatchlistContent() {
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
 
       {/* ═══ MOBILE LAYOUT ═══ */}
+      {isMobileRaw !== false && (
       <div className="lg:hidden flex flex-col flex-1 min-h-0">
         {/* Hero banner */}
         {heroEntry && (
@@ -735,8 +739,10 @@ function WatchlistContent() {
           </div>
         )}
       </div>
+      )}
 
       {/* ═══ DESKTOP LAYOUT ═══ */}
+      {isMobileRaw !== true && (
       <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
         <LedBars />
         <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>
@@ -754,6 +760,7 @@ function WatchlistContent() {
           isOn={tvOn}
         />
       </div>
+      )}
 
       {/* Filter drawer */}
       <FilterDrawer

@@ -26,6 +26,7 @@ import { TvCategorySelect } from "@/components/ui/tv-category-select";
 import { AddModal } from "@/components/add-modal";
 import { PAGE_GLOWS } from "@/lib/ambient-colors";
 import { useHeroRotation } from "@/hooks/use-hero-rotation";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 const SORT_OPTIONS = [
   { key: "vote_average.desc", label: "TMDB" },
@@ -155,6 +156,10 @@ function DiscoverContent() {
   const [tvOn, setTvOn] = useState(true);
   const [peekedResult, setPeekedResult] = useState<TmdbSearchResult | null>(null);
   const [expandedDropdownId, setExpandedDropdownId] = useState<string | null>(null);
+
+  // null on first render (both trees mount, CSS hides the wrong one — keeps
+  // hydration consistent); afterwards only the active tree stays mounted
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   // Hero banner (mobile) — auto-rotate every 5s. Candidates must be memoized:
   // an inline .slice() gives the hook a new array identity every render, which
@@ -993,6 +998,7 @@ function DiscoverContent() {
     <div className="px-4 pt-1 pb-0 flex flex-col flex-1 min-h-0 overflow-hidden lg:px-5 lg:pt-3 lg:pb-0 lg:overflow-hidden">
 
       {/* ═══ MOBILE LAYOUT ═══ */}
+      {isDesktop !== true && (
       <div className="lg:hidden flex flex-col flex-1 min-h-0">
         {/* Hero banner */}
         {heroResult && (
@@ -1224,8 +1230,10 @@ function DiscoverContent() {
           </div>
         )}
       </div>
+      )}
 
       {/* ═══ DESKTOP LAYOUT ═══ */}
+      {isDesktop !== false && (
       <div className="hidden lg:flex lg:flex-col flex-1 min-h-0 relative">
         <LedBars />
         <TvFrame isOn={tvOn} onPowerToggle={() => setTvOn(!tvOn)}>
@@ -1243,6 +1251,7 @@ function DiscoverContent() {
           isOn={tvOn}
         />
       </div>
+      )}
 
       {/* Discover Filter Drawer — genre only */}
       <DiscoverFilterDrawer
