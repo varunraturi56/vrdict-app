@@ -533,7 +533,7 @@ function GenreModal({ genre, entries, onClose }: { genre: string; entries: Entry
           {entries.map((e) => (
             <div key={e.id} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-bg-deep/50 transition-colors">
               <div className="w-8 h-12 shrink-0 rounded overflow-hidden bg-bg-deep">
-                {e.poster ? <img src={posterUrl(e.poster, "small")} alt={e.title} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[6px]">{e.title.slice(0, 3)}</div>}
+                {e.poster ? <img src={posterUrl(e.poster, "small")} alt={e.title} width={32} height={48} loading="lazy" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[6px]">{e.title.slice(0, 3)}</div>}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-display text-[11px] text-[#e8e4dc] truncate">{e.title}</p>

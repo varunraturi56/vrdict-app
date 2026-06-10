@@ -689,7 +689,7 @@ function DiscoverContent() {
                               onClick={() => setExpandedDropdownId(isExpanded ? null : dropKey)}
                             >
                               {r.poster_path && (
-                                <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
+                                <img src={posterUrl(r.poster_path, "small")} alt="" width={24} height={36} loading="lazy" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
                               )}
                               <div className="flex-1 min-w-0">
                                 <p className="font-display text-[10px] text-[#e8e4dc] truncate">{getDisplayTitle(r)}</p>
@@ -714,7 +714,7 @@ function DiscoverContent() {
                               <div className="px-3 pb-2.5 pt-0.5 bg-bg-deep/30">
                                 <div className="flex gap-2.5">
                                   {r.poster_path && (
-                                    <img src={posterUrl(r.poster_path, "medium")} alt="" className="w-16 h-24 rounded object-cover shrink-0" />
+                                    <img src={posterUrl(r.poster_path, "small")} alt="" width={64} height={96} loading="lazy" className="w-16 h-24 rounded object-cover shrink-0" />
                                   )}
                                   <div className="flex-1 min-w-0">
                                     <p className="font-display text-[11px] text-[#e8e4dc] font-medium">{getDisplayTitle(r)}</p>
@@ -1116,7 +1116,7 @@ function DiscoverContent() {
                     const inLib = isInLibrary(r);
                     return (
                       <div key={`${r.media_type}-${r.id}`} className="flex items-center gap-2 w-full px-3 py-2 active:bg-bg-3 transition-colors">
-                        {r.poster_path && <img src={posterUrl(r.poster_path, "small")} alt="" className="w-5 h-8 rounded-[2px] object-cover shrink-0" />}
+                        {r.poster_path && <img src={posterUrl(r.poster_path, "small")} alt="" width={20} height={32} loading="lazy" className="w-5 h-8 rounded-[2px] object-cover shrink-0" />}
                         <div className="flex-1 min-w-0">
                           <p className="font-display text-[9px] text-[#e8e4dc] truncate">{getDisplayTitle(r)}</p>
                           <p className="font-mono-stats text-[7px] text-[#5c5954]">{getYear(r)} · {r.media_type}</p>

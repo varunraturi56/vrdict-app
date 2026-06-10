@@ -343,8 +343,11 @@ function WatchlistContent() {
                 >
                   {item.poster && (
                     <img
-                      src={posterUrl(item.poster, "medium")}
+                      src={posterUrl(item.poster, "small")}
                       alt={item.title}
+                      width={45}
+                      height={67}
+                      loading="lazy"
                       className="w-[36px] h-[54px] xl:w-[45px] xl:h-[67px] rounded-[3px] object-cover shrink-0"
                     />
                   )}
@@ -557,6 +560,9 @@ function WatchlistContent() {
             <img
               src={posterUrl(item.poster, "small")}
               alt={item.title}
+              width={36}
+              height={54}
+              loading="lazy"
               className="w-[36px] h-[54px] rounded-[3px] object-cover shrink-0"
             />
           )}
@@ -906,7 +912,7 @@ function WatchlistToolbar({
                       onClick={() => setExpandedDropdownId(isExpanded ? null : dropKey)}
                     >
                       {r.poster_path && (
-                        <img src={posterUrl(r.poster_path, "small")} alt="" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
+                        <img src={posterUrl(r.poster_path, "small")} alt="" width={24} height={36} loading="lazy" className="w-6 h-9 rounded-[2px] object-cover shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-display text-[10px] text-[#e8e4dc] truncate">{r.title || r.name}</p>
@@ -927,7 +933,7 @@ function WatchlistToolbar({
                       <div className="px-3 pb-2.5 pt-0.5 bg-bg-deep/30">
                         <div className="flex gap-2.5">
                           {r.poster_path && (
-                            <img src={posterUrl(r.poster_path, "medium")} alt="" className="w-16 h-24 rounded object-cover shrink-0" />
+                            <img src={posterUrl(r.poster_path, "small")} alt="" width={64} height={96} loading="lazy" className="w-16 h-24 rounded object-cover shrink-0" />
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="font-display text-[11px] text-[#e8e4dc] font-medium">{r.title || r.name}</p>

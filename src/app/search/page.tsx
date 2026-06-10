@@ -190,6 +190,9 @@ export default function SearchPage() {
                     <img
                       src={posterUrl(result.poster_path, "small")}
                       alt={getDisplayTitle(result)}
+                      width={56}
+                      height={80}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                     />
                   ) : (
