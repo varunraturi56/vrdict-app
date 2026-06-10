@@ -33,4 +33,6 @@ next-env.d.ts
 # PWA build artifacts (if using next-pwa)
 public/workbox-*.js
 public/workbox-*.js.map
-supabase/
+
+# Supabase CLI temp folder (root only — src/lib/supabase is source code)
+/supabase/
