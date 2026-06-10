@@ -13,6 +13,7 @@ import {
 } from "@/lib/tmdb";
 import { DEFAULT_TAGS } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "@/components/ui/toast";
 
 interface AddModalProps {
   result: TmdbSearchResult;
@@ -53,10 +54,14 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
         const res = await fetch(
           `/api/tmdb?action=detail&id=${result.id}&media_type=${result.media_type}`
         );
+        if (!res.ok) {
+          setDetail(null);
+          return;
+        }
         const data = await res.json();
         setDetail(data);
       } catch {
-        // fail silently
+        setDetail(null);
       } finally {
         setLoading(false);
       }
@@ -116,11 +121,13 @@ export function AddModal({ result, onClose, onAdded, onAddToWatchlist, isInWatch
       };
 
       const { error } = await supabase.from("entries").insert(entry);
-      if (!error) {
-        onAdded(result.id, result.media_type);
+      if (error) {
+        toast("Could not add to library.");
+        return;
       }
+      onAdded(result.id, result.media_type);
     } catch {
-      // fail silently
+      toast("Could not add to library.");
     } finally {
       setSaving(false);
     }

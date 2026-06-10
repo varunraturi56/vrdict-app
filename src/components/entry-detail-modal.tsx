@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { posterUrl } from "@/lib/tmdb";
+import { toast } from "@/components/ui/toast";
 import { DEFAULT_TAGS, type Entry } from "@/lib/types";
 
 function ratingColor(val: number): string {
@@ -54,14 +55,20 @@ export function EntryDetailModal({
       .from("entries")
       .update({ my_rating: myRating, tags, recommended, rewatch, seasons_watched: seasonsWatched, year_watched: yearWatched || null })
       .eq("id", entry.id).select().single();
-    if (!error && data) onUpdate(data as Entry);
-    else onClose();
     setSaving(false);
+    if (!error && data) onUpdate(data as Entry);
+    else toast("Save failed — your changes were not stored.");
+    // modal stays open on failure so edits are not lost
   }
 
   async function handleDelete() {
     const supabase = createClient();
-    await supabase.from("entries").delete().eq("id", entry.id);
+    const { error } = await supabase.from("entries").delete().eq("id", entry.id);
+    if (error) {
+      toast("Delete failed — entry was not removed.");
+      setConfirmDelete(false);
+      return;
+    }
     onDelete(entry.id);
   }
 

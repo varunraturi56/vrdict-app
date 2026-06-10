@@ -6,6 +6,8 @@ import { Bookmark, Search, ChevronDown, X, Plus, Star, RotateCcw, SlidersHorizon
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
 import { useWatchlist } from "@/lib/watchlist-context";
+import { useEntries } from "@/lib/entries-context";
+import { toast } from "@/components/ui/toast";
 import { posterUrl, normalizeGenres, genreMatchesFilter, type TmdbSearchResult } from "@/lib/tmdb";
 import { buildWatchlistItem } from "@/lib/watchlist-helpers";
 import { MAJOR_GENRES, type WatchlistItem, type Entry, type MediaType } from "@/lib/types";
@@ -57,6 +59,7 @@ function WatchlistContent() {
   const mediaTab = (searchParams.get("tab") || "movie") as MediaType;
 
   const { items, loading, addItem: ctxAddItem, removeItem: ctxRemoveItem } = useWatchlist();
+  const { addEntry: ctxAddEntry } = useEntries();
   const [genreFilter, setGenreFilter] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("tmdb_rating");
   const [ratingFilter, setRatingFilter] = useState<RatingKey>("any");
@@ -195,26 +198,36 @@ function WatchlistContent() {
   }, [addQuery]);
 
   async function addToWatchlist(result: TmdbSearchResult) {
-    const existing = items.find((i) => i.tmdb_id === result.id);
+    const existing = items.find((i) => i.tmdb_id === result.id && i.media_type === result.media_type);
     if (existing) return;
 
     const detailRes = await fetch(`/api/tmdb?action=detail&id=${result.id}&media_type=${result.media_type}`);
+    if (!detailRes.ok) {
+      toast("Could not fetch details from TMDB.");
+      return;
+    }
     const detail = await detailRes.json();
 
     const supabase = createClient();
     const item = buildWatchlistItem(result, detail);
 
-    const { data } = await supabase.from("watchlist").insert(item).select().single();
-    if (data) {
-      ctxAddItem(data as WatchlistItem);
-      setAddQuery("");
-      setAddResults([]);
+    const { data, error } = await supabase.from("watchlist").insert(item).select().single();
+    if (error || !data) {
+      toast("Could not add to watchlist.");
+      return;
     }
+    ctxAddItem(data as WatchlistItem);
+    setAddQuery("");
+    setAddResults([]);
   }
 
   async function removeFromWatchlist(id: string) {
     const supabase = createClient();
-    await supabase.from("watchlist").delete().eq("id", id);
+    const { error } = await supabase.from("watchlist").delete().eq("id", id);
+    if (error) {
+      toast("Could not remove from watchlist.");
+      return;
+    }
     ctxRemoveItem(id);
   }
 
@@ -241,11 +254,16 @@ function WatchlistContent() {
       rewatch: false,
     };
 
-    const { error } = await supabase.from("entries").insert(entry);
-    if (!error) {
-      await supabase.from("watchlist").delete().eq("id", item.id);
-      ctxRemoveItem(item.id);
+    const { data, error } = await supabase.from("entries").insert(entry).select().single();
+    if (error || !data) {
+      toast("Could not move to library.");
+      setMovingToLibrary(null);
+      return;
     }
+    ctxAddEntry(data as Entry);
+    const { error: delError } = await supabase.from("watchlist").delete().eq("id", item.id);
+    if (!delError) ctxRemoveItem(item.id);
+    else toast("Added to library, but could not remove from watchlist.");
     setMovingToLibrary(null);
   }
 
@@ -889,7 +907,7 @@ function WatchlistToolbar({
           {addResults.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border-glow bg-[#0e0e14] shadow-xl z-50 overflow-hidden max-h-[320px] overflow-y-auto">
               {addResults.map((r) => {
-                const alreadyAdded = items.some((i) => i.tmdb_id === r.id);
+                const alreadyAdded = items.some((i) => i.tmdb_id === r.id && i.media_type === r.media_type);
                 const dropKey = `${r.media_type}-${r.id}`;
                 const isExpanded = expandedDropdownId === dropKey;
                 return (
