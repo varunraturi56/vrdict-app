@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Library as LibraryIcon, Star, Bookmark, Radar, BarChart3, Search } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { posterUrl } from "@/lib/tmdb";
@@ -172,9 +173,9 @@ export function LibraryMobileView(props: MobileViewProps) {
               style={{ animationDelay: `${Math.min(i * 30, 400)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
               onClick={() => onSelectEntry(entry)}
             >
-              <div className="aspect-[2/3]">
+              <div className="aspect-[2/3] relative">
                 {entry.poster ? (
-                  <img src={posterUrl(entry.poster, "medium")} alt={entry.title} className="w-full h-full object-cover rounded-[6px]" loading="lazy" />
+                  <Image src={posterUrl(entry.poster, "medium")} alt={entry.title} fill sizes="(max-width: 640px) 33vw, 25vw" className="object-cover rounded-[6px]" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[8px] font-display p-1 text-center bg-bg-card rounded-[6px]">{entry.title}</div>
                 )}

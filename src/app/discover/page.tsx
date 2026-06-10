@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Radar, Search, Plus, Bookmark, Check, ChevronDown, X, SlidersHorizontal } from "lucide-react";
 import { MobileDropdown } from "@/components/ui/mobile-dropdown";
 import { createClient } from "@/lib/supabase/client";
@@ -893,11 +894,12 @@ function DiscoverContent() {
                           onClick={() => { if (!inLibrary) setSelectedResult(r); }}
                         >
                           <div className="h-full">
-                            <img
+                            <Image
                               src={posterUrl(r.poster_path, "medium")}
                               alt={getDisplayTitle(r)}
-                              className="w-full h-full object-cover rounded-md"
-                              loading="lazy"
+                              fill
+                              sizes="(max-width: 1024px) 33vw, 10vw"
+                              className="object-cover rounded-md"
                             />
                           </div>
 
@@ -1160,12 +1162,13 @@ function DiscoverContent() {
                     style={{ animationDelay: `${Math.min(i * 30, 400)}ms`, border: "1px solid rgba(255,255,255,0.05)" }}
                     onClick={() => { if (!inLibrary) setSelectedResult(r); }}
                   >
-                    <div className="aspect-[2/3]">
-                      <img
-                        src={posterUrl(r.poster_path, "small")}
+                    <div className="aspect-[2/3] relative">
+                      <Image
+                        src={posterUrl(r.poster_path, "medium")}
                         alt={getDisplayTitle(r)}
-                        className="w-full h-full object-cover rounded-[6px]"
-                        loading="lazy"
+                        fill
+                        sizes="(max-width: 640px) 33vw, 25vw"
+                        className="object-cover rounded-[6px]"
                       />
                     </div>
 

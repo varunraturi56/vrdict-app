@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Library as LibraryIcon, ChevronDown } from "lucide-react";
 import { posterUrl } from "@/lib/tmdb";
@@ -212,7 +213,7 @@ function PaginatedGrid({
               >
                 <div className="h-full">
                   {entry.poster ? (
-                    <img src={posterUrl(entry.poster, "medium")} alt={entry.title} className="w-full h-full object-cover rounded-md" loading="lazy" />
+                    <Image src={posterUrl(entry.poster, "medium")} alt={entry.title} fill sizes="(max-width: 1024px) 33vw, 10vw" className="object-cover rounded-md" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[#5c5954] text-[8px] font-display p-1 text-center bg-bg-card rounded-md">{entry.title}</div>
                   )}
